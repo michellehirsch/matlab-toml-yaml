@@ -1,4 +1,4 @@
-classdef toml_test < matlab.unittest.TestCase
+classdef tomltest < matlab.unittest.TestCase
 
     properties (TestParameter)
     end

@@ -1,26 +1,20 @@
-name: MATLAB CI
+apiVersion: v1
 
-on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
-    branches: main
+kind: Service
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        matlab-version:
-          - R2023b
-          - R2024a
-          - R2024b
-    steps:
-      - name: Upload coverage
-      uses: codecov/codecov-action@v4
-      with:
-        files: code-coverage/coverage.xml
-        flags: matlab-${{ matrix.matlab-version }}
-      if: always()
+metadata:
+  name: matlab-web-service
+  namespace: production
+  labels:
+    app: matlab-webapp
+    version: v1.0.0
+    tier: backend
+
+spec:
+  type: LoadBalancer
+  selector:
+    app: matlab-webapp
+  ports:
+    http-port: 80
+    https-port: 443
+  sessionAffinity: ClientIP

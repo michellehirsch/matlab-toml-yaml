@@ -1,0 +1,14 @@
+application:
+  name: WebServer
+  version: 2.0.0
+  environment: production
+database:
+  host: localhost
+  port: 5432
+  name: mydb
+  credentials:
+    username: admin
+    password: secret123
+logging:
+  level: info
+  file: /var/log/app.log

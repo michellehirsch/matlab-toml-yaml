@@ -1,4 +1,4 @@
-classdef YAMLToolboxTest < matlab.unittest.TestCase
+classdef yamltest < matlab.unittest.TestCase
     % YAMLToolboxTest Unit tests for YAML Toolbox
     %   Comprehensive tests for readyaml, yamlwrite, and YAMLData
     

@@ -68,7 +68,7 @@ summary
 %   data: {"layout":"inline"}
 %---
 %[output:03a49f5a]
-%   data: {"dataType":"textualVariable","outputData":{"name":"k8s","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    apiVersion: 'v1'\n    kind: 'Service'\n    metadata: [1×1 ConfigurationData with 3 fields]\n    spec: [1×1 ConfigurationData with 4 fields]\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"k8s","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    apiVersion: 'v1'\n    kind: 'Service'\n    metadata: [1×1 YAMLData with 3 fields]\n    spec: [1×1 YAMLData with 4 fields]\n\n    <a href=\"matlab:show(k8s)\">Show all values<\/a>\n"}}
 %---
 %[output:73d00c27]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"'matlab-web-service'"}}
