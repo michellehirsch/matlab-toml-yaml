@@ -1,0 +1,100 @@
+# Kubernetes Deployment Configuration
+# Deploys a MATLAB web application with persistent storage
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: matlab-webapp
+  namespace: production
+  labels:
+    app: matlab-webapp
+    version: v1.2.0
+    environment: production
+
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: matlab-webapp
+  
+  template:
+    metadata:
+      labels:
+        app: matlab-webapp
+        version: v1.2.0
+    
+    spec:
+      containers:
+        - name: webapp
+          image: myregistry.io/matlab-webapp:1.2.0
+          imagePullPolicy: Always
+          
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          
+          env:
+            - name: MATLAB_WORKERS
+              value: "4"
+            - name: LOG_LEVEL
+              value: INFO
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: db-credentials
+                  key: connection-string
+          
+          resources:
+            requests:
+              memory: "4Gi"
+              cpu: "2000m"
+            limits:
+              memory: "8Gi"
+              cpu: "4000m"
+          
+          volumeMounts:
+            - name: data-storage
+              mountPath: /app/data
+            - name: config
+              mountPath: /app/config
+              readOnly: true
+          
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      
+      volumes:
+        - name: data-storage
+          persistentVolumeClaim:
+            claimName: matlab-webapp-pvc
+        - name: config
+          configMap:
+            name: matlab-webapp-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: matlab-webapp-service
+  namespace: production
+
+spec:
+  type: LoadBalancer
+  selector:
+    app: matlab-webapp
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
+      name: http

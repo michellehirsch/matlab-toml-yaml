@@ -1,0 +1,51 @@
+# Docker Compose Configuration
+# MATLAB application with database
+
+version: '3.8'
+
+services:
+  matlab-app:
+    image: matlab-runtime:R2024b
+    container_name: matlab-app
+    restart: unless-stopped
+    
+    environment:
+      APP_ENV: production
+      DEBUG: false
+      LOG_LEVEL: INFO
+      DATABASE_HOST: postgres
+      MAX_WORKERS: 8
+    
+    ports:
+      web: 8080
+      metrics: 9090
+    
+    volumes:
+      data: /app/data
+      logs: /app/logs
+    
+    depends_on:
+      - postgres
+    
+    deploy:
+      replicas: 3
+      resources:
+        memory: 8G
+        cpus: 4
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres-db
+    restart: unless-stopped
+    
+    environment:
+      POSTGRES_DB: matlab_app
+      POSTGRES_USER: matlab_user
+      POSTGRES_PASSWORD: changeme
+    
+    ports:
+      db: 5432
+
+networks:
+  matlab-network:
+    driver: bridge

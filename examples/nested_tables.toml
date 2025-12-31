@@ -1,0 +1,37 @@
+# Demonstration of nested tables
+
+title = "Nested Configuration Example"
+
+# Top-level table
+[server]
+name = "production"
+ip = "10.0.0.1"
+
+# Nested table
+[server.database]
+host = "localhost"
+port = 5432
+name = "mydb"
+
+# Another nested table
+[server.cache]
+host = "localhost"
+port = 6379
+ttl = 3600
+
+# Deeply nested
+[application.settings.security]
+enabled = true
+encryption = "AES256"
+key_rotation_days = 90
+
+[application.settings.performance]
+cache_enabled = true
+max_connections = 100
+timeout = 30
+
+# Dotted key notation (creates nested structure)
+[client]
+name = "web-client"
+client.version = "2.0"
+client.build = 1234

@@ -1,0 +1,23 @@
+SourceFile: kubernetes-service.yaml
+apiVersion: v1
+kind: Service
+metadata:
+  SourceFile: kubernetes-service.yaml
+  labels:
+    SourceFile: kubernetes-service.yaml
+    app: matlab-webapp
+    tier: backend
+    version: v2.0.0
+  name: matlab-web-service
+  namespace: production
+spec:
+  SourceFile: kubernetes-service.yaml
+  ports:
+    SourceFile: kubernetes-service.yaml
+    http-port: 80
+    https-port: 443
+  selector:
+    SourceFile: kubernetes-service.yaml
+    app: matlab-webapp
+  sessionAffinity: None
+  type: LoadBalancer

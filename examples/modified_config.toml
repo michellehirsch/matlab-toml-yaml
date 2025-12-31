@@ -1,0 +1,14 @@
+title = "My Application"
+version = 1
+debug = false
+
+[database]
+server = "192.168.1.1"
+port = 3306
+username = "admin"
+enabled = true
+
+[logging]
+level = "info"
+file = "/var/log/app.log"
+max_size = 10485760

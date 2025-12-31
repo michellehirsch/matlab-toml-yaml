@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+   name: matlab-web-service
+   namespace: production
+   labels:
+      app: matlab-webapp
+      version: v1.0.0
+      tier: backend
+spec:
+   type: LoadBalancer
+   selector:       app: matlab-webapp
+   ports:
+      http-port: 80
+      https-port: 443
+   sessionAffinity: ClientIP

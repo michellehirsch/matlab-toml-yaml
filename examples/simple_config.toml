@@ -1,0 +1,18 @@
+# Simple configuration file example
+
+title = "My Application"
+version = 1.0
+debug = false
+
+# Database connection
+[database]
+server = "192.168.1.1"
+port = 5432
+username = "admin"
+enabled = true
+
+# Logging configuration
+[logging]
+level = "info"
+file = "/var/log/app.log"
+max-size = 10485760

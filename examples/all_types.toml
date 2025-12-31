@@ -1,0 +1,58 @@
+# Comprehensive example showing all TOML data types
+
+# Strings
+basic_string = "hello world"
+literal_string = 'C:\Users\nodejs\templates'
+escaped_string = "Line 1\nLine 2\tTabbed"
+
+# Integers
+decimal_int = 42
+positive_int = +17
+negative_int = -5000
+hex_int = 0xDEADBEEF
+octal_int = 0o755
+binary_int = 0b11010110
+large_int = 1_000_000
+
+# Floats
+float_val = 3.14159
+exponent = 5e+22
+negative_float = -0.01
+fractional = 6.626e-34
+
+# Booleans
+enabled = true
+disabled = false
+
+# Datetime values
+offset_datetime = 1979-05-27T07:32:00Z
+local_datetime = 1979-05-27T07:32:00
+local_date = 1979-05-27
+local_time = 07:32:00
+
+# Arrays
+numbers = [1, 2, 3]
+colors = ["red", "yellow", "green"]
+nested_arrays = [[1, 2], [3, 4], [5, 6]]
+
+# Inline tables
+point = {x = 1, y = 2, z = 3}
+color_rgb = {r = 255, g = 127, b = 0}
+metadata = {author = "John Doe", created = 2024-01-01T00:00:00Z}
+
+# Tables
+[database]
+server = "192.168.1.1"
+ports = [8001, 8001, 8002]
+connection_max = 5000
+enabled = true
+
+[database.credentials]
+username = "dbuser"
+password = "secret123"
+
+# Quoted keys (allow special characters)
+[special_keys]
+"key with spaces" = "value1"
+"special!@#$chars" = "value2"
+"127.0.0.1" = "localhost"

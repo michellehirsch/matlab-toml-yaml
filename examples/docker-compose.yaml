@@ -1,0 +1,115 @@
+# Docker Compose Configuration
+# Multi-container setup for MATLAB application with database and cache
+
+version: '3.8'
+
+services:
+  matlab-app:
+    image: matlab-runtime:R2024b
+    container_name: matlab-production-app
+    restart: unless-stopped
+    
+    build:
+      context: ./app
+      dockerfile: Dockerfile
+      args:
+        MATLAB_VERSION: R2024b
+        BUILD_DATE: 2024-01-15
+    
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - LOG_LEVEL=INFO
+      - DATABASE_HOST=postgres
+      - REDIS_HOST=redis
+      - MAX_WORKERS=8
+    
+    ports:
+      - "8080:8080"
+      - "9090:9090"
+    
+    volumes:
+      - ./data:/app/data
+      - ./logs:/app/logs
+      - matlab-cache:/app/cache
+    
+    depends_on:
+      - postgres
+      - redis
+    
+    networks:
+      - matlab-network
+    
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    
+    deploy:
+      resources:
+        limits:
+          cpus: '4'
+          memory: 8G
+        reservations:
+          cpus: '2'
+          memory: 4G
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: matlab-postgres
+    restart: unless-stopped
+    
+    environment:
+      - POSTGRES_DB=matlab_app
+      - POSTGRES_USER=matlab_user
+      - POSTGRES_PASSWORD_FILE=/run/secrets/db_password
+    
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-scripts:/docker-entrypoint-initdb.d
+    
+    ports:
+      - "5432:5432"
+    
+    networks:
+      - matlab-network
+    
+    secrets:
+      - db_password
+
+  redis:
+    image: redis:7-alpine
+    container_name: matlab-redis
+    restart: unless-stopped
+    
+    command: redis-server --appendonly yes --requirepass ${REDIS_PASSWORD}
+    
+    volumes:
+      - redis-data:/data
+    
+    ports:
+      - "6379:6379"
+    
+    networks:
+      - matlab-network
+
+volumes:
+  matlab-cache:
+    driver: local
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+
+networks:
+  matlab-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16
+
+secrets:
+  db_password:
+    file: ./secrets/db_password.txt

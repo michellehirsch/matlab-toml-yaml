@@ -1,0 +1,25 @@
+name: MATLAB CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:     branches: main
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        matlab-version:
+          - R2023b
+          - R2024a
+          - R2024b
+    steps:
+      - name: Upload coverage
+      uses: codecov/codecov-action@v4
+      with:
+        files: code-coverage/coverage.xml
+        flags: matlab-${{ matrix.matlab-version }}
+      if: always()g.

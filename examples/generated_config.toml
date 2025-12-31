@@ -1,0 +1,7 @@
+app_name = "My MATLAB App"
+version = 3.14
+features = ["plotting", "analysis", "export"]
+
+[settings]
+theme = "dark"
+autosave = true

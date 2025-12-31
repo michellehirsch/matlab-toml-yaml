@@ -1,0 +1,60 @@
+# Example MATLAB project configuration
+
+[project]
+name = "Data Analysis Toolkit"
+version = "2.1.0"
+description = "Tools for scientific data analysis"
+author = "Research Team"
+license = "MIT"
+
+[project.requirements]
+matlab_version = "R2022b"
+required_toolboxes = ["Statistics and Machine Learning Toolbox", "Signal Processing Toolbox"]
+
+# Build configuration
+[build]
+output_dir = "./build"
+include_tests = false
+generate_docs = true
+optimization_level = 2
+
+# Test configuration
+[testing]
+framework = "matlab.unittest"
+coverage_enabled = true
+parallel = true
+max_workers = 4
+test_dirs = ["tests", "integration_tests"]
+
+# Data paths
+[paths]
+data_input = "/data/raw"
+data_output = "/data/processed"
+models = "/models"
+cache = "/cache"
+
+# Algorithm parameters
+[algorithm]
+max_iterations = 1000
+tolerance = 1e-6
+learning_rate = 0.01
+batch_size = 32
+
+[algorithm.preprocessing]
+normalize = true
+remove_outliers = true
+outlier_threshold = 3.0
+
+# Visualization settings
+[visualization]
+default_figure_size = [800, 600]
+color_scheme = "parula"
+save_format = "png"
+dpi = 300
+
+# Logging
+[logging]
+level = "INFO"
+log_file = "./logs/analysis.log"
+console_output = true
+timestamp_format = "yyyy-MM-dd HH:mm:ss"

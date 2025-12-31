@@ -1,0 +1,68 @@
+# Array of Tables example
+# This is useful for representing collections of similar objects
+
+# Simple products array
+[[products]]
+name = "Hammer"
+sku = 738594937
+price = 19.99
+in_stock = true
+
+[[products]]
+name = "Nail"
+sku = 284758393
+price = 0.05
+in_stock = true
+
+[[products]]
+name = "Screwdriver"
+sku = 847520193
+price = 24.99
+in_stock = false
+
+# Servers configuration
+[[servers]]
+name = "alpha"
+ip = "10.0.0.1"
+role = "frontend"
+
+[[servers]]
+name = "beta"
+ip = "10.0.0.2"
+role = "backend"
+
+[[servers]]
+name = "gamma"
+ip = "10.0.0.3"
+role = "database"
+
+# Users with nested properties
+[[users]]
+name = "Alice"
+email = "alice@example.com"
+active = true
+
+[users.permissions]
+read = true
+write = true
+admin = false
+
+[[users]]
+name = "Bob"
+email = "bob@example.com"
+active = false
+
+[users.permissions]
+read = true
+write = false
+admin = false
+
+[[users]]
+name = "Charlie"
+email = "charlie@example.com"
+active = true
+
+[users.permissions]
+read = true
+write = true
+admin = true
