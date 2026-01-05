@@ -207,19 +207,15 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
     
     if ~isfield(parent, lastKey)
         % First element - just assign
-        fprintf('  First element, creating\n');
         parent.(lastKey) = newElement;
         arrayIndex = 1;
         arrayPath = tablePath;
         arrayOfTables(tablePath) = arrayIndex;
-        fprintf('  After assign, length(parent.%s) = %d\n', lastKey, length(parent.(lastKey)));
     elseif isKey(arrayOfTables, tablePath)
         % Append to existing array
         currentArray = parent.(lastKey);
-        fprintf('  Appending, currentArray length = %d\n', length(currentArray));
         if isa(currentArray, 'TOMLData')
             parent.(lastKey) = [currentArray, newElement];
-            fprintf('  After append, length(parent.%s) = %d\n', lastKey, length(parent.(lastKey)));
         else
             error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
                 'Key "%s" is not a TOMLData array', lastKey);
