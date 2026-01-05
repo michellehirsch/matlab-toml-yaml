@@ -1,128 +1,140 @@
-# Configuration File I/O Toolbox - Session Notes
-**Date:** December 31, 2025
+# Session Notes
 
-## Major Accomplishments
+## Recent Work Summary
 
-### 1. Function Naming Standardization
-**Decision:** Use `read<type>` / `write<type>` pattern (modern MATLAB convention)
-- Renamed: `yamlread` → `readyaml`, `yamlwrite` → `writeyaml`
-- Kept: `readtoml`, `writetoml` (already correct)
-- **Rationale:** Aligns with `readstruct`/`writestruct` (closest analogue for structured config data)
-- **Documentation:** `Claude/YAML/NAMING_DECISION.md`
+### Session: January 5, 2026 - Array of Tables Bug Fix & Parser Redesign
 
-### 2. Parameter Naming Improvement
-**Decision:** `ArrayFormat` → `SequenceRule` in `readyaml()`
-- Distinguishes from `ArrayStyle` (write parameter)
-- Uses correct YAML terminology ("sequence")
-- Follows MATLAB "Rule" convention (like `VariableNamingRule`)
-- **Documentation:** `Claude/YAML/PARAMETER_NAMING_DECISION.md`
+#### Context
+Continued from previous session where we had a complete ConfigurationFileIO toolbox with YAML and TOML support. This session focused on fixing critical bugs in the TOML parser.
 
-### 3. Complete writetoml Implementation
-**Status:** ✅ Fully working
-- Signature: `writetoml(data, filename)` (data first, optional filename)
-- Accepts: TOMLData, ConfigurationData, struct
-- Features: Nested tables, array of tables, hyphenated keys, all data types
-- Round-trip tested and verified
+#### Issue #1: Array of Tables Bug
+**Problem:** TOML files with `[[array.of.tables]]` syntax only stored the last element instead of all elements.
 
-### 4. Project Reorganization
-**New Structure:**
+**Example:**
+```toml
+[[items]]
+name = "first"
+
+[[items]]
+name = "second"
+
+[[items]]
+name = "third"
 ```
-ConfigurationFileIO/
-├── README.md              ← User documentation
-├── GettingStarted.m       ← Interactive tutorial
-├── toolbox/               ← All functions (unified)
-│   ├── readyaml.m, writeyaml.m
-│   ├── readtoml.m, writetoml.m
-│   ├── ConfigurationData.m (shared base)
-│   ├── YAMLData.m, TOMLData.m
-├── examples/              ← Example files
-├── tests/                 ← Test files
-├── Claude/                ← Development docs
-│   ├── YAML/
-│   ├── TOML/
-│   └── ConfigurationData/
-├── ConfigurationFileIO.prj
-└── resources/
+Result: Only `items(3)` with `name = "third"` was stored.
+
+**Initial Fix Attempt:** Added array index tracking to the parser
+- Added `currentArrayIndex` to track which element we're in
+- Modified `parseKeyValue` to update array elements correctly
+- **Result:** Fixed simple arrays but broke nested tables within arrays
+
+#### Issue #2: Nested Tables in Array of Tables
+**Problem:** Files with nested tables inside array elements failed:
+```toml
+[[users]]
+name = "Alice"
+
+[users.permissions]
+read = true
 ```
 
-**Benefits:** Single unified toolbox, clean structure, ready for distribution
+**Root Cause Analysis:**
+The fundamental issue was **fighting MATLAB's value semantics**:
+- Parser tried to maintain "references" to current table
+- Used handle-style thinking (containers.Map) in value-semantic context
+- Every modification created copies, changes didn't propagate
+- Complex path tracking with mixed notations (`"items[1].name"`)
 
-### 5. Documentation Created
-- **README.md** - Professional root documentation (238 lines)
-  - Features, installation, API reference, examples
-  - Special characters, GitHub Actions support
-  - Known limitations, project structure
-- **GettingStarted.m** - Use-case driven tutorial
-  - Starts with reading (primary use case)
-  - Progressive complexity: basic → hierarchy → advanced
-  - Real example files, hands-on demonstrations
-- **Example Files Created:**
-  - `basic_config.yaml` - Flat structure with hyphenated key
-  - `server_config.yaml` - 3-level hierarchy
-  - `arrays_config.yaml` - Numeric, string, mixed arrays
-  - `simple_project.toml` - TOML example
+#### Key Insight: Value Semantics vs Handle Semantics
+**What went wrong:**
+- Trying to maintain `tableRef` and expecting modifications to propagate
+- Mixing array indices into path strings (`"items[1].name"`)
+- Using `containers.Map` (handle) for state tracking in otherwise value-semantic code
+- Fighting against MATLAB's copy-on-write behavior
 
-## Critical Conventions (For Future Reference)
+**Better approach identified:**
+1. **Use value semantics throughout** - always return updated root
+2. **Use `dictionary` instead of `containers.Map`** - value semantics, more modern
+3. **Separate concerns:** Parse to simple dictionaries first, convert to ConfigurationData after
+4. **Track array context separately:** Don't encode `[index]` in paths
+   - `currentPath = "items"` (path to array)
+   - `currentArrayIndex = 2` (which element)
+   - NOT `currentPath = "items[2]"` (complex parsing)
 
-### Code Style Rules:
-1. **Method Syntax:** ALWAYS `method(obj)` NOT `obj.method()`
-   - `keys(config)` not `config.keys()`
-   - `show(data)` not `data.show()`
-   - Exception: Only if explicitly told otherwise
-2. **String Literals:** ALWAYS `""` NOT `''`
+#### Parser Redesign (Partial Implementation)
+**New Architecture:**
+```
+Parse Phase (dictionaries + cell arrays)
+    ↓
+Convert Phase (dictionary → ConfigurationData)
+```
 
-### Live Script Best Practices:
-- No blank lines in file
-- Sections: `%%` then `%[text] ##`
-- Required appendix at end
-- No `figure()` commands
-- No `close all` or `clear` at start
-- Bulleted lists end with backslash
-- Use `%[text]` not `fprintf()` for comments
+**Key Changes:**
+- Parse to nested `dictionary` objects (value semantics)
+- Store arrays as `cell` arrays during parsing
+- Simple path notation (no brackets): `"users"` not `"users[1]"`
+- Track `(arrayPath, arrayIndex)` separately
+- Convert to ConfigurationData/TOMLData only at the end
 
-## Known Issues (Not Blocking)
+**Implementation Status:**
+- ✅ Framework implemented
+- ✅ Simple arrays working (3/3 elements)
+- ⚠️ Syntax error in cell array assignment needs fixing
+- ❌ Nested tables in arrays not yet tested
 
-### readtoml Bugs:
-1. **Array of tables:** Only stores last element
-   - Location: `handleArrayOfTables()` function
-   - Theory: Handle reference issue in nested paths
-   - Status: Writing works, only reading affected
-2. **Multi-line arrays:** Not supported
-   - Needs: Line continuation logic
-   - Example: Arrays spanning multiple lines
+**Remaining Issue:**
+```matlab
+% This fails in dictionary assignment:
+dict(key) = {element1, element2}  % Tries to assign to multiple keys
 
-### writetoml Status:
-- ✅ Fully functional
-- ✅ Handles all data types
-- ✅ Preserves hyphenated keys
-- ✅ Round-trip verified
+% Need to wrap properly:
+temp = {cellArray};
+dict(key) = temp{1};
+```
 
-## Skills Used
-- `/mnt/skills/user/matlab-live-script/` - Live script formatting
-- `/mnt/skills/public/docx/` - Not used this session
-- `/mnt/skills/public/pptx/` - Not used this session
+#### What We Learned
 
-## File Locations
-- **Project Root:** `/Users/michellehirsch/Coding/Agent Experiments/MATLAB/Claude/ConfigurationFileIO/`
-- **Toolbox:** `toolbox/` (add to path)
-- **Dev Docs:** `Claude/YAML/`, `Claude/TOML/`, `Claude/ConfigurationData/`
-- **Transcripts:** `/mnt/transcripts/` (session history)
+**MATLAB Best Practices:**
+1. **Embrace value semantics** - Don't fight MATLAB's copy behavior
+2. **`dictionary` > `containers.Map`** for value-semantic code
+3. **Separate parsing from data model** - Use simple types during parse, convert after
+4. **Track context explicitly** - Don't encode state in complex path strings
+5. **Return updated structures** - `root = setPath(root, path, value)`
 
-## Next Steps (Potential)
-1. Fix readtoml array of tables bug
-2. Add multi-line array support
-3. Update tests for new structure
-4. Consider adding LICENSE file
-5. Consider CHANGELOG.md
-6. Test with MATLAB Project packaging
+**Design Patterns:**
+- **Two-phase parsing:** raw data structures → domain objects
+- **Functional style:** Always return updated root, don't mutate
+- **Simple paths:** `"a.b.c"` not `"a[1].b[2].c"`
+- **Context tracking:** `(path, arrayIndex)` tuple, not encoded paths
 
-## Key Decision Documents
-All in `Claude/` folder:
-- `YAML/NAMING_DECISION.md` - Function naming rationale
-- `YAML/PARAMETER_NAMING_DECISION.md` - SequenceRule rationale
-- `TOML/` and `ConfigurationData/` - Implementation notes
+#### Files Changed
+- `toolbox/readtoml.m` - Multiple iterations, currently has syntax error
+- `toolbox/readtoml_old.m` - Backup of handle-style version
+- `toolbox/readtoml_working_but_broken.m` - Latest attempt with value semantics
+- `Claude/DEVELOPMENT_NOTES.md` - Updated with array of tables issue
 
-## Git Status
-✅ All changes committed to repository
-- Last commit: "Add root README and improved Getting Started tutorial with example files"
-- Repository is clean and ready for next session
+#### Next Steps
+1. Fix cell array assignment syntax in `setValueAtPath`
+2. Complete testing of nested tables in arrays
+3. Remove debug output from parser
+4. Clean up backup files
+5. Update DEVELOPMENT_NOTES.md with resolution
+6. Test with real-world TOML files (pyproject.toml, etc.)
+
+#### Current Status
+- **Simple array of tables:** ✅ Working (after value semantics redesign)
+- **Nested tables in arrays:** ⚠️ Implementation 90% complete, syntax error blocking
+- **Parser approach:** ✅ Much cleaner with value semantics
+- **Code quality:** 🔄 In progress - needs cleanup and testing
+
+#### Lessons for Future Development
+When designing MATLAB code that manipulates nested data structures:
+1. **Start with value semantics** - Don't assume you need handles
+2. **Use built-in types** - `dictionary` is powerful and value-semantic
+3. **Parse first, model second** - Separate concerns cleanly
+4. **Test incrementally** - Each phase should work before moving on
+5. **Don't mix paradigms** - Either value or handle, not both
+
+---
+
+*This session demonstrated the importance of working WITH MATLAB's semantics rather than against them. The redesign is cleaner and more maintainable, even though incomplete.*
