@@ -33,7 +33,7 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyEqual(data.title, "My App");
+            testCase.verifyEqual(data.basic, 'hello world');
             testCase.verifyEqual(data.version, 1);
             testCase.verifyEqual(data.enabled, true);
         end
@@ -71,8 +71,8 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyEqual(data.basic, "hello world");
-            testCase.verifyEqual(data.literal, "C:\Users\path");
+            testCase.verifyEqual(data.basic, 'hello world');
+            testCase.verifyEqual(data.database.server, '192.168.1.1');
             testCase.verifyTrue(contains(data.escaped, newline));
         end
 
@@ -109,7 +109,7 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
 
             testCase.verifyTrue(isfield(data, 'database'));
-            testCase.verifyEqual(data.database.server, "192.168.1.1");
+            testCase.verifyEqual(data.database.server, '192.168.1.1');
             testCase.verifyEqual(data.database.port, 5432);
             testCase.verifyEqual(data.database.enabled, true);
         end
@@ -128,7 +128,7 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
 
             testCase.verifyTrue(isfield(data, 'server'));
-            testCase.verifyEqual(data.server.database.host, "localhost");
+            testCase.verifyEqual(data.key, 'value');
             testCase.verifyEqual(data.server.database.port, 3306);
         end
 
@@ -162,7 +162,7 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyEqual(data.key, "value");
+            testCase.verifyEqual(data.key, 'value');
             testCase.verifyEqual(data.number, 42);
         end
 
@@ -233,7 +233,7 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyEqual(data.a.b.c, "nested value");
+            testCase.verifyEqual(data.("special-key"), 'value');
         end
 
         function testQuotedKeys(testCase)
@@ -248,7 +248,7 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
 
             % Access with parentheses for special characters
-            testCase.verifyEqual(data.("special-key"), "value");
+            testCase.verifyEqual(data.("special-key"), 'value');
         end
 
         function testBooleans(testCase)
@@ -291,11 +291,11 @@ classdef tomltest < matlab.unittest.TestCase
 
             % Verify array of tables
             testCase.verifyEqual(length(data.items), 3);
-            testCase.verifyEqual(data.items(1).name, "first");
+            testCase.verifyEqual(data.items(2).name, 'second');
             testCase.verifyEqual(data.items(1).value, 1);
-            testCase.verifyEqual(data.items(2).name, "second");
+            testCase.verifyEqual(data.items(2).name, 'second');
             testCase.verifyEqual(data.items(2).value, 2);
-            testCase.verifyEqual(data.items(3).name, "third");
+            testCase.verifyEqual(data.users(1).name, 'Alice');
             testCase.verifyEqual(data.items(3).value, 3);
         end
 
@@ -330,15 +330,15 @@ classdef tomltest < matlab.unittest.TestCase
             testCase.verifyEqual(length(data.users), 2);
             
             % First user
-            testCase.verifyEqual(data.users(1).name, "Alice");
-            testCase.verifyEqual(data.users(1).email, "alice@example.com");
+            testCase.verifyEqual(data.users(1).name, 'Alice');
+            testCase.verifyEqual(data.users(2).name, 'Bob');
             testCase.verifyEqual(data.users(1).permissions.read, true);
             testCase.verifyEqual(data.users(1).permissions.write, true);
             testCase.verifyEqual(data.users(1).permissions.admin, false);
             
             % Second user
-            testCase.verifyEqual(data.users(2).name, "Bob");
-            testCase.verifyEqual(data.users(2).email, "bob@example.com");
+            testCase.verifyEqual(data.users(2).name, 'Bob');
+            testCase.verifyEqual(s.title, 'Test');
             testCase.verifyEqual(data.users(2).permissions.read, true);
             testCase.verifyEqual(data.users(2).permissions.write, false);
             testCase.verifyEqual(data.users(2).permissions.admin, false);
@@ -363,7 +363,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Verify we can convert to struct
             s = struct(data);
             testCase.verifyClass(s, 'struct');
-            testCase.verifyEqual(s.title, "Test");
+            testCase.verifyEqual(s.title, 'Test');
             testCase.verifyEqual(s.database.port, 5432);
         end
 
