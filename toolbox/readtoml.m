@@ -90,7 +90,7 @@ function data = parseToml(content, datetimeType)
             tableName = extractBetween(line, 2, strlength(line) - 1);
             tableName = strtrim(tableName);
             [data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath] = handleTable(data, tableName, currentArrayIndex, currentArrayPath);
-            currentArrayIndex = 0;  % Not in array anymore
+            % Note: handleTable manages arrayIndex/arrayPath - don't reset here!
 
         else
             % Key-value pair
@@ -287,13 +287,48 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
     else
         tableRef.(char(key)) = value;
         % Update in rootData
-        if arrayIndex > 0 && strcmp(tablePath, arrayPath)
-            % Direct array element update
-            pathKeys = split(tablePath, ".");
-            currentArray = getDataPath(rootData, tablePath);
-            currentArray(arrayIndex).(char(key)) = value;
-            rootData = setDataPath(rootData, pathKeys, currentArray);
-            tableRef = currentArray(arrayIndex);
+        if arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
+            % Array element update
+            % Get the array
+            currentArray = getDataPath(rootData, arrayPath);
+            
+            % Update the specific element
+            if strcmp(tablePath, arrayPath)
+                % Direct field in array element
+                currentArray(arrayIndex).(char(key)) = value;
+            else
+                % Nested path within array element (e.g., users.permissions.read)
+                % Extract the path relative to the array element
+                relativePath = extractAfter(tablePath, arrayPath + ".");
+                relativeKeys = split(relativePath, ".");
+                
+                % Navigate to the nested location and set
+                element = currentArray(arrayIndex);
+                current = element;
+                for k = 1:(numel(relativeKeys)-1)
+                    current = current.(char(relativeKeys(k)));
+                end
+                current.(char(key)) = value;
+                
+                % Write element back
+                currentArray(arrayIndex) = element;
+            end
+            
+            % Write array back
+            arrayPathKeys = split(arrayPath, ".");
+            rootData = setDataPath(rootData, arrayPathKeys, currentArray);
+            
+            % Update tableRef from array element
+            if strcmp(tablePath, arrayPath)
+                tableRef = currentArray(arrayIndex);
+            else
+                % Navigate within the array element
+                tableRef = currentArray(arrayIndex);
+                relKeys = split(relativePath, ".");
+                for k = 1:numel(relKeys)
+                    tableRef = tableRef.(char(relKeys(k)));
+                end
+            end
         elseif strlength(tablePath) == 0
             rootData = tableRef;
         else
@@ -665,6 +700,11 @@ function num = parseNumber(numStr)
         end
     end
 end
+
+
+
+
+
 
 
 
