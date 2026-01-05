@@ -61,6 +61,7 @@ function data = parseToml(content, datetimeType)
     data = TOMLData();
     currentTable = data;
     currentTablePath = "";
+    currentArrayIndex = 0;  % Track if we're in an array of tables
 
     % Split into lines
     lines = splitlines(content);
@@ -81,17 +82,18 @@ function data = parseToml(content, datetimeType)
             % Array of tables
             tableName = extractBetween(line, 3, strlength(line) - 2);
             tableName = strtrim(tableName);
-            [data, currentTable, currentTablePath] = handleArrayOfTables(data, tableName, arrayOfTables);
+            [data, currentTable, currentTablePath, currentArrayIndex] = handleArrayOfTables(data, tableName, arrayOfTables);
 
         elseif startsWith(line, "[") && endsWith(line, "]")
             % Standard table
             tableName = extractBetween(line, 2, strlength(line) - 1);
             tableName = strtrim(tableName);
             [data, currentTable, currentTablePath] = handleTable(data, tableName);
+            currentArrayIndex = 0;  % Not in array anymore
 
         else
             % Key-value pair
-            [data, currentTable] = parseKeyValue(data, currentTable, currentTablePath, line, datetimeType);
+            [data, currentTable] = parseKeyValue(data, currentTable, currentTablePath, currentArrayIndex, line, datetimeType);
         end
     end
 end
@@ -128,7 +130,7 @@ function data = ensureDataPath(data, pathKeys, currentPath)
     end
 end
 
-function [rootData, tableRef, tablePath] = handleArrayOfTables(rootData, tableName, arrayOfTables)
+function [rootData, tableRef, tablePath, arrayIndex] = handleArrayOfTables(rootData, tableName, arrayOfTables)
     % Handle [[array.of.tables]] syntax
     
     keys = split(tableName, ".");
@@ -153,29 +155,46 @@ function [rootData, tableRef, tablePath] = handleArrayOfTables(rootData, tableNa
     % Create new element
     newElement = TOMLData();
     
+    
     if ~isfield(parent, lastKey)
         % First element - just assign
+        fprintf('  First element, creating\n');
         parent.(lastKey) = newElement;
-        arrayOfTables(tablePath) = 1;
+        arrayIndex = 1;
+        arrayOfTables(tablePath) = arrayIndex;
+        fprintf('  After assign, length(parent.%s) = %d\n', lastKey, length(parent.(lastKey)));
     elseif isKey(arrayOfTables, tablePath)
         % Append to existing array
         currentArray = parent.(lastKey);
+        fprintf('  Appending, currentArray length = %d\n', length(currentArray));
         if isa(currentArray, 'TOMLData')
             parent.(lastKey) = [currentArray, newElement];
+            fprintf('  After append, length(parent.%s) = %d\n', lastKey, length(parent.(lastKey)));
         else
             error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
                 'Key "%s" is not a TOMLData array', lastKey);
         end
-        arrayOfTables(tablePath) = arrayOfTables(tablePath) + 1;
+            arrayIndex = arrayOfTables(tablePath) + 1;
+            arrayOfTables(tablePath) = arrayIndex;
     else
         error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
             'Key "%s" already exists and is not an array of tables', lastKey);
     end
     
+    % Write parent back to rootData
+    fprintf('  Writing back to rootData\n');
+    if numel(keys) > 1
+        parentPath = keys(1:end-1);
+        rootData = setDataPath(rootData, parentPath, parent);
+    else
+        rootData = parent;
+    end
+    fprintf('  After writeback, length(rootData.%s) = %d\n', lastKey, length(rootData.(lastKey)));
+    
     tableRef = newElement;
 end
 
-function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, line, datetimeType)
+function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arrayIndex, line, datetimeType)
     % Parse key = value line
     
     % Find first '=' not in quotes
@@ -220,9 +239,15 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, lin
         tableRef = getDataPath(rootData, tablePath);
     else
         tableRef.(char(key)) = value;
-
         % Update in rootData
-        if strlength(tablePath) == 0
+        if arrayIndex > 0
+            % Update array element
+            pathKeys = split(tablePath, ".");
+            currentArray = getDataPath(rootData, tablePath);
+            currentArray(arrayIndex).(char(key)) = value;
+            rootData = setDataPath(rootData, pathKeys, currentArray);
+            tableRef = currentArray(arrayIndex);
+        elseif strlength(tablePath) == 0
             rootData = tableRef;
         else
             pathKeys = split(tablePath, ".");
@@ -593,3 +618,9 @@ function num = parseNumber(numStr)
         end
     end
 end
+
+
+
+
+
+

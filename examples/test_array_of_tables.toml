@@ -1,0 +1,14 @@
+# Test file for array of tables
+# Should create an array with 3 elements
+
+[[items]]
+name = "first"
+value = 1
+
+[[items]]
+name = "second"
+value = 2
+
+[[items]]
+name = "third"
+value = 3

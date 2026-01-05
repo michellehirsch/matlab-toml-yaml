@@ -37,7 +37,7 @@ The YAML implementation is a **subset parser** - it handles the most common YAML
 - Block sequences:
   ```yaml
   - item1
-  - item2
+   - item2
   ```
 - Mixed structures (objects in arrays, arrays in objects)
 
