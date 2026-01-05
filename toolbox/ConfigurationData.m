@@ -265,33 +265,59 @@ classdef ConfigurationData < handle & ...
         end
         
         function varargout = dotReference(obj, indexOp, ~)
-            key = indexOp(1).Name;
-            resolvedKey = obj.resolveKey(key);
+            % Handle both dot notation (.) and array indexing ()
             
-            if isempty(resolvedKey)
-                error('ConfigurationData:InvalidKey', ...
-                    'Key "%s" does not exist.', key);
-            end
-            
-            value = obj.Data(resolvedKey);
-            
-            % Wrap nested Maps in ConfigurationData (legacy support)
-            if isa(value, 'containers.Map')
-                value = obj.wrapNested(value);
-            end
-            
-            % ConfigurationData is already the right type, just return it
-            % (no wrapping needed)
-            
-            % Handle chained reference: obj.a.b.c
-            if length(indexOp) > 1
-                % Recursively reference into nested object
-                if isa(value, 'ConfigurationData')
-                    value = dotReference(value, indexOp(2:end));
-                else
-                    error('ConfigurationData:InvalidChain', ...
-                        'Cannot chain into non-ConfigurationData value');
+            if strcmp(indexOp(1).Type, 'Dot')
+                % Dot notation: obj.key
+                key = indexOp(1).Name;
+                resolvedKey = obj.resolveKey(key);
+                
+                if isempty(resolvedKey)
+                    error('ConfigurationData:InvalidKey', ...
+                        'Key "%s" does not exist.', key);
                 end
+                
+                value = obj.Data(resolvedKey);
+                
+                % Wrap nested Maps in ConfigurationData (legacy support)
+                if isa(value, 'containers.Map')
+                    value = obj.wrapNested(value);
+                end
+                
+                % Handle chained indexing: obj.key(1).field or obj.key.field
+                if length(indexOp) > 1
+                    if strcmp(indexOp(2).Type, 'Paren')
+                        % Array indexing: obj.key(indices)
+                        indices = indexOp(2).Indices{:};
+                        value = value(indices);
+                        
+                        % Handle further chaining: obj.key(1).field
+                        if length(indexOp) > 2
+                            if isa(value, 'ConfigurationData')
+                                value = dotReference(value, indexOp(3:end));
+                            else
+                                error('ConfigurationData:InvalidChain', ...
+                                    'Cannot chain into non-ConfigurationData value');
+                            end
+                        end
+                    elseif strcmp(indexOp(2).Type, 'Dot')
+                        % Nested dot: obj.key.field
+                        if isa(value, 'ConfigurationData')
+                            value = dotReference(value, indexOp(2:end));
+                        else
+                            error('ConfigurationData:InvalidChain', ...
+                                'Cannot chain into non-ConfigurationData value');
+                        end
+                    end
+                end
+                
+            elseif strcmp(indexOp(1).Type, 'Paren')
+                % Direct array indexing on obj: should not happen
+                error('ConfigurationData:UnsupportedIndexing', ...
+                    'Direct parenthesis indexing not supported');
+            else
+                error('ConfigurationData:UnsupportedIndexing', ...
+                    'Unsupported indexing type: %s', indexOp(1).Type);
             end
             
             varargout{1} = value;
