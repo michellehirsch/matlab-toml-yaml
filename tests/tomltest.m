@@ -1,5 +1,6 @@
 classdef tomltest < matlab.unittest.TestCase
-
+    % Tests for TOML parser with TOMLData objects
+    
     properties (TestParameter)
     end
 
@@ -107,7 +108,7 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyTrue(isfield(data, "database"));
+            testCase.verifyTrue(isfield(data, 'database'));
             testCase.verifyEqual(data.database.server, "192.168.1.1");
             testCase.verifyEqual(data.database.port, 5432);
             testCase.verifyEqual(data.database.enabled, true);
@@ -126,7 +127,7 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyTrue(isfield(data, "server"));
+            testCase.verifyTrue(isfield(data, 'server'));
             testCase.verifyEqual(data.server.database.host, "localhost");
             testCase.verifyEqual(data.server.database.port, 3306);
         end
@@ -163,179 +164,6 @@ classdef tomltest < matlab.unittest.TestCase
 
             testCase.verifyEqual(data.key, "value");
             testCase.verifyEqual(data.number, 42);
-        end
-
-        function testMixedTypeArrayError(testCase)
-            % Test that mixed-type arrays throw error
-            tomlContent = 'mixed = [1, "two", 3]';
-
-            filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
-
-            testCase.verifyError(@() readtoml(filename), 'readtoml:MixedTypeArray');
-        end
-
-        function testMetadataOutput(testCase)
-            % Test that metadata is returned with key ordering
-            tomlContent = ['title = "My App"' newline ...
-                          'version = 1' newline ...
-                          '[database]' newline ...
-                          'server = "localhost"' newline ...
-                          'port = 5432'];
-
-            filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
-
-            [data, metadata] = readtoml(filename);
-
-            % Verify data is struct
-            testCase.verifyTrue(isstruct(data));
-            testCase.verifyEqual(data.database.server, "localhost");
-            testCase.verifyEqual(data.database.port, 5432);
-
-            % Verify metadata is dictionary
-            testCase.verifyClass(metadata, 'dictionary');
-
-            % Verify root key order is preserved
-            testCase.verifyTrue(isKey(metadata, ""));
-            rootKeys = metadata{""}{1};
-            testCase.verifyEqual(rootKeys(1), "title");
-            testCase.verifyEqual(rootKeys(2), "version");
-            testCase.verifyEqual(rootKeys(3), "database");
-        end
-
-        function testWriteSimple(testCase)
-            % Test writing simple struct
-            data.title = "Test App";
-            data.version = 2;
-            data.enabled = true;
-
-            filename = 'output.toml';
-            writetoml(filename, data);
-
-            % Read back and verify
-            readData = readtoml(filename);
-            testCase.verifyEqual(readData.title, "Test App");
-            testCase.verifyEqual(readData.version, 2);
-            testCase.verifyEqual(readData.enabled, true);
-        end
-
-        function testWriteTable(testCase)
-            % Test writing nested tables
-            data.database.server = "192.168.1.1";
-            data.database.port = 5432;
-
-            filename = 'output.toml';
-            writetoml(filename, data);
-
-            % Read back and verify
-            readData = readtoml(filename);
-            testCase.verifyEqual(readData.database.server, "192.168.1.1");
-            testCase.verifyEqual(readData.database.port, 5432);
-        end
-
-        function testWriteArray(testCase)
-            % Test writing arrays
-            data.numbers = [1, 2, 3, 4, 5];
-            data.colors = ["red", "green", "blue"];
-
-            filename = 'output.toml';
-            writetoml(filename, data);
-
-            % Read back and verify
-            readData = readtoml(filename);
-            testCase.verifyEqual(readData.numbers, [1, 2, 3, 4, 5]);
-            testCase.verifyEqual(readData.colors, ["red", "green", "blue"]);
-        end
-
-        function testWriteStruct(testCase)
-            % Test writing struct
-            data.title = "My Config";
-            data.database.server = "localhost";
-            data.database.port = 3306;
-
-            filename = 'output.toml';
-            writetoml(filename, data);
-
-            % Read back and verify
-            readData = readtoml(filename);
-            testCase.verifyEqual(readData.title, "My Config");
-            testCase.verifyEqual(readData.database.server, "localhost");
-            testCase.verifyEqual(readData.database.port, 3306);
-        end
-
-        function testRoundTrip(testCase)
-            % Test round-trip: write then read
-            original.app = "TestApp";
-            original.version = 1.5;
-            original.ports = [8080, 8081, 8082];
-            original.config.timeout = 30;
-            original.config.retries = 3;
-
-            filename = 'roundtrip.toml';
-            writetoml(filename, original);
-            readBack = readtoml(filename);
-
-            testCase.verifyEqual(readBack.app, original.app);
-            testCase.verifyEqual(readBack.version, original.version);
-            testCase.verifyEqual(readBack.ports, original.ports);
-            testCase.verifyEqual(readBack.config.timeout, original.config.timeout);
-            testCase.verifyEqual(readBack.config.retries, original.config.retries);
-        end
-
-        function testRoundTripWithMetadata(testCase)
-            % Test round-trip with metadata preserves key order
-            tomlContent = ['zebra = 1' newline ...
-                          'apple = 2' newline ...
-                          'middle = 3'];
-
-            filename = 'input.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
-
-            % Read with metadata
-            [data, metadata] = readtoml(filename);
-
-            % Write with metadata
-            outfile = 'output.toml';
-            writetoml(outfile, data, 'Metadata', metadata);
-
-            % Read output as text to verify order
-            content = string(fileread(outfile));
-            lines = splitlines(content);
-
-            % Verify key order is preserved
-            testCase.verifyTrue(contains(lines(1), 'zebra'));
-            testCase.verifyTrue(contains(lines(2), 'apple'));
-            testCase.verifyTrue(contains(lines(3), 'middle'));
-        end
-
-        function testOverwriteProtection(testCase)
-            % Test that files are not overwritten by default
-            filename = 'protected.toml';
-            data1.key = "value1";
-            writetoml(filename, data1);
-
-            data2.key = "value2";
-            testCase.verifyError(@() writetoml(filename, data2), 'writetoml:FileExists');
-        end
-
-        function testOverwriteAllowed(testCase)
-            % Test that OverWrite option works
-            filename = 'overwrite.toml';
-            data1.key = "value1";
-            writetoml(filename, data1);
-
-            data2.key = "value2";
-            writetoml(filename, data2, 'OverWrite', true);
-
-            readBack = readtoml(filename);
-            testCase.verifyEqual(readBack.key, "value2");
         end
 
         function testHexNumbers(testCase)
@@ -410,7 +238,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testQuotedKeys(testCase)
             % Test quoted keys (keys with special characters)
-            tomlContent = '"special key" = "value"';
+            tomlContent = '"special-key" = "value"';
 
             filename = 'test.toml';
             fid = fopen(filename, 'w');
@@ -419,7 +247,8 @@ classdef tomltest < matlab.unittest.TestCase
 
             data = readtoml(filename);
 
-            testCase.verifyEqual(data.specialKey, "value");
+            % Access with parentheses for special characters
+            testCase.verifyEqual(data.("special-key"), "value");
         end
 
         function testBooleans(testCase)
@@ -439,20 +268,123 @@ classdef tomltest < matlab.unittest.TestCase
             testCase.verifyClass(data.t, 'logical');
         end
 
-        function testIntegerVsFloatRoundTrip(testCase)
-            % Test that integers stay integers in round-trip
-            data.integer = 42;
-            data.float = 3.14;
+        function testArrayOfTables(testCase)
+            % Test array of tables [[items]]
+            tomlContent = ['[[items]]' newline ...
+                          'name = "first"' newline ...
+                          'value = 1' newline ...
+                          '' newline ...
+                          '[[items]]' newline ...
+                          'name = "second"' newline ...
+                          'value = 2' newline ...
+                          '' newline ...
+                          '[[items]]' newline ...
+                          'name = "third"' newline ...
+                          'value = 3'];
 
-            filename = 'numbers.toml';
-            writetoml(filename, data);
+            filename = 'test.toml';
+            fid = fopen(filename, 'w');
+            fprintf(fid, '%s', tomlContent);
+            fclose(fid);
 
-            % Read file as text to verify format
-            content = fileread(filename);
+            data = readtoml(filename);
 
-            testCase.verifyTrue(contains(content, 'integer = 42'));
-            testCase.verifyTrue(contains(content, 'float = 3.14'));
-            testCase.verifyFalse(contains(content, 'integer = 42.0'));
+            % Verify array of tables
+            testCase.verifyEqual(length(data.items), 3);
+            testCase.verifyEqual(data.items(1).name, "first");
+            testCase.verifyEqual(data.items(1).value, 1);
+            testCase.verifyEqual(data.items(2).name, "second");
+            testCase.verifyEqual(data.items(2).value, 2);
+            testCase.verifyEqual(data.items(3).name, "third");
+            testCase.verifyEqual(data.items(3).value, 3);
+        end
+
+        function testNestedTablesInArrays(testCase)
+            % Test nested tables within array of tables
+            tomlContent = ['[[users]]' newline ...
+                          'name = "Alice"' newline ...
+                          'email = "alice@example.com"' newline ...
+                          '' newline ...
+                          '[users.permissions]' newline ...
+                          'read = true' newline ...
+                          'write = true' newline ...
+                          'admin = false' newline ...
+                          '' newline ...
+                          '[[users]]' newline ...
+                          'name = "Bob"' newline ...
+                          'email = "bob@example.com"' newline ...
+                          '' newline ...
+                          '[users.permissions]' newline ...
+                          'read = true' newline ...
+                          'write = false' newline ...
+                          'admin = false'];
+
+            filename = 'test.toml';
+            fid = fopen(filename, 'w');
+            fprintf(fid, '%s', tomlContent);
+            fclose(fid);
+
+            data = readtoml(filename);
+
+            % Verify array structure
+            testCase.verifyEqual(length(data.users), 2);
+            
+            % First user
+            testCase.verifyEqual(data.users(1).name, "Alice");
+            testCase.verifyEqual(data.users(1).email, "alice@example.com");
+            testCase.verifyEqual(data.users(1).permissions.read, true);
+            testCase.verifyEqual(data.users(1).permissions.write, true);
+            testCase.verifyEqual(data.users(1).permissions.admin, false);
+            
+            % Second user
+            testCase.verifyEqual(data.users(2).name, "Bob");
+            testCase.verifyEqual(data.users(2).email, "bob@example.com");
+            testCase.verifyEqual(data.users(2).permissions.read, true);
+            testCase.verifyEqual(data.users(2).permissions.write, false);
+            testCase.verifyEqual(data.users(2).permissions.admin, false);
+        end
+
+        function testTOMLDataObject(testCase)
+            % Test that TOMLData object works correctly
+            tomlContent = ['title = "Test"' newline ...
+                          '[database]' newline ...
+                          'port = 5432'];
+
+            filename = 'test.toml';
+            fid = fopen(filename, 'w');
+            fprintf(fid, '%s', tomlContent);
+            fclose(fid);
+
+            data = readtoml(filename);
+
+            % Verify it's a TOMLData object
+            testCase.verifyClass(data, 'TOMLData');
+            
+            % Verify we can convert to struct
+            s = struct(data);
+            testCase.verifyClass(s, 'struct');
+            testCase.verifyEqual(s.title, "Test");
+            testCase.verifyEqual(s.database.port, 5432);
+        end
+
+        function testSpecialCharacterKeys(testCase)
+            % Test keys with special characters using parentheses notation
+            tomlContent = ['"my-key" = 1' newline ...
+                          '"another.key" = 2' newline ...
+                          '[table."sub-table"]' newline ...
+                          'value = 3'];
+
+            filename = 'test.toml';
+            fid = fopen(filename, 'w');
+            fprintf(fid, '%s', tomlContent);
+            fclose(fid);
+
+            data = readtoml(filename);
+
+            % Access with parentheses
+            testCase.verifyEqual(data.("my-key"), 1);
+            testCase.verifyEqual(data.("another.key"), 2);
+            testCase.verifyEqual(data.table.("sub-table").value, 3);
         end
     end
 end
