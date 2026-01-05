@@ -1,10 +1,10 @@
 %[text] # Real-World YAML Examples
 %[text] This demo shows how to work with realistic YAML configurations commonly used in DevOps and cloud deployments.
-%[text] ## Example 1: Kubernetes Service Configuration
+%[text] ## Example 1: Kubernetes Service Configuration fields:
 k8s = readyaml('kubernetes-service.yaml');
-k8s %[output:03a49f5a]
+k8s
 %%
-%[text] Access specific fields:
+%[text] Access specific
 k8s.metadata.name %[output:73d00c27]
 k8s.metadata.labels.app %[output:0604702a]
 k8s.spec.ports.("http-port") %[output:66beaf93]
@@ -66,9 +66,6 @@ summary
 %---
 %[metadata:view]
 %   data: {"layout":"inline"}
-%---
-%[output:03a49f5a]
-%   data: {"dataType":"textualVariable","outputData":{"name":"k8s","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    apiVersion: 'v1'\n    kind: 'Service'\n    metadata: [1×1 YAMLData with 3 fields]\n    spec: [1×1 YAMLData with 4 fields]\n\n    <a href=\"matlab:show(k8s)\">Show all values<\/a>\n"}}
 %---
 %[output:73d00c27]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"'matlab-web-service'"}}
