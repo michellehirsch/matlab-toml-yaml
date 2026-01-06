@@ -23,6 +23,11 @@ function writetoml(data, filename, options)
 %   'Precision' - Number of significant digits for numeric values (default: 6)
 %                 Must be a positive integer
 %
+%   'TableStyle' - Style for nested tables (default: 'auto')
+%                  'auto'     - Use heuristics based on table size/complexity
+%                  'inline'   - Always use inline tables {x = 1, y = 2}
+%                  'expanded' - Always use expanded [table] headers
+%
 % Examples:
 %   Write TOMLData to file
 %       config = TOMLData();
@@ -43,6 +48,10 @@ function writetoml(data, filename, options)
 %           'ArrayStyle', 'block', ...
 %           'NumIndentationSpaces', 4);
 %
+%   Compact inline tables
+%       writetoml(data, 'config.toml', ...
+%           'TableStyle', 'inline');
+%
 % See also READTOML, TOMLData, ConfigurationData
 
 %   Copyright 2025 The MathWorks, Inc.
@@ -54,6 +63,7 @@ function writetoml(data, filename, options)
         options.NumIndentationSpaces (1,1) {mustBeInteger, mustBePositive} = 2
         options.SectionSpacing {mustBeMember(options.SectionSpacing, {'compact', 'loose'})} = 'loose'
         options.Precision (1,1) {mustBeInteger, mustBePositive} = 6
+        options.TableStyle {mustBeMember(options.TableStyle, {'auto', 'inline', 'expanded'})} = 'auto'
     end
 
     % Convert options for internal use
@@ -62,7 +72,7 @@ function writetoml(data, filename, options)
 
     % Generate TOML content
     tomlContent = serializeToml(data, useFlowArrays, options.NumIndentationSpaces, ...
-                                addSectionSpacing, options.Precision);
+                                addSectionSpacing, options.Precision, options.TableStyle);
 
     % Write to file
     fid = fopen(filename, 'w', 'n', 'UTF-8');

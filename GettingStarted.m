@@ -152,7 +152,7 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"layout":"inline"}
 %---
 %[output:6d3abc7b]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    app-name: 'MyApplication'\n    version: '1.2.0'\n    port: 8080\n    debug: true\n    author: 'Jane Doe'\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 8080\n    debug: true\n    author: \"Jane Doe\"\n"}}
 %---
 %[output:2e9a802b]
 %   data: {"dataType":"textualVariable","outputData":{"name":"port","value":"8080"}}
