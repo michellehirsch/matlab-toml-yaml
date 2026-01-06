@@ -372,7 +372,7 @@ function value = parseValue(valueStr, arrayFormat)
     % Check for quoted string
     if (startsWith(valueStr, '"') && endsWith(valueStr, '"')) || ...
        (startsWith(valueStr, '''') && endsWith(valueStr, ''''))
-        value = valueStr(2:end-1);
+        value = string(valueStr(2:end-1));
         return;
     end
 

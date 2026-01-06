@@ -81,7 +81,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyEqual(data.ports, [8080, 8443, 9000]);
+            testCase.verifyEqual(data.ports, [8080; 8443; 9000]);
         end
         
         function testReadBlockArrays(testCase)

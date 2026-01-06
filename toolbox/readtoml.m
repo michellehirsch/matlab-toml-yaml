@@ -663,11 +663,11 @@ function str = parseString(strValue)
 
     % Regular strings
     if startsWith(strValue, '"') && endsWith(strValue, '"')
-        str = char(extractBetween(strValue, 2, strlength(strValue) - 1));
+        str = string(extractBetween(strValue, 2, strlength(strValue) - 1));
         str = unescapeString(str);
     elseif startsWith(strValue, "'") && endsWith(strValue, "'")
         % Literal string (no escaping)
-        str = char(extractBetween(strValue, 2, strlength(strValue) - 1));
+        str = string(extractBetween(strValue, 2, strlength(strValue) - 1));
     else
         error('tomlToolbox:readtoml:InvalidString', 'Invalid string syntax');
     end
