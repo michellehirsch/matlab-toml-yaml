@@ -70,11 +70,13 @@ function data = parseToml(content, datetimeType)
     % Track array of tables
     arrayOfTables = containers.Map('KeyType', 'char', 'ValueType', 'double');
 
-    for i = 1:numel(lines)
+    i = 1;
+    while i <= numel(lines)
         line = strtrim(lines(i));
 
         % Skip empty lines and comments
         if strlength(line) == 0 || startsWith(line, "#")
+            i = i + 1;
             continue;
         end
 
@@ -84,6 +86,7 @@ function data = parseToml(content, datetimeType)
             tableName = extractBetween(line, 3, strlength(line) - 2);
             tableName = strtrim(tableName);
             [data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath] = handleArrayOfTables(data, tableName, arrayOfTables);
+            i = i + 1;
 
         elseif startsWith(line, "[") && endsWith(line, "]")
             % Standard table
@@ -91,10 +94,16 @@ function data = parseToml(content, datetimeType)
             tableName = strtrim(tableName);
             [data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath] = handleTable(data, tableName, currentArrayIndex, currentArrayPath);
             % Don't reset currentArrayIndex - handleTable manages array context
+            i = i + 1;
 
         else
-            % Key-value pair
+            % Key-value pair - check if it spans multiple lines
+            if needsMultiLineHandling(line)
+                [fullLine, i] = accumulateMultiLineValue(lines, i);
+                line = fullLine;
+            end
             [data, currentTable] = parseKeyValue(data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath, line, datetimeType);
+            i = i + 1;
         end
     end
 end
@@ -715,7 +724,7 @@ end
 
 function num = parseNumber(numStr)
     % Parse TOML number (integer or float)
-    
+
     numStr = char(strtrim(numStr));
 
     % Remove underscores (TOML allows _ in numbers)
@@ -736,6 +745,105 @@ function num = parseNumber(numStr)
             error('tomlToolbox:readtoml:InvalidNumber', 'Invalid number: %s', numStr);
         end
     end
+end
+
+function tf = needsMultiLineHandling(line)
+    % Check if a line needs multi-line value accumulation
+    % This happens when there's an opening bracket/brace without a closing one
+
+    % Find the equals sign to separate key from value
+    eqPos = findUnquotedChar(line, '=');
+    if eqPos == 0
+        tf = false;
+        return;
+    end
+
+    % Get the value part
+    valuePart = strtrim(extractAfter(line, eqPos));
+
+    % Track bracket/brace depth
+    depth = 0;
+    inQuotes = false;
+    quoteChar = '';
+
+    for i = 1:strlength(valuePart)
+        c = extractBetween(valuePart, i, i);
+
+        if (c == '"' || c == "'") && ~inQuotes
+            inQuotes = true;
+            quoteChar = c;
+        elseif c == quoteChar && inQuotes
+            inQuotes = false;
+        elseif ~inQuotes && (c == "[" || c == "{")
+            depth = depth + 1;
+        elseif ~inQuotes && (c == "]" || c == "}")
+            depth = depth - 1;
+        end
+    end
+
+    % If depth > 0, we have unclosed brackets/braces
+    tf = depth > 0;
+end
+
+function [fullLine, newIndex] = accumulateMultiLineValue(lines, startIndex)
+    % Accumulate lines until all brackets/braces are closed
+    % Returns the combined line and the index of the last line used
+
+    fullLine = strtrim(lines(startIndex));
+    currentIndex = startIndex;
+
+    % Track bracket/brace depth
+    depth = 0;
+    inQuotes = false;
+    quoteChar = '';
+
+    % Count initial depth from first line
+    for i = 1:strlength(fullLine)
+        c = extractBetween(fullLine, i, i);
+
+        if (c == '"' || c == "'") && ~inQuotes
+            inQuotes = true;
+            quoteChar = c;
+        elseif c == quoteChar && inQuotes
+            inQuotes = false;
+        elseif ~inQuotes && (c == "[" || c == "{")
+            depth = depth + 1;
+        elseif ~inQuotes && (c == "]" || c == "}")
+            depth = depth - 1;
+        end
+    end
+
+    % Accumulate lines until depth reaches 0
+    while depth > 0 && currentIndex < numel(lines)
+        currentIndex = currentIndex + 1;
+        nextLine = strtrim(lines(currentIndex));
+
+        % Skip empty lines and comments in multi-line values
+        if strlength(nextLine) == 0 || startsWith(nextLine, "#")
+            continue;
+        end
+
+        % Add this line to the accumulated value (with a space separator)
+        fullLine = fullLine + " " + nextLine;
+
+        % Update depth tracking
+        for i = 1:strlength(nextLine)
+            c = extractBetween(nextLine, i, i);
+
+            if (c == '"' || c == "'") && ~inQuotes
+                inQuotes = true;
+                quoteChar = c;
+            elseif c == quoteChar && inQuotes
+                inQuotes = false;
+            elseif ~inQuotes && (c == "[" || c == "{")
+                depth = depth + 1;
+            elseif ~inQuotes && (c == "]" || c == "}")
+                depth = depth - 1;
+            end
+        end
+    end
+
+    newIndex = currentIndex;
 end
 
 
