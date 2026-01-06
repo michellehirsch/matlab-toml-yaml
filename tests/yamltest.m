@@ -29,7 +29,7 @@ classdef yamltest < matlab.unittest.TestCase
             data = readyaml(filename);
             
             testCase.verifyClass(data, 'YAMLData');
-            testCase.verifyEqual(data.name, 'Test');
+            testCase.verifyEqual(data.name, "Test");
             testCase.verifyEqual(data.version, 1.0);
             testCase.verifyEqual(data.enabled, true);
         end
@@ -48,7 +48,7 @@ classdef yamltest < matlab.unittest.TestCase
             data = readyaml(filename);
             
             testCase.verifyClass(data.database, 'YAMLData');
-            testCase.verifyEqual(data.database.host, 'localhost');
+            testCase.verifyEqual(data.database.host, "localhost");
             testCase.verifyEqual(data.database.port, 5432);
         end
         
@@ -117,8 +117,8 @@ classdef yamltest < matlab.unittest.TestCase
             
             testCase.verifyClass(data.steps, 'YAMLData');
             testCase.verifyEqual(numel(data.steps), 2);
-            testCase.verifyEqual(data.steps(1).name, 'Checkout');
-            testCase.verifyEqual(data.steps(2).name, 'Build');
+            testCase.verifyEqual(data.steps(1).name, "Checkout");
+            testCase.verifyEqual(data.steps(2).name, "Build");
         end
         
         %% Basic Writing Tests
@@ -136,7 +136,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             % Read back and verify
             data2 = readyaml(filename);
-            testCase.verifyEqual(data2.name, 'Test');
+            testCase.verifyEqual(data2.name, "Test");
             testCase.verifyEqual(data2.version, 1.0);
             testCase.verifyEqual(data2.enabled, true);
         end
@@ -152,7 +152,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             % Read back and verify
             data2 = readyaml(filename);
-            testCase.verifyEqual(data2.database.host, 'localhost');
+            testCase.verifyEqual(data2.database.host, "localhost");
             testCase.verifyEqual(data2.database.port, 5432);
         end
         
@@ -213,7 +213,7 @@ classdef yamltest < matlab.unittest.TestCase
             writeyaml(original, filename);
             restored = readyaml(filename);
             
-            testCase.verifyEqual(restored.name, original.name);
+            testCase.verifyEqual(restored.name, string(original.name));
             testCase.verifyEqual(restored.value, original.value);
         end
         
@@ -228,9 +228,9 @@ classdef yamltest < matlab.unittest.TestCase
             writeyaml(original, filename);
             restored = readyaml(filename);
             
-            testCase.verifyEqual(restored.server.host, original.server.host);
+            testCase.verifyEqual(restored.server.host, string(original.server.host));
             testCase.verifyEqual(restored.server.port, original.server.port);
-            testCase.verifyEqual(restored.database.url, original.database.url);
+            testCase.verifyEqual(restored.database.url, string(original.database.url));
         end
         
         function testRoundTripArrays(testCase)
@@ -301,7 +301,7 @@ classdef yamltest < matlab.unittest.TestCase
             s = struct(data);
             
             testCase.verifyClass(s, 'struct');
-            testCase.verifyEqual(s.name, 'Test');
+            testCase.verifyEqual(s.name, "Test");
             testCase.verifyEqual(s.value, 123);
         end
         
@@ -335,7 +335,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyEqual(data.name, 'Test');
+            testCase.verifyEqual(data.name, "Test");
             testCase.verifyEqual(data.value, 123);
         end
         
@@ -350,7 +350,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyEqual(data.message, 'Hello, World!');
+            testCase.verifyEqual(data.message, "Hello, World!");
         end
         
         function testBooleanValues(testCase)

@@ -397,7 +397,7 @@ function value = parseValue(valueStr, arrayFormat)
     end
 
     % Default to string
-    value = valueStr;
+    value = string(valueStr);
 end
 
 function mustBeNonzeroLengthText(str)

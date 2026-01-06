@@ -368,23 +368,26 @@ end
 function yamlText = stringToYAML(data)
     %STRINGTOYAML Convert string/char to YAML
 
+    % Convert to char for processing (but maintain string type for output)
     if isstring(data)
-        data = char(data);
+        strData = char(data);
+    else
+        strData = data;
     end
 
     % Check if quoting is needed
-    if isempty(data) || ...
-       any(data(1) == '!#&*{[|>@`') || ...
-       contains(data, ': ') || ...
-       contains(data, ' #') || ...
-       ismember(lower(data), {'true', 'false', 'null', 'yes', 'no', 'on', 'off'})
+    if isempty(strData) || ...
+       any(strData(1) == '!#&*{[|>@`') || ...
+       contains(strData, ': ') || ...
+       contains(strData, ' #') || ...
+       ismember(lower(strData), {'true', 'false', 'null', 'yes', 'no', 'on', 'off'})
         % Use double quotes and escape special characters
-        data = strrep(data, '\', '\\');
-        data = strrep(data, '"', '\"');
-        data = strrep(data, newline, '\n');
-        yamlText = sprintf('"%s"', data);
+        strData = strrep(strData, '\', '\\');
+        strData = strrep(strData, '"', '\"');
+        strData = strrep(strData, newline, '\n');
+        yamlText = sprintf('"%s"', strData);
     else
-        yamlText = data;
+        yamlText = strData;
     end
 end
 
