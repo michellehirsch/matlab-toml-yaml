@@ -1,0 +1,220 @@
+# ============================================================
+# Synthetic pyproject.toml for parser stress testing
+# Inspired by real-world complexity, not real content
+# ============================================================
+
+[build-system]
+requires = [
+    "setuptools>=65.0",
+    "wheel",
+    "cython>=0.29",
+]
+build-backend = "setuptools.build_meta"
+
+# ------------------------------------------------------------
+# Project metadata
+# ------------------------------------------------------------
+
+[project]
+name = "dummy-complex-project"
+version = "0.0.0"
+description = """
+A deliberately complex pyproject.toml intended
+to exercise edge cases in TOML parsers.
+
+Nothing here is real.
+"""
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "BSD-3-Clause" }
+
+keywords = [
+    "toml",
+    "parser",
+    "stress-test",
+    "edge cases",
+]
+
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+dependencies = [
+    "numpy>=1.23",
+    "python-dateutil>=2.8",
+    "pytz; python_version < '3.11'",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7",
+    "hypothesis",
+    "black",
+]
+docs = [
+    "sphinx",
+    "myst-parser",
+]
+
+# ------------------------------------------------------------
+# Authors and maintainers as arrays of inline tables
+# ------------------------------------------------------------
+
+[[project.authors]]
+name = "Jane Doe"
+email = "jane@example.com"
+
+[[project.authors]]
+name = "John Smith"
+
+[[project.maintainers]]
+name = "Build Bot"
+email = "ci@example.com"
+
+# ------------------------------------------------------------
+# URLs using dotted keys
+# ------------------------------------------------------------
+
+[project.urls]
+Homepage = "https://example.com"
+"Issue Tracker" = "https://example.com/issues"
+"Source Code" = "https://example.com/source"
+
+# ------------------------------------------------------------
+# Tool configuration (dense + nested)
+# ------------------------------------------------------------
+
+[tool.black]
+line-length = 88
+target-version = ["py39", "py310"]
+skip-string-normalization = false
+
+[tool.black.exclude]
+# This is intentionally an inline table nested under a table
+files = { regex = '''
+/(
+    \.eggs
+  | \.git
+  | \.venv
+  | build
+  | dist
+)/
+''' }
+
+# ------------------------------------------------------------
+
+[tool.isort]
+profile = "black"
+known-first-party = ["dummy"]
+known-third-party = ["numpy", "dateutil", "pytz"]
+skip = [
+    ".git",
+    ".venv",
+]
+
+# ------------------------------------------------------------
+# Ruff-style deeply nested configuration
+# ------------------------------------------------------------
+
+[tool.ruff]
+line-length = 88
+fix = true
+unsafe-fixes = false
+
+[tool.ruff.lint]
+select = ["E", "F", "W"]
+ignore = [
+    "E203",
+    "E266",
+]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+"tests/**/*.py" = ["E501"]
+
+# ------------------------------------------------------------
+# Coverage with dotted keys and inline tables
+# ------------------------------------------------------------
+
+[tool.coverage.run]
+branch = true
+source = ["dummy"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "if TYPE_CHECKING:",
+]
+precision = 2
+show_missing = true
+
+[tool.coverage.paths]
+source = [
+    "src/dummy",
+    "*/site-packages/dummy",
+]
+
+# ------------------------------------------------------------
+# Pytest with nested arrays and mixed values
+# ------------------------------------------------------------
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "-ra",
+    "--strict-markers",
+    "--strict-config",
+]
+testpaths = ["tests"]
+
+markers = [
+    "slow: marks tests as slow",
+    "network: requires network access",
+]
+
+# ------------------------------------------------------------
+# Custom tool with arrays of tables and mixed types
+# ------------------------------------------------------------
+
+[[tool.custom.matrix]]
+os = "linux"
+python = ["3.9", "3.10", "3.11"]
+arch = "x86_64"
+enabled = true
+
+[[tool.custom.matrix]]
+os = "windows"
+python = ["3.10"]
+arch = "amd64"
+enabled = false
+
+[[tool.custom.matrix]]
+os = "macos"
+python = ["3.11"]
+arch = "arm64"
+enabled = true
+notes = '''
+This is a literal multiline string.
+No escapes are processed here.
+Even "quotes" remain literal.
+'''
+
+# ------------------------------------------------------------
+# Edge cases: quoted keys, dotted keys, and inline tables
+# ------------------------------------------------------------
+
+[tool."weird-tool"]
+"key.with.dots" = "value"
+"key-with-dash" = 123
+"spaced key" = { inner = [1, 2, 3], flag = true }
+
+[tool."weird-tool".subtable]
+"value" = 3.14159
+"boolean-string" = "true"
+actual-boolean = true
+
+# ------------------------------------------------------------
+# End of file
+# ------------------------------------------------------------

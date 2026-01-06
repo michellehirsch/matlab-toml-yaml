@@ -661,25 +661,48 @@ function tbl = parseInlineTable(tableStr, datetimeType)
 end
 
 function str = parseString(strValue)
-    % Parse TOML string
-    
+    % Parse TOML string (basic, literal, or multi-line)
+
     strValue = strtrim(strValue);
 
-    % Multi-line strings
-    if startsWith(strValue, '"""') || startsWith(strValue, "'''")
-        error('tomlToolbox:readtoml:NotImplemented', 'Multi-line strings not yet implemented');
+    % Multi-line basic string (""")
+    if startsWith(strValue, '"""') && endsWith(strValue, '"""')
+        content = extractBetween(strValue, 4, strlength(strValue) - 3);
+        % Per TOML spec: trim one newline immediately after opening delimiter
+        if startsWith(content, newline)
+            content = extractAfter(content, 1);
+        end
+        % Unescape and return
+        str = unescapeString(content);
+        return;
     end
 
-    % Regular strings
+    % Multi-line literal string (''')
+    if startsWith(strValue, "'''") && endsWith(strValue, "'''")
+        content = extractBetween(strValue, 4, strlength(strValue) - 3);
+        % Per TOML spec: trim one newline immediately after opening delimiter
+        if startsWith(content, newline)
+            content = extractAfter(content, 1);
+        end
+        % No unescaping for literal strings
+        str = string(content);
+        return;
+    end
+
+    % Regular basic string (")
     if startsWith(strValue, '"') && endsWith(strValue, '"')
         str = string(extractBetween(strValue, 2, strlength(strValue) - 1));
         str = unescapeString(str);
-    elseif startsWith(strValue, "'") && endsWith(strValue, "'")
-        % Literal string (no escaping)
-        str = string(extractBetween(strValue, 2, strlength(strValue) - 1));
-    else
-        error('tomlToolbox:readtoml:InvalidString', 'Invalid string syntax');
+        return;
     end
+
+    % Regular literal string (')
+    if startsWith(strValue, "'") && endsWith(strValue, "'")
+        str = string(extractBetween(strValue, 2, strlength(strValue) - 1));
+        return;
+    end
+
+    error('tomlToolbox:readtoml:InvalidString', 'Invalid string syntax');
 end
 
 function str = unescapeString(str)
@@ -749,7 +772,7 @@ end
 
 function tf = needsMultiLineHandling(line)
     % Check if a line needs multi-line value accumulation
-    % This happens when there's an opening bracket/brace without a closing one
+    % This happens when there's an opening bracket/brace/quote without a closing one
 
     % Find the equals sign to separate key from value
     eqPos = findUnquotedChar(line, '=');
@@ -761,7 +784,17 @@ function tf = needsMultiLineHandling(line)
     % Get the value part
     valuePart = strtrim(extractAfter(line, eqPos));
 
-    % Track bracket/brace depth
+    % Check for multi-line strings (""" or ''')
+    if startsWith(valuePart, '"""') || startsWith(valuePart, "'''")
+        % Multi-line string - check if it closes on the same line
+        delimiter = extractBetween(valuePart, 1, 3);
+        % Look for closing delimiter after the opening one
+        remainingPart = extractAfter(valuePart, 3);
+        tf = ~contains(remainingPart, delimiter);
+        return;
+    end
+
+    % Track bracket/brace depth for arrays and inline tables
     depth = 0;
     inQuotes = false;
     quoteChar = '';
@@ -786,50 +819,48 @@ function tf = needsMultiLineHandling(line)
 end
 
 function [fullLine, newIndex] = accumulateMultiLineValue(lines, startIndex)
-    % Accumulate lines until all brackets/braces are closed
+    % Accumulate lines until all brackets/braces/quotes are closed
     % Returns the combined line and the index of the last line used
 
     fullLine = strtrim(lines(startIndex));
     currentIndex = startIndex;
 
-    % Track bracket/brace depth
-    depth = 0;
-    inQuotes = false;
-    quoteChar = '';
-
-    % Count initial depth from first line
-    for i = 1:strlength(fullLine)
-        c = extractBetween(fullLine, i, i);
-
-        if (c == '"' || c == "'") && ~inQuotes
-            inQuotes = true;
-            quoteChar = c;
-        elseif c == quoteChar && inQuotes
-            inQuotes = false;
-        elseif ~inQuotes && (c == "[" || c == "{")
-            depth = depth + 1;
-        elseif ~inQuotes && (c == "]" || c == "}")
-            depth = depth - 1;
+    % Check if this is a multi-line string
+    eqPos = findUnquotedChar(fullLine, '=');
+    if eqPos > 0
+        valuePart = strtrim(extractAfter(fullLine, eqPos));
+        isMultiLineString = startsWith(valuePart, '"""') || startsWith(valuePart, "'''");
+        if isMultiLineString
+            stringDelimiter = extractBetween(valuePart, 1, 3);
+            % Accumulate multi-line string
+            [fullLine, newIndex] = accumulateMultiLineString(lines, startIndex, stringDelimiter);
+            return;
         end
     end
 
-    % Accumulate lines until depth reaches 0
-    while depth > 0 && currentIndex < numel(lines)
-        currentIndex = currentIndex + 1;
-        nextLine = strtrim(lines(currentIndex));
+    % Track bracket/brace depth for arrays and inline tables
+    depth = 0;
+    inQuotes = false;
+    inTripleQuotes = false;
+    quoteChar = '';
 
-        % Skip empty lines and comments in multi-line values
-        if strlength(nextLine) == 0 || startsWith(nextLine, "#")
-            continue;
+    % Count initial depth from first line (handle triple quotes)
+    i = 1;
+    while i <= strlength(fullLine)
+        % Check for triple quotes first
+        if i <= strlength(fullLine) - 2
+            threeChars = extractBetween(fullLine, i, i+2);
+            if (threeChars == '"""' || threeChars == "'''") && ~inQuotes
+                inTripleQuotes = ~inTripleQuotes;
+                quoteChar = extractBetween(fullLine, i, i);
+                i = i + 3;
+                continue;
+            end
         end
 
-        % Add this line to the accumulated value (with a space separator)
-        fullLine = fullLine + " " + nextLine;
+        c = extractBetween(fullLine, i, i);
 
-        % Update depth tracking
-        for i = 1:strlength(nextLine)
-            c = extractBetween(nextLine, i, i);
-
+        if ~inTripleQuotes
             if (c == '"' || c == "'") && ~inQuotes
                 inQuotes = true;
                 quoteChar = c;
@@ -840,6 +871,105 @@ function [fullLine, newIndex] = accumulateMultiLineValue(lines, startIndex)
             elseif ~inQuotes && (c == "]" || c == "}")
                 depth = depth - 1;
             end
+        end
+
+        i = i + 1;
+    end
+
+    % Accumulate lines until depth reaches 0
+    while depth > 0 && currentIndex < numel(lines)
+        currentIndex = currentIndex + 1;
+        nextLine = strtrim(lines(currentIndex));
+
+        % Skip empty lines and comments in multi-line arrays/tables
+        if strlength(nextLine) == 0 || startsWith(nextLine, "#")
+            continue;
+        end
+
+        % Add this line to the accumulated value (with a space separator)
+        fullLine = fullLine + " " + nextLine;
+
+        % Update depth tracking (handle triple quotes)
+        i = 1;
+        while i <= strlength(nextLine)
+            % Check for triple quotes first
+            if i <= strlength(nextLine) - 2
+                threeChars = extractBetween(nextLine, i, i+2);
+                if (threeChars == '"""' || threeChars == "'''") && ~inQuotes
+                    inTripleQuotes = ~inTripleQuotes;
+                    quoteChar = extractBetween(nextLine, i, i);
+                    i = i + 3;
+                    continue;
+                end
+            end
+
+            c = extractBetween(nextLine, i, i);
+
+            if ~inTripleQuotes
+                if (c == '"' || c == "'") && ~inQuotes
+                    inQuotes = true;
+                    quoteChar = c;
+                elseif c == quoteChar && inQuotes
+                    inQuotes = false;
+                elseif ~inQuotes && (c == "[" || c == "{")
+                    depth = depth + 1;
+                elseif ~inQuotes && (c == "]" || c == "}")
+                    depth = depth - 1;
+                end
+            end
+
+            i = i + 1;
+        end
+    end
+
+    newIndex = currentIndex;
+end
+
+function [fullLine, newIndex] = accumulateMultiLineString(lines, startIndex, delimiter)
+    % Accumulate a multi-line string preserving newlines
+    % delimiter is either '"""' or "'''"
+
+    firstLine = lines(startIndex);
+    eqPos = findUnquotedChar(firstLine, '=');
+    keyPart = extractBefore(firstLine, eqPos + 1);
+    valuePart = extractAfter(firstLine, eqPos);
+
+    % Start with key = delimiter
+    fullLine = keyPart + delimiter;
+
+    % Get content after opening delimiter on first line
+    afterDelimiter = extractAfter(valuePart, 3);
+    currentIndex = startIndex;
+
+    % Check if string closes on first line
+    if contains(afterDelimiter, delimiter)
+        fullLine = firstLine;
+        newIndex = startIndex;
+        return;
+    end
+
+    % Add first line content (if any) after delimiter
+    if strlength(strtrim(afterDelimiter)) > 0
+        fullLine = fullLine + afterDelimiter;
+    end
+
+    % Accumulate remaining lines until we find closing delimiter
+    while currentIndex < numel(lines)
+        currentIndex = currentIndex + 1;
+        nextLine = lines(currentIndex);
+
+        % Check if this line contains the closing delimiter
+        if contains(nextLine, delimiter)
+            % Add content before the delimiter
+            beforeDelimiter = extractBefore(nextLine, strfind(char(nextLine), char(delimiter)));
+            if strlength(beforeDelimiter) > 0
+                fullLine = fullLine + newline + beforeDelimiter;
+            end
+            fullLine = fullLine + delimiter;
+            break;
+        else
+            % Add entire line with newline
+            fullLine = fullLine + newline + nextLine;
         end
     end
 
