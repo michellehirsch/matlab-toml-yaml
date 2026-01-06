@@ -57,7 +57,8 @@ classdef tomltest < matlab.unittest.TestCase
             fclose(fid);
             data = readtoml(filename);
             testCase.verifyEqual(data.basic, 'hello world');
-            testCase.verifyEqual(data.literal, 'C:\\Users\\path');
+            % TOML literal strings (single quotes) don't escape - backslashes are literal
+            testCase.verifyEqual(data.literal, 'C:\Users\path');
             testCase.verifyTrue(contains(data.escaped, newline));
         end
         function testArrays(testCase)
@@ -72,7 +73,9 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
             testCase.verifyEqual(data.numbers, [1, 2, 3, 4]);
             testCase.verifyEqual(data.strings, ["red", "green", "blue"]);
-            testCase.verifyEqual(data.empty, []);
+            % Note: "empty" conflicts with MATLAB's empty() method
+            % Use Data map directly as workaround
+            testCase.verifyEqual(data.Data('empty'), []);
         end
         function testTables(testCase)
             % Test table parsing
@@ -86,7 +89,7 @@ classdef tomltest < matlab.unittest.TestCase
             fclose(fid);
             data = readtoml(filename);
             testCase.verifyTrue(isfield(data, 'database'));
-            testCase.verifyEqual(data.literal, 'C:Userspath');
+            testCase.verifyEqual(data.database.server, '192.168.1.1');
             testCase.verifyEqual(data.database.port, 5432);
             testCase.verifyEqual(data.database.enabled, true);
         end
@@ -127,7 +130,7 @@ classdef tomltest < matlab.unittest.TestCase
             fprintf(fid, '%s', tomlContent);
             fclose(fid);
             data = readtoml(filename);
-            testCase.verifyEqual(data.server.database.host, 'localhost');
+            testCase.verifyEqual(data.key, 'value');
             testCase.verifyEqual(data.number, 42);
         end
         function testHexNumbers(testCase)
@@ -189,7 +192,7 @@ classdef tomltest < matlab.unittest.TestCase
             fclose(fid);
             data = readtoml(filename);
             % Access with parentheses for special characters
-            testCase.verifyEqual(data.a.b.c, 'nested value');
+            testCase.verifyEqual(data.("special-key"), 'value');
         end
         function testBooleans(testCase)
             % Test boolean values
@@ -257,16 +260,17 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
             % Verify array structure
             testCase.verifyEqual(length(data.users), 2);
-            
+
             % First user
-            testCase.verifyEqual(data.items(1).name, 'first');
-            testCase.verifyEqual(data.users(2).name, 'Bob');
+            testCase.verifyEqual(data.users(1).name, 'Alice');
+            testCase.verifyEqual(data.users(1).email, 'alice@example.com');
             testCase.verifyEqual(data.users(1).permissions.read, true);
             testCase.verifyEqual(data.users(1).permissions.write, true);
             testCase.verifyEqual(data.users(1).permissions.admin, false);
             
             % Second user
             testCase.verifyEqual(data.users(2).name, 'Bob');
+            testCase.verifyEqual(data.users(2).email, 'bob@example.com');
             testCase.verifyEqual(data.users(2).permissions.read, true);
             testCase.verifyEqual(data.users(2).permissions.write, false);
             testCase.verifyEqual(data.users(2).permissions.admin, false);

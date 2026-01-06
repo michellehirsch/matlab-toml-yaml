@@ -90,7 +90,7 @@ function data = parseToml(content, datetimeType)
             tableName = extractBetween(line, 2, strlength(line) - 1);
             tableName = strtrim(tableName);
             [data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath] = handleTable(data, tableName, currentArrayIndex, currentArrayPath);
-            currentArrayIndex = 0;  % Not in array anymore
+            % Don't reset currentArrayIndex - handleTable manages array context
 
         else
             % Key-value pair
@@ -275,7 +275,18 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
         end
 
         finalKey = char(cleanKey(strtrim(keys(end))));
-        currentData.(finalKey) = value;
+        try
+            currentData.(finalKey) = value;
+        catch ME
+            if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
+                currentData.Data(finalKey) = value;
+                if ~any(currentData.OriginalKeys == finalKey)
+                    currentData.OriginalKeys(end+1) = finalKey;
+                end
+            else
+                rethrow(ME);
+            end
+        end
 
         % Update tableRef in rootData
         if strlength(tablePath) == 0
@@ -285,14 +296,75 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
         end
         tableRef = getDataPath(rootData, tablePath);
     else
-        tableRef.(char(key)) = value;
+        % Try direct assignment; if it fails due to method conflict, use workaround
+        try
+            tableRef.(char(key)) = value;
+        catch ME
+            if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
+                % Method name conflict - store directly in Data
+                tableRef.Data(char(key)) = value;
+                if ~any(tableRef.OriginalKeys == key)
+                    tableRef.OriginalKeys(end+1) = key;
+                end
+                validKey = matlab.lang.makeValidName(char(key));
+                if ~strcmp(validKey, char(key))
+                    tableRef.KeyAliases(validKey) = char(key);
+                end
+            else
+                rethrow(ME);
+            end
+        end
         % Update in rootData
-        if arrayIndex > 0 && strcmp(tablePath, arrayPath)
-            % Direct array element update
-            pathKeys = split(tablePath, ".");
-            currentArray = getDataPath(rootData, tablePath);
-            currentArray(arrayIndex).(char(key)) = value;
-            rootData = setDataPath(rootData, pathKeys, currentArray);
+        if arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
+            % Array element update (direct or nested table within array)
+            arrayKeys = split(arrayPath, ".");
+            currentArray = getDataPath(rootData, arrayPath);
+
+            % Get the array element
+            element = currentArray(arrayIndex);
+
+            if strcmp(tablePath, arrayPath)
+                % Direct array element field
+                try
+                    element.(char(key)) = value;
+                catch ME
+                    if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
+                        element.Data(char(key)) = value;
+                        if ~any(element.OriginalKeys == key)
+                            element.OriginalKeys(end+1) = key;
+                        end
+                    else
+                        rethrow(ME);
+                    end
+                end
+            else
+                % Nested table within array element - navigate and set
+                relativePath = extractAfter(tablePath, arrayPath + ".");
+                relativeKeys = split(relativePath, ".");
+
+                % Navigate to parent of the field we want to set
+                current = element;
+                for k = 1:numel(relativeKeys)
+                    current = current.(char(relativeKeys(k)));
+                end
+                % Set the value in the nested table
+                try
+                    current.(char(key)) = value;
+                catch ME
+                    if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
+                        current.Data(char(key)) = value;
+                        if ~any(current.OriginalKeys == key)
+                            current.OriginalKeys(end+1) = key;
+                        end
+                    else
+                        rethrow(ME);
+                    end
+                end
+            end
+
+            % Write the modified element back to the array
+            currentArray(arrayIndex) = element;
+            rootData = setDataPath(rootData, arrayKeys, currentArray);
             tableRef = currentArray(arrayIndex);
         elseif strlength(tablePath) == 0
             rootData = tableRef;

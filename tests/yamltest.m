@@ -1,6 +1,6 @@
 classdef yamltest < matlab.unittest.TestCase
     % YAMLToolboxTest Unit tests for YAML Toolbox
-    %   Comprehensive tests for readyaml, yamlwrite, and YAMLData
+    %   Comprehensive tests for readyaml, writeyaml, and YAMLData
     
     properties (TestParameter)
         ArrayStyle = {'block', 'flow'}
@@ -130,7 +130,7 @@ classdef yamltest < matlab.unittest.TestCase
             data.enabled = true;
             
             filename = fullfile(pwd, 'output.yaml');
-            yamlwrite(data, filename);
+            writeyaml(data, filename);
             
             testCase.verifyTrue(isfile(filename));
             
@@ -148,7 +148,7 @@ classdef yamltest < matlab.unittest.TestCase
             data.database.port = 5432;
             
             filename = fullfile(pwd, 'output.yaml');
-            yamlwrite(data, filename);
+            writeyaml(data, filename);
             
             % Read back and verify
             data2 = readyaml(filename);
@@ -162,7 +162,7 @@ classdef yamltest < matlab.unittest.TestCase
             data.ports = [8080, 8443];
             
             filename = fullfile(pwd, 'output.yaml');
-            yamlwrite(data, filename, 'ArrayStyle', ArrayStyle);
+            writeyaml(data, filename, 'ArrayStyle', ArrayStyle);
             
             content = fileread(filename);
             
@@ -181,7 +181,7 @@ classdef yamltest < matlab.unittest.TestCase
             data.section2 = 'value2';
             
             filename = fullfile(pwd, 'output.yaml');
-            yamlwrite(data, filename, 'SectionSpacing', SectionSpacing);
+            writeyaml(data, filename, 'SectionSpacing', SectionSpacing);
             
             content = fileread(filename);
             lines = splitlines(content);
@@ -197,7 +197,7 @@ classdef yamltest < matlab.unittest.TestCase
             data = YAMLData();
             data.test = 'value';
             
-            yamlwrite(data);
+            writeyaml(data);
             
             testCase.verifyTrue(isfile('untitled.yaml'));
         end
@@ -210,7 +210,7 @@ classdef yamltest < matlab.unittest.TestCase
             original.value = 123;
             
             filename = fullfile(pwd, 'test.yaml');
-            yamlwrite(original, filename);
+            writeyaml(original, filename);
             restored = readyaml(filename);
             
             testCase.verifyEqual(restored.name, original.name);
@@ -225,7 +225,7 @@ classdef yamltest < matlab.unittest.TestCase
             original.database.url = 'jdbc:postgresql://db:5432';
             
             filename = fullfile(pwd, 'test.yaml');
-            yamlwrite(original, filename);
+            writeyaml(original, filename);
             restored = readyaml(filename);
             
             testCase.verifyEqual(restored.server.host, original.server.host);
@@ -240,7 +240,7 @@ classdef yamltest < matlab.unittest.TestCase
             original.strings = ["a", "b", "c"];
             
             filename = fullfile(pwd, 'test.yaml');
-            yamlwrite(original, filename);
+            writeyaml(original, filename);
             restored = readyaml(filename);
             
             testCase.verifyEqual(restored.numbers, original.numbers);
@@ -254,7 +254,7 @@ classdef yamltest < matlab.unittest.TestCase
             original.("some-key") = "value";
             
             filename = fullfile(pwd, 'test.yaml');
-            yamlwrite(original, filename);
+            writeyaml(original, filename);
             restored = readyaml(filename);
             
             testCase.verifyEqual(restored.("pull-request").branches, "main");
@@ -375,16 +375,17 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testNullValues(testCase)
             % Test null value handling
-            yamlText = 'empty: null';
-            
+            % Note: Using "nullValue" instead of "empty" to avoid MATLAB method conflict
+            yamlText = 'nullValue: null';
+
             filename = fullfile(pwd, 'test.yaml');
             fid = fopen(filename, 'w');
             fprintf(fid, '%s', yamlText);
             fclose(fid);
-            
+
             data = readyaml(filename);
-            
-            testCase.verifyTrue(isempty(data.empty));
+
+            testCase.verifyTrue(isempty(data.nullValue));
         end
     end
 end

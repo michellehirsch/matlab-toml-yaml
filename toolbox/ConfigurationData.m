@@ -8,7 +8,7 @@ classdef ConfigurationData < handle & ...
     %   Note: This is a handle class. To create an independent copy,
     %   use the copy() method: newData = copy(data)
     
-    properties (Access = protected)
+    properties (Access = public)
         Data containers.Map
         KeyAliases containers.Map
         OriginalKeys string
@@ -257,8 +257,9 @@ classdef ConfigurationData < handle & ...
                 str = sprintf('[%s %s]', sizeStr, class(value));
             end
         end
+
     end
-    
+
     methods (Access = protected)
         function n = dotListLength(~, ~, ~)
             n = 1;
