@@ -310,5 +310,158 @@ classdef tomltest < matlab.unittest.TestCase
             testCase.verifyEqual(data.("another.key"), 2);
             testCase.verifyEqual(data.table.("sub-table").value, 3);
         end
+
+        %% Writing Options Tests
+        function testWriteArrayStyleFlow(testCase)
+            % Test writing with flow array style (default)
+            data = TOMLData();
+            data.numbers = [1, 2, 3];
+            data.strings = ["a", "b", "c"];
+
+            filename = 'test.toml';
+            writetoml(data, filename, 'ArrayStyle', 'flow');
+
+            content = fileread(filename);
+            testCase.verifyTrue(contains(content, '[1, 2, 3]'));
+            testCase.verifyTrue(contains(content, '["a", "b", "c"]'));
+        end
+
+        function testWriteArrayStyleBlock(testCase)
+            % Test writing with block array style
+            data = TOMLData();
+            data.numbers = [1, 2, 3];
+
+            filename = 'test.toml';
+            writetoml(data, filename, 'ArrayStyle', 'block');
+
+            content = fileread(filename);
+            lines = splitlines(content);
+
+            % Should have multi-line array
+            testCase.verifyTrue(contains(content, '['));
+            testCase.verifyTrue(any(contains(lines, '  1,')));
+            testCase.verifyTrue(any(contains(lines, '  2,')));
+            testCase.verifyTrue(any(contains(lines, '  3')));
+        end
+
+        function testWriteNumIndentationSpaces(testCase)
+            % Test custom indentation
+            data = TOMLData();
+            data.numbers = [1, 2, 3];
+
+            filename = 'test.toml';
+            writetoml(data, filename, 'ArrayStyle', 'block', 'NumIndentationSpaces', 4);
+
+            content = fileread(filename);
+            lines = splitlines(content);
+
+            % Should use 4 spaces for indentation
+            testCase.verifyTrue(any(contains(lines, '    1,')));
+        end
+
+        function testWriteSectionSpacingLoose(testCase)
+            % Test loose section spacing (default)
+            data = TOMLData();
+            data.section1.value = 1;
+            data.section2.value = 2;
+
+            filename = 'test.toml';
+            writetoml(data, filename, 'SectionSpacing', 'loose');
+
+            content = fileread(filename);
+            lines = splitlines(content);
+
+            % Find positions of section headers
+            section1Idx = find(contains(lines, '[section1]'));
+            section2Idx = find(contains(lines, '[section2]'));
+
+            % Should have blank line between sections
+            testCase.verifyTrue(section2Idx - section1Idx > 2);
+        end
+
+        function testWriteSectionSpacingCompact(testCase)
+            % Test compact section spacing
+            data = TOMLData();
+            data.section1.value = 1;
+            data.section2.value = 2;
+
+            filename = 'test.toml';
+            writetoml(data, filename, 'SectionSpacing', 'compact');
+
+            content = fileread(filename);
+            lines = splitlines(content);
+
+            % Find positions of section headers
+            section1Idx = find(contains(lines, '[section1]'));
+            section2Idx = find(contains(lines, '[section2]'));
+
+            % Should be adjacent (only value line between)
+            testCase.verifyEqual(section2Idx - section1Idx, 2);
+        end
+
+        function testWritePrecision(testCase)
+            % Test numeric precision control
+            data = TOMLData();
+            data.pi_value = pi;
+
+            % Test with precision = 3
+            filename = 'test.toml';
+            writetoml(data, filename, 'Precision', 3);
+            content = fileread(filename);
+            testCase.verifyTrue(contains(content, '3.14'));
+            testCase.verifyFalse(contains(content, '3.14159'));
+
+            % Test with precision = 10
+            writetoml(data, filename, 'Precision', 10);
+            content = fileread(filename);
+            testCase.verifyTrue(contains(content, '3.141592654'));
+        end
+
+        function testWriteCombinedOptions(testCase)
+            % Test multiple options combined
+            data = TOMLData();
+            data.values = [1, 2, 3];
+            data.float_val = 3.14159;
+            data.section.nested = "value";
+
+            filename = 'test.toml';
+            writetoml(data, filename, ...
+                'ArrayStyle', 'block', ...
+                'NumIndentationSpaces', 4, ...
+                'SectionSpacing', 'compact', ...
+                'Precision', 2);
+
+            content = fileread(filename);
+
+            % Check block array with 4-space indent
+            testCase.verifyTrue(contains(content, '    1,'));
+
+            % Check precision
+            testCase.verifyTrue(contains(content, '3.1'));
+            testCase.verifyFalse(contains(content, '3.14159'));
+
+            % Check compact spacing (no double newlines)
+            testCase.verifyFalse(contains(content, [newline newline newline]));
+        end
+
+        function testWriteRoundTripWithOptions(testCase)
+            % Test round-trip with various options
+            original = TOMLData();
+            original.name = "test";
+            original.numbers = [1, 2, 3];
+            original.settings.value = 42;
+
+            % Write with block arrays
+            filename = 'test.toml';
+            writetoml(original, filename, 'ArrayStyle', 'block');
+
+            % Read back
+            restored = readtoml(filename);
+
+            testCase.verifyEqual(restored.name, "test");
+            % Arrays may be row or column depending on format
+            testCase.verifyEqual(restored.numbers(:), [1; 2; 3]);
+            testCase.verifyEqual(restored.settings.value, 42);
+        end
     end
 end

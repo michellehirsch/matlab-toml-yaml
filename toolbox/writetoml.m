@@ -1,10 +1,27 @@
-function writetoml(data, filename)
+function writetoml(data, filename, options)
 % WRITETOML Write data to TOML file
 %
 %   WRITETOML(DATA) writes DATA to 'untitled.toml' in the current directory.
 %   DATA can be a TOMLData object, ConfigurationData object, or struct.
 %
 %   WRITETOML(DATA, FILENAME) writes DATA to the specified TOML file.
+%
+%   WRITETOML(..., Name, Value) specifies additional options using
+%   name-value pairs:
+%
+%   'ArrayStyle' - Style for arrays (default: 'flow')
+%                  'flow'  - Use inline style as [1, 2, 3]
+%                  'block' - Use multi-line style with one item per line
+%
+%   'NumIndentationSpaces' - Number of spaces for indentation (default: 2)
+%                            Must be a positive integer
+%
+%   'SectionSpacing' - Spacing between top-level tables (default: 'loose')
+%                      'loose'   - Blank line between each top-level table
+%                      'compact' - No blank lines
+%
+%   'Precision' - Number of significant digits for numeric values (default: 6)
+%                 Must be a positive integer
 %
 % Examples:
 %   Write TOMLData to file
@@ -16,24 +33,36 @@ function writetoml(data, filename)
 %   Write with default filename
 %       writetoml(config);  % Creates untitled.toml
 %
-%   Write struct
-%       s.title = "Config";
-%       s.database.host = "localhost";
-%       writetoml(s, 'config.toml');
+%   Compact format with flow arrays
+%       writetoml(data, 'config.toml', ...
+%           'ArrayStyle', 'flow', ...
+%           'SectionSpacing', 'compact');
+%
+%   Expanded format with block arrays
+%       writetoml(data, 'pyproject.toml', ...
+%           'ArrayStyle', 'block', ...
+%           'NumIndentationSpaces', 4);
 %
 % See also READTOML, TOMLData, ConfigurationData
+
+%   Copyright 2025 The MathWorks, Inc.
 
     arguments
         data {mustBeA(data, ["TOMLData", "ConfigurationData", "struct"])}
         filename (1,1) string = "untitled.toml"
+        options.ArrayStyle {mustBeMember(options.ArrayStyle, {'flow', 'block'})} = 'flow'
+        options.NumIndentationSpaces (1,1) {mustBeInteger, mustBePositive} = 2
+        options.SectionSpacing {mustBeMember(options.SectionSpacing, {'compact', 'loose'})} = 'loose'
+        options.Precision (1,1) {mustBeInteger, mustBePositive} = 6
     end
 
-    % Convert ConfigurationData/TOMLData if needed - write directly from it
-    % No conversion needed, just pass through
-    dataToWrite = data;
+    % Convert options for internal use
+    useFlowArrays = strcmp(options.ArrayStyle, 'flow');
+    addSectionSpacing = strcmp(options.SectionSpacing, 'loose');
 
     % Generate TOML content
-    tomlContent = serializeToml(dataToWrite);
+    tomlContent = serializeToml(data, useFlowArrays, options.NumIndentationSpaces, ...
+                                addSectionSpacing, options.Precision);
 
     % Write to file
     fid = fopen(filename, 'w', 'n', 'UTF-8');
@@ -91,26 +120,26 @@ function s = configDataToStruct(data)
     end
 end
 
-function tomlStr = serializeToml(data)
+function tomlStr = serializeToml(data, useFlowArrays, indentSize, addSectionSpacing, precision)
     % Serialize struct or ConfigurationData to TOML string
-    
+
     tomlStr = "";
-    
+
     % Get keys based on type
     if isa(data, 'ConfigurationData')
         allKeys = data.keys();
     else
         allKeys = string(fieldnames(data));
     end
-    
+
     % Separate root key-values from tables
     rootPairs = string.empty;
     tables = string.empty;
-    
+
     for i = 1:numel(allKeys)
         key = allKeys(i);
         value = getValue(data, key);
-        
+
         if (isstruct(value) && numel(value) == 1) || ...
            (isa(value, 'ConfigurationData') && numel(value) == 1) || ...
            (isstruct(value) && numel(value) > 1) || ...
@@ -120,26 +149,28 @@ function tomlStr = serializeToml(data)
             rootPairs = [rootPairs, key]; %#ok<AGROW>
         end
     end
-    
+
     % Write root key-value pairs first
     for i = 1:numel(rootPairs)
         key = rootPairs(i);
         value = getValue(data, key);
-        tomlStr = tomlStr + serializeKeyValue(key, value) + newline;
+        tomlStr = tomlStr + serializeKeyValue(key, value, useFlowArrays, indentSize, precision) + newline;
     end
-    
+
     if numel(rootPairs) > 0 && numel(tables) > 0
         tomlStr = tomlStr + newline;
     end
-    
+
     % Write tables
     for i = 1:numel(tables)
         key = tables(i);
         value = getValue(data, key);
-        tomlStr = tomlStr + serializeTable(key, value, "");
-        
+        tomlStr = tomlStr + serializeTable(key, value, "", useFlowArrays, indentSize, precision);
+
         if i < numel(tables)
-            tomlStr = tomlStr + newline;
+            if addSectionSpacing
+                tomlStr = tomlStr + newline;
+            end
         end
     end
 end
@@ -153,25 +184,25 @@ function value = getValue(data, key)
     end
 end
 
-function tomlStr = serializeTable(tableName, tableData, prefix)
+function tomlStr = serializeTable(tableName, tableData, prefix, useFlowArrays, indentSize, precision)
     % Serialize table with given prefix
-    
+
     tomlStr = "";
-    
+
     % Build full table name
     if strlength(prefix) > 0
         fullName = prefix + "." + tableName;
     else
         fullName = tableName;
     end
-    
+
     % Check if this is an array (array of tables)
     if (isstruct(tableData) && numel(tableData) > 1) || ...
        (isa(tableData, 'ConfigurationData') && numel(tableData) > 1)
         % Array of tables
         for i = 1:numel(tableData)
             tomlStr = tomlStr + "[[" + fullName + "]]" + newline;
-            tomlStr = tomlStr + serializeStructContent(tableData(i), fullName);
+            tomlStr = tomlStr + serializeStructContent(tableData(i), fullName, useFlowArrays, indentSize, precision);
             if i < numel(tableData)
                 tomlStr = tomlStr + newline;
             end
@@ -183,43 +214,43 @@ function tomlStr = serializeTable(tableName, tableData, prefix)
         else
             allKeys = string(fieldnames(tableData));
         end
-        
+
         % Separate key-values from subtables
         pairs = string.empty;
         subtables = string.empty;
-        
+
         for i = 1:numel(allKeys)
             key = allKeys(i);
             value = getValue(tableData, key);
-            
+
             if isstruct(value) || isa(value, 'ConfigurationData')
                 subtables = [subtables, key]; %#ok<AGROW>
             else
                 pairs = [pairs, key]; %#ok<AGROW>
             end
         end
-        
+
         % Only write table header if there are key-value pairs
         if numel(pairs) > 0
             tomlStr = tomlStr + "[" + fullName + "]" + newline;
-            
+
             for i = 1:numel(pairs)
                 key = pairs(i);
                 value = getValue(tableData, key);
-                tomlStr = tomlStr + serializeKeyValue(key, value) + newline;
+                tomlStr = tomlStr + serializeKeyValue(key, value, useFlowArrays, indentSize, precision) + newline;
             end
-            
+
             if numel(subtables) > 0
                 tomlStr = tomlStr + newline;
             end
         end
-        
+
         % Write subtables
         for i = 1:numel(subtables)
             key = subtables(i);
             value = getValue(tableData, key);
-            tomlStr = tomlStr + serializeTable(key, value, fullName);
-            
+            tomlStr = tomlStr + serializeTable(key, value, fullName, useFlowArrays, indentSize, precision);
+
             if i < numel(subtables)
                 tomlStr = tomlStr + newline;
             end
@@ -227,49 +258,49 @@ function tomlStr = serializeTable(tableName, tableData, prefix)
     end
 end
 
-function tomlStr = serializeStructContent(data, ~)
+function tomlStr = serializeStructContent(data, ~, useFlowArrays, indentSize, precision)
     % Serialize struct or ConfigurationData content without table header
-    
+
     tomlStr = "";
-    
+
     % Get keys
     if isa(data, 'ConfigurationData')
         allKeys = data.keys();
     else
         allKeys = string(fieldnames(data));
     end
-    
+
     for i = 1:numel(allKeys)
         key = allKeys(i);
         value = getValue(data, key);
-        
+
         if ~isstruct(value) && ~isa(value, 'ConfigurationData')
-            tomlStr = tomlStr + serializeKeyValue(key, value) + newline;
+            tomlStr = tomlStr + serializeKeyValue(key, value, useFlowArrays, indentSize, precision) + newline;
         end
     end
-    
+
     % Handle nested tables
     for i = 1:numel(allKeys)
         key = allKeys(i);
         value = getValue(data, key);
-        
+
         if isstruct(value) || isa(value, 'ConfigurationData')
-            tomlStr = tomlStr + serializeTable(key, value, "");
+            tomlStr = tomlStr + serializeTable(key, value, "", useFlowArrays, indentSize, precision);
         end
     end
 end
 
-function str = serializeKeyValue(key, value)
+function str = serializeKeyValue(key, value, useFlowArrays, indentSize, precision)
     % Serialize a single key-value pair
-    
+
     % Quote key if necessary
     if needsQuoting(key)
         keyStr = '"' + key + '"';
     else
         keyStr = key;
     end
-    
-    valueStr = serializeValue(value);
+
+    valueStr = serializeValue(value, useFlowArrays, indentSize, precision, 0);
     str = keyStr + " = " + valueStr;
 end
 
@@ -287,9 +318,9 @@ function tf = needsQuoting(key)
     end
 end
 
-function str = serializeValue(value)
+function str = serializeValue(value, useFlowArrays, indentSize, precision, depth)
     % Serialize a value to TOML format
-    
+
     if islogical(value)
         % Boolean
         if value
@@ -297,94 +328,114 @@ function str = serializeValue(value)
         else
             str = "false";
         end
-        
+
     elseif ischar(value)
         % Char array - treat as string
         str = '"' + escapeString(string(value)) + '"';
-        
+
     elseif (isstring(value)) && isscalar(value)
         % Scalar string
         str = '"' + escapeString(value) + '"';
-        
+
     elseif isstring(value) && ~isscalar(value)
         % String array
-        str = serializeArray(value);
-        
+        str = serializeArray(value, useFlowArrays, indentSize, precision, depth);
+
     elseif isdatetime(value)
         % DateTime
         str = string(value, 'yyyy-MM-dd''T''HH:mm:ssXXX');
-        
+
     elseif isnumeric(value) && isscalar(value)
-        % Number - use heuristic for integer vs float
+        % Number - use precision parameter
         if value == floor(value) && abs(value) < 2^53
             str = sprintf('%d', value);
         else
-            str = sprintf('%.15g', value);
+            str = sprintf(['%.', num2str(precision), 'g'], value);
         end
-        
+
     elseif isnumeric(value) && ~isscalar(value)
         % Numeric array
-        str = serializeArray(value);
-        
+        str = serializeArray(value, useFlowArrays, indentSize, precision, depth);
+
     elseif isstruct(value) && isscalar(value)
         % Inline table
-        str = serializeInlineTable(value);
-        
+        str = serializeInlineTable(value, useFlowArrays, indentSize, precision);
+
     elseif isa(value, 'ConfigurationData') && isscalar(value)
         % ConfigurationData as inline table
-        str = serializeInlineTable(value);
-        
+        str = serializeInlineTable(value, useFlowArrays, indentSize, precision);
+
     else
         error('tomlToolbox:writetoml:UnsupportedType', ...
             'Cannot serialize value of type: %s', class(value));
     end
 end
 
-function str = serializeArray(arr)
+function str = serializeArray(arr, useFlowArrays, indentSize, precision, depth)
     % Serialize array to TOML format
-    
-    str = "[";
-    
-    for i = 1:numel(arr)
-        str = str + serializeValue(arr(i));
-        
-        if i < numel(arr)
-            str = str + ", ";
+
+    if useFlowArrays
+        % Flow style: [item1, item2, item3]
+        str = "[";
+
+        for i = 1:numel(arr)
+            str = str + serializeValue(arr(i), useFlowArrays, indentSize, precision, depth + 1);
+
+            if i < numel(arr)
+                str = str + ", ";
+            end
         end
+
+        str = str + "]";
+    else
+        % Block style: multi-line with indentation
+        str = "[" + newline;
+        indent = repmat(' ', 1, (depth + 1) * indentSize);
+
+        for i = 1:numel(arr)
+            str = str + indent + serializeValue(arr(i), useFlowArrays, indentSize, precision, depth + 1);
+
+            if i < numel(arr)
+                str = str + "," + newline;
+            else
+                str = str + newline;
+            end
+        end
+
+        closeIndent = repmat(' ', 1, depth * indentSize);
+        str = str + closeIndent + "]";
     end
-    
-    str = str + "]";
 end
 
-function str = serializeInlineTable(tbl)
+function str = serializeInlineTable(tbl, useFlowArrays, indentSize, precision)
     % Serialize inline table (struct or ConfigurationData)
-    
+
     str = "{";
-    
+
     % Get keys
     if isa(tbl, 'ConfigurationData')
         tableKeys = tbl.keys();
     else
         tableKeys = string(fieldnames(tbl));
     end
-    
+
     for i = 1:numel(tableKeys)
         fieldName = tableKeys(i);
         value = getValue(tbl, fieldName);
-        
+
         if needsQuoting(fieldName)
             str = str + '"' + fieldName + '"';
         else
             str = str + fieldName;
         end
-        
-        str = str + " = " + serializeValue(value);
-        
+
+        str = str + " = " + serializeValue(value, useFlowArrays, indentSize, precision, 0);
+
         if i < numel(tableKeys)
             str = str + ", ";
         end
     end
-    
+
     str = str + "}";
 end
 
