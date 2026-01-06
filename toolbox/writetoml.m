@@ -275,9 +275,12 @@ end
 
 function tf = needsQuoting(key)
     % Check if key needs quoting
-    
-    % Keys with spaces or special characters need quotes
-    if contains(key, " ") || contains(key, ".") || contains(key, "-")
+    % Per TOML spec, bare keys may only contain:
+    %   A-Z, a-z, 0-9, -, _
+    % All other characters require quoting
+
+    % Check if key contains only valid bare key characters
+    if isempty(regexp(char(key), '^[A-Za-z0-9_-]+$', 'once'))
         tf = true;
     else
         tf = false;
