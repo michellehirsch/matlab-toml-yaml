@@ -78,7 +78,7 @@ class(settings) %[output:97db5b19]
 %%
 %[text] ## The SequenceRule Option
 %[text] By default, arrays are converted based on their content (auto mode). If you want consistent behavior regardless of content - for example, if a file might change from a single value to multiple values - use `SequenceRule` set to "`cell"` to always get cell arrays:
-arraysCell = readyaml("examples/arrays_config.yaml", "SequenceRule", "cell");
+arraysCell = readyaml("examples/arrays_config.yaml", SequenceRule="cell");
 portsCell = arraysCell.web.ports %[output:77533ed3]
 class(portsCell) %[output:4f03c25e]
 %%
@@ -96,17 +96,17 @@ type("examples/modified_config.yaml") %[output:59c9ff08]
 %[text] ## Controlling Output Format
 %[text] Use `ArrayStyle` to control how arrays are formatted:
 config.ports = [8080, 8443, 9000];
-%[text] 
+%[text]
 %[text] Flow style (inline):
-writeyaml(config, "examples/flow_style.yaml", "ArrayStyle", "flow");
+writeyaml(config, "examples/flow_style.yaml", ArrayStyle="flow");
 type("examples/flow_style.yaml") %[output:3801d647]
 %%
 %[text] Block style (vertical list):
-writeyaml(config, "examples/block_style.yaml", "ArrayStyle", "block");
+writeyaml(config, "examples/block_style.yaml", ArrayStyle="block");
 type("examples/block_style.yaml") %[output:0dd64c3c]
 %%
 %[text] Control spacing between sections:
-writeyaml(config, "examples/compact.yaml", "SectionSpacing", "compact");
+writeyaml(config, "examples/compact.yaml", SectionSpacing="compact");
 disp("Compact spacing removes blank lines between top-level keys") %[output:425dc22e]
 %%
 %[text] ## Working with TOML Files
@@ -129,6 +129,19 @@ project.project.("new-field") = "new value";
 writetoml(project, "examples/modified_project.toml");
 type("examples/modified_project.toml") %[output:8d534e59]
 %%
+%[text] ## TOML Formatting Options
+%[text] `writetoml` offers extensive formatting control. Here are common options:
+%[text]
+%[text] Control array style:
+project.dependencies = ["numpy", "pandas", "matplotlib"];
+writetoml(project, "examples/array_flow.toml", ArrayStyle="flow");
+writetoml(project, "examples/array_block.toml", ArrayStyle="block");
+%[text]
+%[text] Control string formatting for paths (useful for Windows paths):
+project.paths.data = 'C:\Users\Data';
+writetoml(project, "examples/literal_strings.toml", StringEscapeStyle="literal");
+disp("Literal strings avoid double-backslash escaping") %[output:literal_msg]
+%%
 %[text] ## Summary
 %[text] You"ve learned how to:
 %[text] - Read YAML and TOML files into intuitive data objects
@@ -137,14 +150,20 @@ type("examples/modified_project.toml") %[output:8d534e59]
 %[text] - Explore configuration files with `keys()` and `isfield()`
 %[text] - Modify configurations programmatically
 %[text] - Understand how arrays are converted (`SequenceRule`)
-%[text] - Write files with formatting control (`ArrayStyle`, `SectionSpacing`) \
-%[text] 
-%[text] For more examples, explore the `examples/` folder!
+%[text] - Write files with formatting control (`ArrayStyle`, `SectionSpacing`, `StringEscapeStyle`)
+%[text]
+%[text] For more focused examples, see:
+%[text] - `examples/ReadTOMLExample.m` - Advanced TOML reading features
+%[text] - `examples/WriteTOMLExample.m` - Complete TOML formatting options
+%[text] - `examples/ReadYAMLExample.m` - YAML reading and array handling
+%[text] - `examples/WriteYAMLExample.m` - YAML formatting options
+%[text] - `examples/ConfigurationDataExample.m` - Working with the ConfigurationData class
 %%
 %[text] ## Cleanup
 delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
        "examples/block_style.yaml", "examples/compact.yaml", ...
-       "examples/modified_project.toml");
+       "examples/modified_project.toml", "examples/array_flow.toml", ...
+       "examples/array_block.toml", "examples/literal_strings.toml");
 
 %[appendix]{"version":"1.0"}
 %---
@@ -158,28 +177,28 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"textualVariable","outputData":{"name":"port","value":"8080"}}
 %---
 %[output:03a217ec]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    app-name: 'MyApplication'\n    version: '1.2.0'\n    port: 9000\n    debug: false\n    author: 'Jane Doe'\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 9000\n    debug: false\n    author: \"Jane Doe\"\n"}}
 %---
 %[output:05d2e5a9]
-%   data: {"dataType":"textualVariable","outputData":{"name":"currentVersion","value":"'1.2.0'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"currentVersion","value":"\"1.2.0\""}}
 %---
 %[output:9c315967]
-%   data: {"dataType":"textualVariable","outputData":{"name":"appName","value":"'MyApplication'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"appName","value":"\"MyApplication\""}}
 %---
 %[output:5efc4fe0]
-%   data: {"dataType":"textualVariable","outputData":{"name":"appName","value":"'MyApplication'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"appName","value":"\"MyApplication\""}}
 %---
 %[output:0ac3e6f6]
 %   data: {"dataType":"textualVariable","outputData":{"name":"server","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    application: [1×1 YAMLData with 3 fields]\n    database: [1×1 YAMLData with 4 fields]\n    logging: [1×1 YAMLData with 2 fields]\n\n    <a href=\"matlab:show(server)\">Show all values<\/a>\n"}}
 %---
 %[output:4fdcf276]
-%   data: {"dataType":"textualVariable","outputData":{"name":"dbHost","value":"'localhost'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"dbHost","value":"\"localhost\""}}
 %---
 %[output:93262560]
-%   data: {"dataType":"textualVariable","outputData":{"name":"username","value":"'admin'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"username","value":"\"admin\""}}
 %---
 %[output:22d1d835]
-%   data: {"dataType":"textualVariable","outputData":{"name":"logLevel","value":"'info'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"logLevel","value":"\"info\""}}
 %---
 %[output:6194d526]
 %   data: {"dataType":"text","outputData":{"text":"application:\n  name: WebServer\n  version: 2.0.0\n  environment: production\n\ndatabase:\n  host: localhost\n  port: 5432\n  name: mydb\n  credentials:\n    username: admin\n    password: secret123\n\nlogging:\n  level: info\n  file: \/var\/log\/app.log\n","truncated":false}}
@@ -200,7 +219,7 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"ans","rows":1,"type":"string","value":[["application","database","cache"]]}}
 %---
 %[output:21e81206]
-%   data: {"dataType":"textualVariable","outputData":{"name":"arrays","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    web: [1×1 YAMLData with 3 fields]\n    services: [1x3 cell]\n    mixed: [1x2 YAMLData]\n\n    <a href=\"matlab:show(arrays)\">Show all values<\/a>\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"arrays","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    web: [1×1 YAMLData with 3 fields]\n    services: [3x1 string]\n    mixed: [1x2 YAMLData]\n\n    <a href=\"matlab:show(arrays)\">Show all values<\/a>\n"}}
 %---
 %[output:84bf9bab]
 %   data: {"dataType":"matrix","outputData":{"columns":1,"name":"ports","rows":3,"type":"double","value":[["8080"],["8443"],["9000"]]}}
@@ -245,17 +264,17 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"textualVariable","outputData":{"name":"project","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with properties:\n\n    project: [1×1 TOMLData with 4 fields]\n    build-system: [1×1 TOMLData with 2 fields]\n\n    <a href=\"matlab:show(project)\">Show all values<\/a>\n"}}
 %---
 %[output:4dd56da8]
-%   data: {"dataType":"textualVariable","outputData":{"name":"projectName","value":"'example-package'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"projectName","value":"\"example-package\""}}
 %---
 %[output:50a074c2]
-%   data: {"dataType":"textualVariable","outputData":{"name":"homepage","value":"'https:\/\/github.com\/example\/project'"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"homepage","value":"\"https:\/\/github.com\/example\/project\""}}
 %---
 %[output:4a644df4]
-%   data: {"dataType":"textualVariable","outputData":{"name":"buildSystem","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with properties:\n\n    requires: [1x2 string]\n    build-backend: 'setuptools.build_meta'\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"buildSystem","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with properties:\n\n    requires: [1x2 string]\n    build-backend: \"setuptools.build_meta\"\n"}}
 %---
 %[output:20b7a578]
 %   data: {"dataType":"matrix","outputData":{"columns":2,"header":"1×2 string array","name":"requires","rows":1,"type":"string","value":[["setuptools>=61.0","wheel"]]}}
 %---
 %[output:8d534e59]
-%   data: {"dataType":"text","outputData":{"text":"\n[project]\nname = \"example-package\"\nversion = \"2.0.0\"\ndescription = \"An example project\"\n\"new-field\" = \"new value\"\n\n[project.urls]\nhomepage = \"https:\/\/github.com\/example\/project\"\nrepository = \"https:\/\/github.com\/example\/project.git\"\n\n[build-system]\nrequires = [\"setuptools>=61.0\", \"wheel\"]\n\"build-backend\" = \"setuptools.build_meta\"\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"\n[project]\nname = \"example-package\"\nversion = \"2.0.0\"\ndescription = \"An example project\"\nnew-field = \"new value\"\n\n[project.urls]\nhomepage = \"https:\/\/github.com\/example\/project\"\nrepository = \"https:\/\/github.com\/example\/project.git\"\n\n[build-system]\nrequires = [\"setuptools>=61.0\", \"wheel\"]\nbuild-backend = \"setuptools.build_meta\"\n","truncated":false}}
 %---
