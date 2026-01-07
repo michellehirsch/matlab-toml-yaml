@@ -1,0 +1,4 @@
+"my-key" = 1
+"another.key" = 2
+[table."sub-table"]
+value = 3

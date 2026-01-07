@@ -110,8 +110,8 @@ end
 
 function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleTable(rootData, tableName, arrayIndex, arrayPath)
     % Handle [table] syntax
-    
-    keys = split(tableName, ".");
+
+    keys = splitDottedKey(tableName);
     tablePath = tableName;
 
     % Check if this is a nested table within an array of tables
@@ -175,7 +175,7 @@ function data = ensureDataPath(data, pathKeys, currentPath)
         return;
     end
 
-    key = char(strtrim(pathKeys(1)));
+    key = char(cleanKey(strtrim(pathKeys(1))));
 
     if ~isfield(data, key)
         data.(key) = TOMLData();
@@ -190,8 +190,8 @@ end
 
 function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfTables(rootData, tableName, arrayOfTables)
     % Handle [[array.of.tables]] syntax
-    
-    keys = split(tableName, ".");
+
+    keys = splitDottedKey(tableName);
     tablePath = char(tableName);
 
     % Ensure parent path exists
@@ -270,8 +270,9 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
     value = parseValue(valuePart, datetimeType);
 
     % Handle dotted keys (e.g., a.b.c = value)
-    if contains(keyPart, ".")
-        keys = split(keyPart, ".");
+    % Use splitDottedKey to respect quotes in keys
+    keys = splitDottedKey(keyPart);
+    if numel(keys) > 1
         currentData = tableRef;
 
         for i = 1:numel(keys) - 1
@@ -299,9 +300,9 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
 
         % Update tableRef in rootData
         if strlength(tablePath) == 0
-            rootData = updateDataPath(rootData, split(keyPart, "."), currentData, numel(keys) - 1);
+            rootData = updateDataPath(rootData, keys, currentData, numel(keys) - 1);
         else
-            rootData = updateDataPath(rootData, [split(tablePath, "."); split(keyPart, ".")], currentData, numel(keys) - 1);
+            rootData = updateDataPath(rootData, [splitDottedKey(tablePath); keys], currentData, numel(keys) - 1);
         end
         tableRef = getDataPath(rootData, tablePath);
     else
@@ -424,11 +425,11 @@ function tableRef = getDataPath(data, tablePath)
         return;
     end
 
-    keys = split(tablePath, ".");
+    keys = splitDottedKey(tablePath);
     tableRef = data;
 
     for i = 1:numel(keys)
-        tableRef = tableRef.(char(keys(i)));
+        tableRef = tableRef.(char(cleanKey(keys(i))));
     end
 end
 
@@ -707,12 +708,56 @@ end
 
 function str = unescapeString(str)
     % Unescape string escape sequences
-    
+
     str = strrep(str, '\"', '"');
     str = strrep(str, '\\', '\');
     str = strrep(str, '\n', newline);
     str = strrep(str, '\t', sprintf('\t'));
     str = strrep(str, '\r', sprintf('\r'));
+end
+
+function keys = splitDottedKey(keyStr)
+    % Split dotted key while respecting quotes
+    % "a"."b.c".d -> ["a", "b.c", "d"]
+    % a.b.c -> ["a", "b", "c"]
+
+    keyStr = char(strtrim(keyStr));
+    keys = string.empty;
+    currentKey = "";
+    inQuotes = false;
+    quoteChar = '';
+    i = 1;
+
+    while i <= length(keyStr)
+        c = keyStr(i);
+
+        if ~inQuotes && (c == '"' || c == '''')
+            % Start of quoted key
+            inQuotes = true;
+            quoteChar = c;
+            currentKey = currentKey + string(c);
+        elseif inQuotes && c == quoteChar
+            % End of quoted key
+            inQuotes = false;
+            currentKey = currentKey + string(c);
+        elseif ~inQuotes && c == '.'
+            % Dot separator outside quotes
+            if strlength(currentKey) > 0
+                keys(end+1) = strtrim(currentKey); %#ok<AGROW>
+                currentKey = "";
+            end
+        else
+            % Regular character
+            currentKey = currentKey + string(c);
+        end
+
+        i = i + 1;
+    end
+
+    % Add final key
+    if strlength(currentKey) > 0
+        keys(end+1) = strtrim(currentKey);
+    end
 end
 
 function tf = isDateTime(str)
