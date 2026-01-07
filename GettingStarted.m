@@ -96,7 +96,7 @@ type("examples/modified_config.yaml") %[output:59c9ff08]
 %[text] ## Controlling Output Format
 %[text] Use `ArrayStyle` to control how arrays are formatted:
 config.ports = [8080, 8443, 9000];
-%[text]
+%[text] 
 %[text] Flow style (inline):
 writeyaml(config, "examples/flow_style.yaml", ArrayStyle="flow");
 type("examples/flow_style.yaml") %[output:3801d647]
@@ -131,16 +131,16 @@ type("examples/modified_project.toml") %[output:8d534e59]
 %%
 %[text] ## TOML Formatting Options
 %[text] `writetoml` offers extensive formatting control. Here are common options:
-%[text]
+%[text] 
 %[text] Control array style:
 project.dependencies = ["numpy", "pandas", "matplotlib"];
 writetoml(project, "examples/array_flow.toml", ArrayStyle="flow");
 writetoml(project, "examples/array_block.toml", ArrayStyle="block");
-%[text]
+%[text] 
 %[text] Control string formatting for paths (useful for Windows paths):
 project.paths.data = 'C:\Users\Data';
 writetoml(project, "examples/literal_strings.toml", StringEscapeStyle="literal");
-disp("Literal strings avoid double-backslash escaping") %[output:literal_msg]
+disp("Literal strings avoid double-backslash escaping")
 %%
 %[text] ## Summary
 %[text] You"ve learned how to:
@@ -150,14 +150,14 @@ disp("Literal strings avoid double-backslash escaping") %[output:literal_msg]
 %[text] - Explore configuration files with `keys()` and `isfield()`
 %[text] - Modify configurations programmatically
 %[text] - Understand how arrays are converted (`SequenceRule`)
-%[text] - Write files with formatting control (`ArrayStyle`, `SectionSpacing`, `StringEscapeStyle`)
-%[text]
+%[text] - Write files with formatting control (`ArrayStyle`, `SectionSpacing`, `StringEscapeStyle`) \
+%[text] 
 %[text] For more focused examples, see:
 %[text] - `examples/ReadTOMLExample.m` - Advanced TOML reading features
 %[text] - `examples/WriteTOMLExample.m` - Complete TOML formatting options
 %[text] - `examples/ReadYAMLExample.m` - YAML reading and array handling
 %[text] - `examples/WriteYAMLExample.m` - YAML formatting options
-%[text] - `examples/ConfigurationDataExample.m` - Working with the ConfigurationData class
+%[text] - `examples/ConfigurationDataExample.m` - Working with the ConfigurationData class \
 %%
 %[text] ## Cleanup
 delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...

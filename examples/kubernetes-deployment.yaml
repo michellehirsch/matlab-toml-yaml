@@ -1,100 +1,67 @@
-# Kubernetes Deployment Configuration
-# Deploys a MATLAB web application with persistent storage
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: matlab-webapp
-  namespace: production
+  name: example-web
+  namespace: default
   labels:
-    app: matlab-webapp
-    version: v1.2.0
-    environment: production
-
+    app: example-web
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: matlab-webapp
-  
+      app: example-web
   template:
     metadata:
       labels:
-        app: matlab-webapp
-        version: v1.2.0
-    
+        app: example-web
     spec:
       containers:
-        - name: webapp
-          image: myregistry.io/matlab-webapp:1.2.0
-          imagePullPolicy: Always
-          
+        - name: web
+          image: nginx:1.26.1
+          imagePullPolicy: IfNotPresent
           ports:
-            - containerPort: 8080
-              name: http
-              protocol: TCP
-          
+            - containerPort: 80
           env:
-            - name: MATLAB_WORKERS
-              value: "4"
+            - name: ENVIRONMENT
+              value: "production"
             - name: LOG_LEVEL
-              value: INFO
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: db-credentials
-                  key: connection-string
-          
+              value: "info"
           resources:
             requests:
-              memory: "4Gi"
-              cpu: "2000m"
+              cpu: "100m"
+              memory: "128Mi"
             limits:
-              memory: "8Gi"
-              cpu: "4000m"
-          
-          volumeMounts:
-            - name: data-storage
-              mountPath: /app/data
-            - name: config
-              mountPath: /app/config
-              readOnly: true
-          
-          livenessProbe:
-            httpGet:
-              path: /health
-              port: 8080
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          
+              cpu: "500m"
+              memory: "512Mi"
           readinessProbe:
             httpGet:
-              path: /ready
-              port: 8080
-            initialDelaySeconds: 10
-            periodSeconds: 5
-      
-      volumes:
-        - name: data-storage
-          persistentVolumeClaim:
-            claimName: matlab-webapp-pvc
-        - name: config
-          configMap:
-            name: matlab-webapp-config
-
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            failureThreshold: 3
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+            failureThreshold: 3
+      imagePullSecrets:
+        - name: my-registry-secret
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: matlab-webapp-service
-  namespace: production
-
+  name: example-web-svc
+  namespace: default
+  labels:
+    app: example-web
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
-    app: matlab-webapp
+    app: example-web
   ports:
-    - protocol: TCP
+    - name: http
       port: 80
-      targetPort: 8080
-      name: http
+      targetPort: 80
