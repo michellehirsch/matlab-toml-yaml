@@ -196,13 +196,12 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
         if ~isempty(values)
             % This is a sequence
             % If all values are YAMLData or ConfigurationData, return as object array
-            % Otherwise return as cell array
             if all(cellfun(@(x) isa(x, 'ConfigurationData'), values))
                 % Convert cell array to object array
                 data = [values{:}];
             else
-                % Keep as cell array for mixed types
-                data = values;
+                % Apply arrayFormat consolidation (same logic as flow-style arrays)
+                data = consolidateArray(values, arrayFormat);
             end
         else
             data = YAMLData();
@@ -321,6 +320,40 @@ function indent = getIndentation(line)
     end
 end
 
+function value = consolidateArray(parsedItems, arrayFormat)
+    %CONSOLIDATEARRAY Convert cell array to specialized arrays based on arrayFormat
+    %   Shared logic for both flow-style and block-style sequences
+
+    % Ensure parsedItems is a column cell array for consistent output
+    if size(parsedItems, 1) == 1 && size(parsedItems, 2) > 1
+        parsedItems = parsedItems(:);  % Convert row to column
+    end
+
+    if arrayFormat == "auto"
+        % Check if all items are same type
+        allText = all(cellfun(@(x) ischar(x) || isstring(x), parsedItems));
+        allNumeric = all(cellfun(@isnumeric, parsedItems));
+        allLogical = all(cellfun(@islogical, parsedItems));
+
+        if allText
+            % Convert to string array (column)
+            value = string(parsedItems);
+        elseif allNumeric
+            % Convert to numeric array (column)
+            value = cell2mat(parsedItems);
+        elseif allLogical
+            % Convert to logical array (column)
+            value = cell2mat(parsedItems);
+        else
+            % Mixed types - keep as cell array
+            value = parsedItems;
+        end
+    else  % arrayFormat == "cell"
+        % Always return cell array
+        value = parsedItems;
+    end
+end
+
 function value = parseValue(valueStr, arrayFormat)
     %PARSEVALUE Parse a YAML value string
 
@@ -334,38 +367,16 @@ function value = parseValue(valueStr, arrayFormat)
             value = string.empty;
             return;
         end
-        
+
         % Split by comma (simple parser - doesn't handle nested arrays)
         items = split(arrayContent, ',');
         parsedItems = cell(size(items));
         for i = 1:length(items)
             parsedItems{i} = parseValue(strtrim(items{i}), arrayFormat);
         end
-        
+
         % Convert to specialized arrays based on arrayFormat
-        if arrayFormat == "auto"
-            % Check if all items are same type
-            allText = all(cellfun(@(x) ischar(x) || isstring(x), parsedItems));
-            allNumeric = all(cellfun(@isnumeric, parsedItems));
-            allLogical = all(cellfun(@islogical, parsedItems));
-            
-            if allText
-                % Convert to string array
-                value = string(parsedItems);
-            elseif allNumeric
-                % Convert to numeric array
-                value = cell2mat(parsedItems);
-            elseif allLogical
-                % Convert to logical array
-                value = cell2mat(parsedItems);
-            else
-                % Mixed types - keep as cell array
-                value = parsedItems;
-            end
-        else  % arrayFormat == "cell"
-            % Always return cell array
-            value = parsedItems;
-        end
+        value = consolidateArray(parsedItems, arrayFormat);
         return;
     end
 

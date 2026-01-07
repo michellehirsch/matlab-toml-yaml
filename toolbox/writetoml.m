@@ -28,6 +28,21 @@ function writetoml(data, filename, options)
 %                  'inline'   - Always use inline tables {x = 1, y = 2}
 %                  'expanded' - Always use expanded [table] headers
 %
+%   'TableArrayStyle' - Style for arrays of tables (default: 'expanded')
+%                       'expanded' - Use [[table]] syntax (most common, readable)
+%                       'inline'   - Use inline array syntax [{x=1}, {x=2}]
+%                       'auto'     - Choose based on array size/complexity
+%
+%   'StringEscapeStyle' - String escape processing (default: 'auto')
+%                         'auto'     - Choose escaped or literal automatically
+%                         'escaped'  - Use escape-processing (TOML basic strings)
+%                         'literal'  - Use literal strings (no escape processing)
+%
+%   'StringLayout' - String layout style (default: 'auto')
+%                    'auto'       - Choose single-line or multiline automatically
+%                    'singleline' - Always use single-line strings
+%                    'multiline'  - Always use multiline delimiters
+%
 % Examples:
 %   Write TOMLData to file
 %       config = TOMLData();
@@ -52,6 +67,18 @@ function writetoml(data, filename, options)
 %       writetoml(data, 'config.toml', ...
 %           'TableStyle', 'inline');
 %
+%   Inline arrays of tables
+%       writetoml(data, 'config.toml', ...
+%           'TableArrayStyle', 'inline');
+%
+%   Literal strings for paths
+%       writetoml(data, 'config.toml', ...
+%           'StringEscapeStyle', 'literal');
+%
+%   Multiline strings
+%       writetoml(data, 'config.toml', ...
+%           'StringLayout', 'multiline');
+%
 % See also READTOML, TOMLData, ConfigurationData
 
 %   Copyright 2025 The MathWorks, Inc.
@@ -64,15 +91,28 @@ function writetoml(data, filename, options)
         options.SectionSpacing {mustBeMember(options.SectionSpacing, {'compact', 'loose'})} = 'loose'
         options.Precision (1,1) {mustBeInteger, mustBePositive} = 6
         options.TableStyle {mustBeMember(options.TableStyle, {'auto', 'inline', 'expanded'})} = 'auto'
+        options.TableArrayStyle {mustBeMember(options.TableArrayStyle, {'auto', 'inline', 'expanded'})} = 'expanded'
+        options.StringEscapeStyle {mustBeMember(options.StringEscapeStyle, {'auto', 'escaped', 'literal'})} = 'auto'
+        options.StringLayout {mustBeMember(options.StringLayout, {'auto', 'singleline', 'multiline'})} = 'auto'
     end
 
     % Convert options for internal use
     useFlowArrays = strcmp(options.ArrayStyle, 'flow');
     addSectionSpacing = strcmp(options.SectionSpacing, 'loose');
 
+    % Create options struct for passing to serialization functions
+    serializeOpts = struct();
+    serializeOpts.useFlowArrays = useFlowArrays;
+    serializeOpts.indentSize = options.NumIndentationSpaces;
+    serializeOpts.addSectionSpacing = addSectionSpacing;
+    serializeOpts.precision = options.Precision;
+    serializeOpts.tableStyle = options.TableStyle;
+    serializeOpts.tableArrayStyle = options.TableArrayStyle;
+    serializeOpts.stringEscapeStyle = options.StringEscapeStyle;
+    serializeOpts.stringLayout = options.StringLayout;
+
     % Generate TOML content
-    tomlContent = serializeToml(data, useFlowArrays, options.NumIndentationSpaces, ...
-                                addSectionSpacing, options.Precision, options.TableStyle);
+    tomlContent = serializeToml(data, serializeOpts);
 
     % Write to file
     fid = fopen(filename, 'w', 'n', 'UTF-8');
@@ -130,7 +170,7 @@ function s = configDataToStruct(data)
     end
 end
 
-function tomlStr = serializeToml(data, useFlowArrays, indentSize, addSectionSpacing, precision)
+function tomlStr = serializeToml(data, opts)
     % Serialize struct or ConfigurationData to TOML string
 
     tomlStr = "";
@@ -164,7 +204,7 @@ function tomlStr = serializeToml(data, useFlowArrays, indentSize, addSectionSpac
     for i = 1:numel(rootPairs)
         key = rootPairs(i);
         value = getValue(data, key);
-        tomlStr = tomlStr + serializeKeyValue(key, value, useFlowArrays, indentSize, precision) + newline;
+        tomlStr = tomlStr + serializeKeyValue(key, value, opts) + newline;
     end
 
     if numel(rootPairs) > 0 && numel(tables) > 0
@@ -175,10 +215,10 @@ function tomlStr = serializeToml(data, useFlowArrays, indentSize, addSectionSpac
     for i = 1:numel(tables)
         key = tables(i);
         value = getValue(data, key);
-        tomlStr = tomlStr + serializeTable(key, value, "", useFlowArrays, indentSize, precision);
+        tomlStr = tomlStr + serializeTable(key, value, "", opts);
 
         if i < numel(tables)
-            if addSectionSpacing
+            if opts.addSectionSpacing
                 tomlStr = tomlStr + newline;
             end
         end
@@ -194,7 +234,7 @@ function value = getValue(data, key)
     end
 end
 
-function tomlStr = serializeTable(tableName, tableData, prefix, useFlowArrays, indentSize, precision)
+function tomlStr = serializeTable(tableName, tableData, prefix, opts)
     % Serialize table with given prefix
 
     tomlStr = "";
@@ -209,12 +249,27 @@ function tomlStr = serializeTable(tableName, tableData, prefix, useFlowArrays, i
     % Check if this is an array (array of tables)
     if (isstruct(tableData) && numel(tableData) > 1) || ...
        (isa(tableData, 'ConfigurationData') && numel(tableData) > 1)
-        % Array of tables
-        for i = 1:numel(tableData)
-            tomlStr = tomlStr + "[[" + fullName + "]]" + newline;
-            tomlStr = tomlStr + serializeStructContent(tableData(i), fullName, useFlowArrays, indentSize, precision);
-            if i < numel(tableData)
-                tomlStr = tomlStr + newline;
+        % Array of tables - check TableArrayStyle
+        useInlineArray = shouldUseInlineTableArray(tableData, opts.tableArrayStyle);
+
+        % Nested arrays of tables cannot be written inline (TOML limitation)
+        % They must use [[table.subtable]] expanded syntax
+        if useInlineArray && strlength(prefix) > 0
+            useInlineArray = false;
+        end
+
+        if useInlineArray
+            % Write as inline array of inline tables: key = [{x=1}, {x=2}]
+            % Only valid at root level
+            tomlStr = tableName + " = " + serializeArrayOfTables(tableData, opts) + newline;
+        else
+            % Write as expanded array of tables using [[table]] syntax
+            for i = 1:numel(tableData)
+                tomlStr = tomlStr + "[[" + fullName + "]]" + newline;
+                tomlStr = tomlStr + serializeStructContent(tableData(i), fullName, opts);
+                if i < numel(tableData)
+                    tomlStr = tomlStr + newline;
+                end
             end
         end
     elseif isstruct(tableData) || isa(tableData, 'ConfigurationData')
@@ -247,7 +302,7 @@ function tomlStr = serializeTable(tableName, tableData, prefix, useFlowArrays, i
             for i = 1:numel(pairs)
                 key = pairs(i);
                 value = getValue(tableData, key);
-                tomlStr = tomlStr + serializeKeyValue(key, value, useFlowArrays, indentSize, precision) + newline;
+                tomlStr = tomlStr + serializeKeyValue(key, value, opts) + newline;
             end
 
             if numel(subtables) > 0
@@ -259,7 +314,7 @@ function tomlStr = serializeTable(tableName, tableData, prefix, useFlowArrays, i
         for i = 1:numel(subtables)
             key = subtables(i);
             value = getValue(tableData, key);
-            tomlStr = tomlStr + serializeTable(key, value, fullName, useFlowArrays, indentSize, precision);
+            tomlStr = tomlStr + serializeTable(key, value, fullName, opts);
 
             if i < numel(subtables)
                 tomlStr = tomlStr + newline;
@@ -268,7 +323,7 @@ function tomlStr = serializeTable(tableName, tableData, prefix, useFlowArrays, i
     end
 end
 
-function tomlStr = serializeStructContent(data, ~, useFlowArrays, indentSize, precision)
+function tomlStr = serializeStructContent(data, ~, opts)
     % Serialize struct or ConfigurationData content without table header
 
     tomlStr = "";
@@ -285,7 +340,7 @@ function tomlStr = serializeStructContent(data, ~, useFlowArrays, indentSize, pr
         value = getValue(data, key);
 
         if ~isstruct(value) && ~isa(value, 'ConfigurationData')
-            tomlStr = tomlStr + serializeKeyValue(key, value, useFlowArrays, indentSize, precision) + newline;
+            tomlStr = tomlStr + serializeKeyValue(key, value, opts) + newline;
         end
     end
 
@@ -295,12 +350,12 @@ function tomlStr = serializeStructContent(data, ~, useFlowArrays, indentSize, pr
         value = getValue(data, key);
 
         if isstruct(value) || isa(value, 'ConfigurationData')
-            tomlStr = tomlStr + serializeTable(key, value, "", useFlowArrays, indentSize, precision);
+            tomlStr = tomlStr + serializeTable(key, value, "", opts);
         end
     end
 end
 
-function str = serializeKeyValue(key, value, useFlowArrays, indentSize, precision)
+function str = serializeKeyValue(key, value, opts)
     % Serialize a single key-value pair
 
     % Quote key if necessary
@@ -310,7 +365,7 @@ function str = serializeKeyValue(key, value, useFlowArrays, indentSize, precisio
         keyStr = key;
     end
 
-    valueStr = serializeValue(value, useFlowArrays, indentSize, precision, 0);
+    valueStr = serializeValue(value, opts, 0);
     str = keyStr + " = " + valueStr;
 end
 
@@ -328,7 +383,7 @@ function tf = needsQuoting(key)
     end
 end
 
-function str = serializeValue(value, useFlowArrays, indentSize, precision, depth)
+function str = serializeValue(value, opts, depth)
     % Serialize a value to TOML format
 
     if islogical(value)
@@ -341,15 +396,15 @@ function str = serializeValue(value, useFlowArrays, indentSize, precision, depth
 
     elseif ischar(value)
         % Char array - treat as string
-        str = '"' + escapeString(string(value)) + '"';
+        str = formatTomlString(string(value), opts);
 
     elseif (isstring(value)) && isscalar(value)
         % Scalar string
-        str = '"' + escapeString(value) + '"';
+        str = formatTomlString(value, opts);
 
     elseif isstring(value) && ~isscalar(value)
         % String array
-        str = serializeArray(value, useFlowArrays, indentSize, precision, depth);
+        str = serializeArray(value, opts, depth);
 
     elseif isdatetime(value)
         % DateTime
@@ -360,20 +415,20 @@ function str = serializeValue(value, useFlowArrays, indentSize, precision, depth
         if value == floor(value) && abs(value) < 2^53
             str = sprintf('%d', value);
         else
-            str = sprintf(['%.', num2str(precision), 'g'], value);
+            str = sprintf(['%.', num2str(opts.precision), 'g'], value);
         end
 
     elseif isnumeric(value) && ~isscalar(value)
         % Numeric array
-        str = serializeArray(value, useFlowArrays, indentSize, precision, depth);
+        str = serializeArray(value, opts, depth);
 
     elseif isstruct(value) && isscalar(value)
         % Inline table
-        str = serializeInlineTable(value, useFlowArrays, indentSize, precision);
+        str = serializeInlineTable(value, opts);
 
     elseif isa(value, 'ConfigurationData') && isscalar(value)
         % ConfigurationData as inline table
-        str = serializeInlineTable(value, useFlowArrays, indentSize, precision);
+        str = serializeInlineTable(value, opts);
 
     else
         error('tomlToolbox:writetoml:UnsupportedType', ...
@@ -381,15 +436,15 @@ function str = serializeValue(value, useFlowArrays, indentSize, precision, depth
     end
 end
 
-function str = serializeArray(arr, useFlowArrays, indentSize, precision, depth)
+function str = serializeArray(arr, opts, depth)
     % Serialize array to TOML format
 
-    if useFlowArrays
+    if opts.useFlowArrays
         % Flow style: [item1, item2, item3]
         str = "[";
 
         for i = 1:numel(arr)
-            str = str + serializeValue(arr(i), useFlowArrays, indentSize, precision, depth + 1);
+            str = str + serializeValue(arr(i), opts, depth + 1);
 
             if i < numel(arr)
                 str = str + ", ";
@@ -400,10 +455,10 @@ function str = serializeArray(arr, useFlowArrays, indentSize, precision, depth)
     else
         % Block style: multi-line with indentation
         str = "[" + newline;
-        indent = repmat(' ', 1, (depth + 1) * indentSize);
+        indent = repmat(' ', 1, (depth + 1) * opts.indentSize);
 
         for i = 1:numel(arr)
-            str = str + indent + serializeValue(arr(i), useFlowArrays, indentSize, precision, depth + 1);
+            str = str + indent + serializeValue(arr(i), opts, depth + 1);
 
             if i < numel(arr)
                 str = str + "," + newline;
@@ -412,12 +467,12 @@ function str = serializeArray(arr, useFlowArrays, indentSize, precision, depth)
             end
         end
 
-        closeIndent = repmat(' ', 1, depth * indentSize);
+        closeIndent = repmat(' ', 1, depth * opts.indentSize);
         str = str + closeIndent + "]";
     end
 end
 
-function str = serializeInlineTable(tbl, useFlowArrays, indentSize, precision)
+function str = serializeInlineTable(tbl, opts)
     % Serialize inline table (struct or ConfigurationData)
 
     str = "{";
@@ -439,7 +494,7 @@ function str = serializeInlineTable(tbl, useFlowArrays, indentSize, precision)
             str = str + fieldName;
         end
 
-        str = str + " = " + serializeValue(value, useFlowArrays, indentSize, precision, 0);
+        str = str + " = " + serializeValue(value, opts, 0);
 
         if i < numel(tableKeys)
             str = str + ", ";
@@ -449,9 +504,134 @@ function str = serializeInlineTable(tbl, useFlowArrays, indentSize, precision)
     str = str + "}";
 end
 
+function str = serializeArrayOfTables(tableArray, opts)
+    % Serialize array of tables as inline array: [{x=1}, {x=2}]
+
+    str = "[";
+
+    for i = 1:numel(tableArray)
+        str = str + serializeInlineTable(tableArray(i), opts);
+
+        if i < numel(tableArray)
+            str = str + ", ";
+        end
+    end
+
+    str = str + "]";
+end
+
+function useInline = shouldUseInlineTableArray(tableArray, style)
+    % Determine whether to use inline array of tables based on style setting
+
+    if strcmp(style, 'inline')
+        useInline = true;
+    elseif strcmp(style, 'expanded')
+        useInline = false;
+    else % 'auto'
+        % Heuristic: use inline if array has ≤2 elements and each has ≤3 simple fields
+        if numel(tableArray) > 2
+            useInline = false;
+            return;
+        end
+
+        % Check each element
+        for i = 1:numel(tableArray)
+            elem = tableArray(i);
+
+            % Get keys
+            if isa(elem, 'ConfigurationData')
+                keys = elem.keys();
+            else
+                keys = string(fieldnames(elem));
+            end
+
+            % Too many fields?
+            if numel(keys) > 3
+                useInline = false;
+                return;
+            end
+
+            % Check if any values are complex (nested tables)
+            for j = 1:numel(keys)
+                value = getValue(elem, keys(j));
+                if isstruct(value) || isa(value, 'ConfigurationData')
+                    useInline = false;
+                    return;
+                end
+            end
+        end
+
+        useInline = true;
+    end
+end
+
+function str = formatTomlString(value, opts)
+    % Format string value according to StringEscapeStyle and StringLayout options
+
+    % Determine escape style
+    if strcmp(opts.stringEscapeStyle, 'literal')
+        useLiteral = true;
+    elseif strcmp(opts.stringEscapeStyle, 'escaped')
+        useLiteral = false;
+    else % 'auto'
+        % Use literal if string contains backslashes but no actual escape sequences
+        useLiteral = shouldUseLiteralString(value);
+    end
+
+    % Determine layout
+    if strcmp(opts.stringLayout, 'multiline')
+        useMultiline = true;
+    elseif strcmp(opts.stringLayout, 'singleline')
+        useMultiline = false;
+    else % 'auto'
+        % Use multiline if string contains newlines
+        useMultiline = contains(value, newline);
+    end
+
+    % Format the string
+    if useMultiline
+        if useLiteral
+            % Multi-line literal string: '''...'''
+            str = "'''" + value + "'''";
+        else
+            % Multi-line basic string: """..."""
+            escapedValue = escapeString(value);
+            str = '"""' + escapedValue + '"""';
+        end
+    else
+        if useLiteral
+            % Single-line literal string: '...'
+            str = "'" + value + "'";
+        else
+            % Single-line basic string: "..."
+            str = '"' + escapeString(value) + '"';
+        end
+    end
+end
+
+function useLiteral = shouldUseLiteralString(value)
+    % Heuristic: use literal strings for paths and strings with backslashes
+    % but no escape sequences that need processing
+
+    % If no backslashes, doesn't matter
+    if ~contains(value, '\')
+        useLiteral = false;
+        return;
+    end
+
+    % If contains common escape sequences, use escaped
+    if contains(value, '\n') || contains(value, '\t') || contains(value, '\r') || contains(value, '\"')
+        useLiteral = false;
+        return;
+    end
+
+    % Looks like a path or similar - use literal
+    useLiteral = true;
+end
+
 function str = escapeString(str)
     % Escape special characters in string
-    
+
     str = strrep(str, '\', '\\');
     str = strrep(str, '"', '\"');
     str = strrep(str, newline, '\n');
