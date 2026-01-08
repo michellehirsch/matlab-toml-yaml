@@ -1,5 +1,4 @@
-%%
-%[text] ## WriteYAMLExample - Comprehensive guide to writing YAML files
+%[text] # WriteYAMLExample - Comprehensive guide to writing YAML files
 %[text] This example demonstrates all formatting options available in writeyaml, showing how to control the appearance and style of your YAML output files.
 %%
 %[text] ## Setup: Create Sample Data
@@ -18,7 +17,7 @@ config.database.ssl = true;
 %[text] Write YAML file with default settings (block style, loose spacing)
 writeyaml(config, "output_default.yaml");
 %[text] Default output (block style, loose spacing):
-type("output_default.yaml")
+type("output_default.yaml") %[output:10489688]
 %%
 %[text] ## ArrayStyle Option
 %[text] Control how arrays are formatted
@@ -26,12 +25,12 @@ type("output_default.yaml")
 %[text] Best for: better readability, traditional YAML style
 writeyaml(config, "output_array_block.yaml", ArrayStyle="block");
 %[text] Block style arrays (- item per line):
-type("output_array_block.yaml")
+type("output_array_block.yaml") %[output:3407d27a]
 %%
-%[text] Flow style: inline arrays [item1, item2, item3]
+%[text] Flow style: inline arrays \[item1, item2, item3\]
 %[text] Best for: compact output, short arrays
 writeyaml(config, "output_array_flow.yaml", ArrayStyle="flow");
-%[text] Flow style arrays ([item1, item2, item3]):
+%[text] Flow style arrays (\[item1, item2, item3\]):
 type("output_array_flow.yaml")
 %%
 %[text] ## SectionSpacing Option
@@ -232,8 +231,8 @@ type("untitled.yaml")
 %[text] Traditional YAML documents:
 %[text]   ArrayStyle='block', NumIndentationSpaces=4, SectionSpacing='loose'
 %[text] When to use flow vs block arrays:
-%[text]   - Flow: short arrays, compact output (ports: [80, 443])
-%[text]   - Block: better readability, long arrays, traditional style\
+%[text] -  - Flow: short arrays, compact output (ports: \[80, 443\])
+%[text] -  - Block: better readability, long arrays, traditional style\\ \
 %%
 %[text] ## Cleanup
 %[text] Delete temporary output files
@@ -245,8 +244,15 @@ delete("output_default.yaml", "output_array_block.yaml", "output_array_flow.yaml
     "style_github.yaml", "style_minimal.yaml", "style_traditional.yaml", ...
     "data_types.yaml", "complex_config.yaml", ...
     "original_config.yaml", "modified_config.yaml", "untitled.yaml");
+
 %[appendix]{"version":"1.0"}
 %---
 %[metadata:view]
 %   data: {"layout":"inline"}
+%---
+%[output:10489688]
+%   data: {"dataType":"text","outputData":{"text":"\nname: my-application\n\nversion: 1.0.0\n\ndebug: true\n\nports:\n  - 8080\n  - 8443\n  - 9000\n\nhosts:\n  - localhost\n  - api.example.com\n  - db.example.com\n\ndatabase:\n  host: localhost\n  port: 5432\n  ssl: true\n","truncated":false}}
+%---
+%[output:3407d27a]
+%   data: {"dataType":"text","outputData":{"text":"\nname: my-application\n\nversion: 1.0.0\n\ndebug: true\n\nports:\n  - 8080\n  - 8443\n  - 9000\n\nhosts:\n  - localhost\n  - api.example.com\n  - db.example.com\n\ndatabase:\n  host: localhost\n  port: 5432\n  ssl: true\n","truncated":false}}
 %---

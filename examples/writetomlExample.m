@@ -1,5 +1,5 @@
-%[text] # WriteTOMLExample
-%[text] Comprehensive guide to TOML writing and formatting. This example demonstrates all formatting options available in writetoml, showing how to control the appearance and style of your TOML output files.
+%[text] # WriteTOMLExample - Comprehensive guide to writing TOML files
+%[text] This example demonstrates all formatting options available in writetoml, showing how to control the appearance and style of your TOML output files.
 %%
 %[text] ## Setup: Create Sample Data
 %[text] Create a sample TOMLData object for our demonstrations.
@@ -9,8 +9,8 @@ project.version = "1.0.0";
 project.description = "A demonstration project";
 project.authors = ["Alice <alice@example.com>", "Bob <bob@example.com>"];
 project.dependencies = ["numpy>=1.20", "pandas>=1.3", "matplotlib>=3.4"];
-project.paths.data = 'C:\Users\Data';
-project.paths.output = 'C:\Users\Output';
+project.paths.data = "C:\Users\Data";
+project.paths.output = "C:\Users\Output";
 %%
 %[text] ## Basic Writing
 %[text] Write TOML file with default settings.
@@ -51,7 +51,7 @@ type("output_string_literal.toml")
 %[text] Escaped mode uses double quotes with escape sequences. Best for strings that need escape processing.
 project2 = TOMLData();
 project2.message = sprintf("Line 1\nLine 2\tTabbed");
-project2.path = 'C:\Users\Data';
+project2.path = "C:\Users\Data";
 writetoml(project2, "output_string_escaped.toml", StringEscapeStyle="escaped");
 type("output_string_escaped.toml")
 %%
