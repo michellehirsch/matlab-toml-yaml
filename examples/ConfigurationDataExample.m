@@ -173,10 +173,13 @@ end %[output:group:45771f09]
 %[text] Use show for a formatted display of the configuration
 workflow = YAMLData();
 workflow.name = "CI Pipeline";
-workflow.jobs.build.steps(1).name = "Checkout"; %[output:5c9e85b6]
-workflow.jobs.build.steps(1).uses = "actions/checkout@v4";
-workflow.jobs.build.steps(2).name = "Build";
-workflow.jobs.build.steps(2).run = "make build";
+step1 = YAMLData();
+step1.name = "Checkout";
+step1.uses = "actions/checkout@v4";
+step2 = YAMLData();
+step2.name = "Build";
+step2.run = "make build";
+workflow.jobs.build.steps = [step1; step2];
 %[text] Formatted display:
 workflow.show()
 %%
@@ -265,7 +268,7 @@ appConfig.features.("rate-limiting") = true;
 appConfig.features.caching = true;
 appConfig.features.("metrics-collection") = true;
 %[text] Application configuration structure:
-appConfig.show()
+appConfig
 %%
 %[text] Save as TOML for Python services
 writetoml(appConfig, "app_config.toml", ...

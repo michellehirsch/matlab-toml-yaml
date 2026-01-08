@@ -105,22 +105,29 @@ type("output_precision_3.toml")
 %[text] ## TableArrayStyle Option - Expanded
 %[text] Control formatting of arrays of tables. Expanded mode uses `[[table]]` syntax (default, most readable). Best for GitHub Actions and complex configurations.
 config = TOMLData();
-config.steps(1).name = "Checkout";
-config.steps(1).uses = "actions/checkout@v4";
-config.steps(2).name = "Build";
-config.steps(2).run = "make build";
-config.steps(3).name = "Test";
-config.steps(3).run = "make test";
+step1 = TOMLData();
+step1.name = "Checkout";
+step1.uses = "actions/checkout@v4";
+step2 = TOMLData();
+step2.name = "Build";
+step2.run = "make build";
+step3 = TOMLData();
+step3.name = "Test";
+step3.run = "make test";
+config.steps = [step1; step2; step3];
 writetoml(config, "output_tablearray_expanded.toml", TableArrayStyle="expanded");
 type("output_tablearray_expanded.toml")
 %%
 %[text] ## TableArrayStyle Option - Inline
 %[text] Inline mode uses array of inline tables `[{x=1}, {x=2}]`. Best for simple, short tables.
 config2 = TOMLData();
-config2.points(1).x = 1;
-config2.points(1).y = 2;
-config2.points(2).x = 3;
-config2.points(2).y = 4;
+point1 = TOMLData();
+point1.x = 1;
+point1.y = 2;
+point2 = TOMLData();
+point2.x = 3;
+point2.y = 4;
+config2.points = [point1; point2];
 writetoml(config2, "output_tablearray_inline.toml", TableArrayStyle="inline");
 type("output_tablearray_inline.toml")
 %%

@@ -308,10 +308,12 @@ dockerCompose = readyaml("docker-compose.yaml");
 fprintf("Version: %s\n", dockerCompose.version);
 disp("Web service:")
 fprintf("  Image: %s\n", dockerCompose.services.web.image);
-fprintf("  Ports: %s\n", strjoin(dockerCompose.services.web.ports, ", "));
+disp("  Ports:")
+disp(dockerCompose.services.web.ports)
 disp("Database service:")
 fprintf("  Image: %s\n", dockerCompose.services.db.image);
-fprintf("  Ports: %s\n", strjoin(dockerCompose.services.db.ports, ", "));
+disp("  Ports:")
+disp(dockerCompose.services.db.ports)
 %%
 %[text] ## Best Practices
 %[text] Best practices for reading YAML files:

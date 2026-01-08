@@ -88,12 +88,16 @@ workflow.on.push.branches = ["main", "develop"];
 workflow.on.("pull_request").branches = ["main"];
 %[text] Create array of step objects
 workflow.jobs.build.("runs-on") = "ubuntu-latest";
-workflow.jobs.build.steps(1).name = "Checkout";
-workflow.jobs.build.steps(1).uses = "actions/checkout@v4";
-workflow.jobs.build.steps(2).name = "Build";
-workflow.jobs.build.steps(2).run = "make build";
-workflow.jobs.build.steps(3).name = "Test";
-workflow.jobs.build.steps(3).run = "make test";
+step1 = YAMLData();
+step1.name = "Checkout";
+step1.uses = "actions/checkout@v4";
+step2 = YAMLData();
+step2.name = "Build";
+step2.run = "make build";
+step3 = YAMLData();
+step3.name = "Test";
+step3.run = "make test";
+workflow.jobs.build.steps = [step1; step2; step3];
 %[text] Write with block style (best for workflows)
 writeyaml(workflow, "github_workflow.yaml", ...
     ArrayStyle="block", ...
@@ -165,7 +169,7 @@ dataTypes.boolean_true = true;
 dataTypes.boolean_false = false;
 dataTypes.numeric_array = [1, 2, 3, 4, 5];
 dataTypes.string_array = ["apple", "banana", "cherry"];
-dataTypes.empty = [];
+dataTypes.empty_array = [];
 writeyaml(dataTypes, "data_types.yaml", ArrayStyle="flow");
 %[text] Various data types:
 type("data_types.yaml")

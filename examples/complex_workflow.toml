@@ -1,0 +1,17 @@
+[[jobs]]
+name = "build"
+
+[[jobs.steps]]
+name = "Checkout"
+uses = "actions/checkout@v4"
+
+[[jobs.steps]]
+name = "Build"
+run = "make build"
+
+[[jobs]]
+name = "test"
+
+[[jobs.steps]]
+name = "Test"
+run = "make test"
