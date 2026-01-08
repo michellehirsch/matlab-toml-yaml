@@ -102,9 +102,29 @@ Y = mean(X,dim)
 
 ## General Authoring Guidelines
 - Use sentence case for headings and purpose lines.
-- Avoid unnecessary articles (“the”, “a”, “an”).
+- Avoid unnecessary articles ("the", "a", "an").
 - Use clear, concise language.
 - Prefer code blocks for syntax and examples.
+
+### Code Style Guidelines
+- Always use `""` (string) instead of `''` (char), unless char is absolutely required. This applies in both text and code examples (e.g., `data = readyaml(filename,"SequenceRule",rule)`)
+- Use the simplest, most modern functions in code examples:
+  - Use `writelines` with string arrays instead of `fprintf` with char arrays
+  - Use `readlines` instead of `fileread` when working with line-based text
+  - Prefer string arrays over char arrays for multiline text creation
+- Avoid object-oriented terminology where possible:
+  - Minimize saying "object" repeatedly. Instead of "The ClassName object supports:", use "ClassName supports:"
+  - You don't need to mention inheritance relationships (e.g., "subclass of") unless critical to understanding
+  - It's acceptable to say "a ClassName object" when introducing it in output arguments or similar contexts
+- Never use empty parentheses when referring to functions or methods in prose:
+  - Write "Use `copy` to create..." not "Use `copy()` to create..."
+  - Write "The `show` method displays..." not "The `show()` method displays..."
+  - Exception: Empty parentheses are fine in code examples and syntax sections
+- Always use function syntax for method calls, never dot notation:
+  - Write `show(obj)` not `obj.show()`
+  - Write `copy(data)` not `data.copy()`
+  - Exception: Property access uses dot notation: `obj.PropertyName`
+- Follow MATLAB coding guidelines resource for additional standards
 ---
 ---
 title: "Function Reference Page — SKILL"

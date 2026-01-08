@@ -8,7 +8,7 @@ classdef TOMLData < ConfigurationData
     %       data = readtoml('pyproject.toml');
     %       name = data.project.name;
     %       deps = data.("build-system").requires;
-    %       data.show();  % Display as TOML
+    %       data.show;  % Display as TOML
     %
     %   See also READTOML, WRITETOML, ConfigurationData
     

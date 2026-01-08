@@ -1,5 +1,4 @@
-%%\
-%[text] ## ConfigurationDataExample - Working with ConfigurationData, TOMLData, and YAMLData
+%[text] # ConfigurationDataExample - Working with ConfigurationData, TOMLData, and YAMLData
 %[text] This example demonstrates the ConfigurationData class and its subclasses (TOMLData and YAMLData), showing how to create, access, modify, and convert configuration data objects.
 %%
 %[text] ## ConfigurationData Overview
@@ -26,11 +25,7 @@ config.debug = true;
 config %[output:8c90c38a]
 %%
 %[text] ## Accessing Data with Dot Notation
-%[text] Access values using standard dot notation
-"Application name: " + config.name %[output:428a8beb]
-"Version: " + config.version %[output:086ee490]
-"Port: " + string(config.port) %[output:963d7cc6]
-"Debug mode: " + string(config.debug) %[output:1481c01a]
+config.name
 %%
 %[text] ## Working with Special Characters in Keys
 %[text] Keys with hyphens, dots, or spaces require special syntax
@@ -40,10 +35,8 @@ config.("build-version") = "2.0.0";
 %[text] Access with dynamic field name referencing syntax
 config.("app-name") %[output:699558d7]
 %%
-%[text] Keys with hyphens can also be accessed through an alias using an underscore, allowing for simpler indexing syntax. The following are equivalent:
-config.("app-name") %[output:3005dc2b]
-%[text] Replace `-` with `_`, and use standard indexing:
-config.app_name %[output:1f669042]
+%[text] Keys with hyphens can also be accessed through an alias using an underscore:
+config.app_name
 %[text] The name with underscore is simply an alias. Only the original name is included in the list of keys:
 keys(config) %[output:1eda3551]
 %%
@@ -57,8 +50,7 @@ config.database.credentials.password = "secret";
 config.database %[output:8e67bf86]
 %%
 %[text] Navigate nested structures
-"Database host: " + config.database.host %[output:5b968451]
-"Database username: " + config.database.credentials.username %[output:9abaf086]
+config.database.host
 %%
 %[text] ## Exploring Configuration Structure
 %[text] Use keys to list all top-level keys
@@ -87,14 +79,13 @@ config1.value = 42;
 config2 = config1;
 config2.value = 100;
 %[text] Original is modified because config2 is a reference
-"config1.value after modifying config2: " + string(config1.value) %[output:3a88b3bc]
+config1.value
 %%
 %[text] Use copy() to create an independent copy
 config3 = copy(config1);
 config3.value = 200;
-%[text] Original is NOT modified
-"config1.value after modifying copy: " + string(config1.value) %[output:6ee506f7]
-"config3.value (independent copy): " + string(config3.value) %[output:19acfb99]
+%[text] Original is NOT modified - config1 still has value 100
+config1.value
 %%
 %[text] ## Converting to Struct
 %[text] Convert ConfigurationData to a standard MATLAB struct
@@ -124,8 +115,7 @@ type("sample.toml") %[output:6fc9d96e]
 %[text] Read back from TOML file
 readTomlData = readtoml("sample.toml");
 %[text] Read back from TOML:
-readTomlData %[output:392afcfe]
-"Class: " + class(readTomlData) %[output:2569b8f7]
+readTomlData
 %%
 %[text] ## YAMLData - Specialized for YAML Files
 %[text] YAMLData extends ConfigurationData for YAML-specific features
@@ -144,8 +134,7 @@ type("sample.yaml") %[output:22e83765]
 %[text] Read back from YAML file
 readYamlData = readyaml("sample.yaml");
 %[text] Read back from YAML:
-readYamlData %[output:02db1d29]
-"Class: " + class(readYamlData) %[output:79ec4c90]
+readYamlData
 %%
 %[text] ## Working with Arrays of ConfigurationData
 %[text] Create arrays of configuration objects
@@ -166,8 +155,7 @@ for i = 1:numel(steps) %[output:group:45771f09]
 end %[output:group:45771f09]
 %%
 %[text] Access using array indexing
-"First step name: " + steps(1).name %[output:4a6c9794]
-"Last step name: " + steps(end).name %[output:749891bc]
+steps(1).name
 %%
 %[text] ## Formatted Display with show
 %[text] Use show for a formatted display of the configuration
@@ -181,7 +169,7 @@ step2.name = "Build";
 step2.run = "make build";
 workflow.jobs.build.steps = [step1; step2];
 %[text] Formatted display:
-workflow.show()
+workflow.show() %[output:4bc748d8]
 %%
 %[text] ## Removing Fields
 %[text] Remove fields from configuration
@@ -190,11 +178,11 @@ removeExample.keep1 = "value1";
 removeExample.remove_me = "value2";
 removeExample.keep2 = "value3";
 %[text] Before removal:
-removeExample.keys()
+removeExample.keys() %[output:399668a6]
 %[text] Remove a field
 removeExample = rmfield(removeExample, "remove_me");
 %[text] After removal:
-removeExample.keys()
+removeExample.keys() %[output:5dc4ce6f]
 %%
 %[text] Alternative syntax: remove()
 removeExample.temporary = "temp value";
@@ -206,45 +194,41 @@ app = ConfigurationData();
 app.server.host = "localhost";
 app.server.port = 8080;
 %[text] Initial server config:
-app.server
+app.server %[output:52c10bbd]
 %%
 %[text] Modify existing nested values
 app.server.port = 9000;
 app.server.ssl = true;
 app.server.ssl_cert = "/path/to/cert.pem";
 %[text] Modified server config:
-app.server
+app.server %[output:700a871f]
 %%
 %[text] ## SourceFormat Property
 %[text] Track the original format of the data
 tomlFromFile = readtoml("sample.toml");
-"TOML data source format: " + tomlFromFile.SourceFormat
-yamlFromFile = readyaml("sample.yaml");
-"YAML data source format: " + yamlFromFile.SourceFormat
-manualConfig = ConfigurationData();
-"Manual ConfigurationData source format: " + manualConfig.SourceFormat
+tomlFromFile.SourceFormat
 %%
 %[text] ## Converting Between Formats
 %[text] Read from one format, write to another
 %[text] Read TOML
 tomlConfig = readtoml("sample.toml");
 %[text] Original TOML:
-type("sample.toml")
+type("sample.toml") %[output:4d65c9f1]
 %%
 %[text] Write as YAML
 writeyaml(tomlConfig, "converted.yaml");
 %[text] Converted to YAML:
-type("converted.yaml")
+type("converted.yaml") %[output:977c07f1]
 %%
 %[text] Read YAML
 yamlConfig = readyaml("sample.yaml");
 %[text] Original YAML:
-type("sample.yaml")
+type("sample.yaml") %[output:66daeafd]
 %%
 %[text] Write as TOML
 writetoml(yamlConfig, "converted.toml");
 %[text] Converted to TOML:
-type("converted.toml")
+type("converted.toml") %[output:53e5cc41]
 %%
 %[text] ## Practical Example: Managing Application Configuration
 %[text] Complete example of application configuration management
@@ -268,21 +252,21 @@ appConfig.features.("rate-limiting") = true;
 appConfig.features.caching = true;
 appConfig.features.("metrics-collection") = true;
 %[text] Application configuration structure:
-appConfig
+appConfig %[output:6cfd09d2]
 %%
 %[text] Save as TOML for Python services
 writetoml(appConfig, "app_config.toml", ...
     ArrayStyle="block", ...
     SectionSpacing="loose");
 %[text] Saved as TOML (app\_config.toml):
-type("app_config.toml")
+type("app_config.toml") %[output:09fed976]
 %%
 %[text] Save as YAML for Kubernetes/Docker
 writeyaml(appConfig, "app_config.yaml", ...
     ArrayStyle="block", ...
     SectionSpacing="loose");
 %[text] Saved as YAML (app\_config.yaml):
-type("app_config.yaml")
+type("app_config.yaml") %[output:9e157205]
 %%
 %[text] ## Best Practices
 %[text] Best practices for ConfigurationData:
@@ -312,7 +296,7 @@ delete("sample.toml", "sample.yaml", "converted.yaml", "converted.toml", ...
 %[appendix]{"version":"1.0"}
 %---
 %[metadata:view]
-%   data: {"layout":"inline"}
+%   data: {"layout":"onright"}
 %---
 %[output:78054ccd]
 %   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n"}}
@@ -410,6 +394,48 @@ delete("sample.toml", "sample.yaml", "converted.yaml", "converted.toml", ...
 %[output:749891bc]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Last step name: Test\""}}
 %---
-%[output:5c9e85b6]
-%   data: {"dataType":"error","outputData":{"errorType":"runtime","text":"The 'Name' property is only supported for indexing operations whose Type property is Dot.\n\nError in <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('ConfigurationData\/dotAssign', '\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m', 328)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m',328,0)\">line 328<\/a>)\n            key = indexOp(1).Name;\n\nError in <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('ConfigurationData\/dotAssign', '\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m', 350)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m',350,0)\">line 350<\/a>)\n                nested = dotAssign(nested, indexOp(2:end), varargin{:});\n\nError in <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('ConfigurationData\/dotAssign', '\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m', 350)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m',350,0)\">line 350<\/a>)\n                nested = dotAssign(nested, indexOp(2:end), varargin{:});\n\nError in <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('ConfigurationData\/dotAssign', '\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m', 350)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/ConfigurationData.m',350,0)\">line 350<\/a>)\n                nested = dotAssign(nested, indexOp(2:end), varargin{:});"}}
+%[output:4bc748d8]
+%   data: {"dataType":"text","outputData":{"text":"name: CI Pipeline\n\njobs:\n  build:\n    steps:\n      - name: Checkout\n        uses: actions\/checkout@v4\n      - name: Build\n        run: make build\n","truncated":false}}
+%---
+%[output:399668a6]
+%   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"ans","rows":1,"type":"string","value":[["keep1","remove_me","keep2"]]}}
+%---
+%[output:5dc4ce6f]
+%   data: {"dataType":"matrix","outputData":{"columns":2,"header":"1×2 string array","name":"ans","rows":1,"type":"string","value":[["keep1","keep2"]]}}
+%---
+%[output:52c10bbd]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n\n    host: \"localhost\"\n    port: 8080\n"}}
+%---
+%[output:700a871f]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n\n    host: \"localhost\"\n    port: 9000\n    ssl: true\n    ssl_cert: \"\/path\/to\/cert.pem\"\n"}}
+%---
+%[output:4350b568]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"TOML data source format: toml\""}}
+%---
+%[output:79e69cd7]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"YAML data source format: unknown\""}}
+%---
+%[output:508b4724]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Manual ConfigurationData source format: unknown\""}}
+%---
+%[output:4d65c9f1]
+%   data: {"dataType":"text","outputData":{"text":"\n[project]\nname = \"my-package\"\nversion = \"1.0.0\"\n\n[build-system]\nrequires = [\"setuptools>=61.0\", \"wheel\"]\n","truncated":false}}
+%---
+%[output:977c07f1]
+%   data: {"dataType":"text","outputData":{"text":"\nproject:\n  name: my-package\n  version: 1.0.0\n\nbuild-system:\n  requires:\n    - setuptools>=61.0\n    - wheel\n","truncated":false}}
+%---
+%[output:66daeafd]
+%   data: {"dataType":"text","outputData":{"text":"\nname: CI\n\non:\n  push:\n    branches:\n      - main\n      - develop\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n","truncated":false}}
+%---
+%[output:53e5cc41]
+%   data: {"dataType":"text","outputData":{"text":"\nname = \"CI\"\n\n[on.push]\nbranches = [\"main\", \"develop\"]\n\n[jobs.build]\nruns-on = \"ubuntu-latest\"\n","truncated":false}}
+%---
+%[output:6cfd09d2]
+%   data: {"dataType":"textualVariable","outputData":{"name":"appConfig","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n\n    application: [1×1 ConfigurationData with 3 fields]\n    server: [1×1 ConfigurationData with 3 fields]\n    database: [1×1 ConfigurationData with 4 fields]\n    logging: [1×1 ConfigurationData with 3 fields]\n    features: [1×1 ConfigurationData with 3 fields]\n\n    <a href=\"matlab:show(appConfig)\">Show all values<\/a>\n"}}
+%---
+%[output:09fed976]
+%   data: {"dataType":"text","outputData":{"text":"\n[application]\nname = \"WebService\"\nversion = \"2.0.0\"\nenvironment = \"production\"\n\n[server]\nhost = \"0.0.0.0\"\nport = 8080\nworker-threads = 4\n\n[database]\nhost = \"db.example.com\"\nport = 5432\nname = \"myapp_prod\"\n\n[database.connection-pool]\nmin-size = 5\nmax-size = 20\n\n[logging]\nlevel = \"info\"\noutputs = [\n  \"console\",\n  \"file\"\n]\nfile-path = \"\/var\/log\/app.log\"\n\n[features]\nrate-limiting = true\ncaching = true\nmetrics-collection = true\n","truncated":false}}
+%---
+%[output:9e157205]
+%   data: {"dataType":"text","outputData":{"text":"\napplication:\n  name: WebService\n  version: 2.0.0\n  environment: production\n\nserver:\n  host: 0.0.0.0\n  port: 8080\n  worker-threads: 4\n\ndatabase:\n  host: db.example.com\n  port: 5432\n  name: myapp_prod\n  connection-pool:\n    min-size: 5\n    max-size: 20\n\nlogging:\n  level: info\n  outputs:\n    - console\n    - file\n  file-path: \/var\/log\/app.log\n\nfeatures:\n  rate-limiting: true\n  caching: true\n  metrics-collection: true\n","truncated":false}}
 %---
