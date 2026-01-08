@@ -215,7 +215,7 @@ special = readyaml("special_keys.yaml");
 "Push event enabled: " + string(special.push_event.enabled)
 %%
 %[text] ## Exploring Unknown YAML Files
-%[text] Use keys(), isfield(), and show() to explore structure
+%[text] Use keys, isfield, and show to explore structure
 %[text] Top-level keys in GitHub Actions workflow:
 ghActions.keys()
 %%
@@ -230,7 +230,7 @@ if isfield(ghActions, "jobs")
     end
 end
 %%
-%[text] Use show() for formatted display
+%[text] Use show for formatted display
 %[text] Database configuration structure:
 dbConfig.show()
 %%
@@ -318,9 +318,9 @@ fprintf("  Ports: %s\n", strjoin(dockerCompose.services.db.ports, ", "));
 %[text] - Use dot notation for simple keys: config.name
 %[text] - Use quoted syntax for special characters: config.("app-name")
 %[text] - Use SequenceRule='cell' for dynamic configurations
-%[text] - Use keys() to explore unknown structures
-%[text] - Use isfield() to check for optional fields
-%[text] - Use show() for formatted display during debugging
+%[text] - Use keys to explore unknown structures
+%[text] - Use isfield to check for optional fields
+%[text] - Use show for formatted display during debugging
 %[text] - Remember: arrays are column vectors by default\
 %%
 %[text] ## Cleanup

@@ -147,7 +147,7 @@ for i = 1:numel(jobs.jobs)
 end
 %%
 %[text] ## Exploring Unknown TOML Files
-%[text] Use keys() and isfield() to explore TOML structure
+%[text] Use keys and isfield to explore TOML structure
 %[text] Keys in project:
 project.keys()
 %%
@@ -159,7 +159,7 @@ if isfield(project, "project")
     end
 end
 %%
-%[text] Use show() for formatted display
+%[text] Use show for formatted display
 %[text] Project structure:
 project.show()
 %%
@@ -260,9 +260,9 @@ fprintf("  Requires: %s\n", strjoin(buildSys.requires, ", "));
 %[text] Best practices for reading TOML files:
 %[text] - Use dot notation for simple keys: config.name
 %[text] - Use quoted syntax for special characters: config.("build-system")
-%[text] - Use keys() to explore unknown structures
-%[text] - Use isfield() to check for optional fields
-%[text] - Use show() for formatted display during debugging
+%[text] - Use keys to explore unknown structures
+%[text] - Use isfield to check for optional fields
+%[text] - Use show for formatted display during debugging
 %[text] - Convert to struct when interfacing with code expecting structs\
 %%
 %[text] ## Cleanup

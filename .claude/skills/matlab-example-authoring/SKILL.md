@@ -193,7 +193,13 @@ section, drag the Overshoot slider to 10%.
    - Provide context: "For more information, see [Page Title]"
    - Link functions/classes on first mention
 
-7. **Comments**
+7. **Function References**
+   - Never show empty parentheses when referring to functions (e.g., `show()`)
+   - Write function names without parentheses: `show`, `keys`, `isfield`
+   - Avoid the term "method" - use "function" or no label at all
+   - Better: use verbs without labels: "Use show to display..." instead of "Use the show() method..."
+
+8. **Comments**
    - Use `%` for inline code comments (one space after `%`)
    - Keep comments brief and descriptive
    - Explain *why*, not *what* (code should be self-explanatory)
