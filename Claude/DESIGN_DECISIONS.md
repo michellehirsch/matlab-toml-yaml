@@ -238,6 +238,152 @@ key = 'database'
 
 ---
 
+
+## Array Display for ConfigurationData Objects
+
+**Date:** 2026-01-08
+
+**Context:**
+When displaying arrays of ConfigurationData/YAMLData/TOMLData objects (e.g., TOML arrays of tables), the current display shows only `SourceFormat` as a property, which is not useful to users. The issue is that each element in the array can have different keys, unlike standard MATLAB object arrays or struct arrays where all elements share the same properties.
+
+**Problem Example:**
+```matlab
+>> p = readtoml("examples/pyproject_complex.toml");
+>> a = p.project.authors
+
+a =
+  1x2 TOMLData array with properties:
+    SourceFormat    % Not helpful!
+    Show all values
+```
+
+In this case:
+- Element 1 has keys: `{name, email}`
+- Element 2 has keys: `{name}` only
+
+**Decision:**
+Implement intelligent property display for arrays:
+
+1. **Homogeneous case** (all elements have identical keys):
+   ```
+   1x2 TOMLData array with properties:
+       name
+       email
+   ```
+   Display matches struct array behavior - clean and familiar.
+
+2. **Heterogeneous case** (elements have different keys):
+   ```
+   1x2 TOMLData array with properties:
+       name
+       email
+       (keys vary by element)
+   ```
+   Display shows union of all keys with a note indicating variation.
+
+**Rationale:**
+- Provides useful information about what keys exist in the array
+- Clear distinction between homogeneous and heterogeneous cases
+- Follows MATLAB conventions (similar to struct arrays) when possible
+- The "(keys vary by element)" note warns users that not all elements have all keys
+- More informative than showing internal properties like `SourceFormat`
+
+**Implementation Notes:**
+- Modify `displayNonScalarObject` method in ConfigurationData.m
+- Check all array elements to determine if keys are identical
+- If identical: display keys like properties
+- If different: display union of keys with variation note
+- Hide `SourceFormat` and other internal properties from array display
+
+**Status:** Approved, not yet implemented
+
+---
+
+## Terminology: Keys vs Properties vs Fields
+
+**Date:** 2026-01-08
+
+**Decision:** Use "keys" as the primary terminology for ConfigurationData/YAMLData/TOMLData members, while maintaining "fields" as aliases for compatibility.
+
+### Context
+
+ConfigurationData objects use three overlapping terms:
+- **keys** - from `keys(obj)`, `iskey(obj, key)`
+- **fields** - from `fieldnames(obj)`, `isfield(obj, field)`, `rmfield(obj, field)`
+- **properties** - from `properties(obj)`, used in display
+
+This created inconsistency in documentation, display messages, and API naming.
+
+### Decision Details
+
+**Primary term:** "keys"
+- Array display: `1x2 TOMLData array with keys:`
+- Documentation: "Access keys with special characters..."
+- Method names: `keys(obj)` is the canonical method
+
+**Supported aliases:** "fields"
+- Keep `isfield`, `fieldnames`, `rmfield` as aliases
+- Users familiar with MATLAB structs can use these naturally
+- No deprecation needed - both work equally well
+
+### Rationale
+
+1. **Aligns with format specifications:**
+   - TOML spec uses "keys" consistently
+   - YAML spec uses "keys" for mappings
+   - JSON uses "keys" in key-value pairs
+
+2. **Target audience:**
+   - Users working with YAML/TOML are software developers
+   - They expect "keys" from working with JSON, Python dicts, etc.
+   - Using standard terminology reduces cognitive load
+
+3. **Consistency within toolbox:**
+   - Primary method is `keys(obj)`, not `fieldnames(obj)`
+   - Makes sense to align display/docs with the primary API
+
+4. **MATLAB compatibility:**
+   - Maintaining `isfield`, `fieldnames`, `rmfield` preserves struct-like behavior
+   - Users don't need to change existing code
+   - "Just works" for users who type without thinking
+
+### Implementation Impact
+
+**Changes needed:**
+1. Array display: Change "properties" → "keys"
+   ```matlab
+   % Old
+   1x2 TOMLData array with properties:
+
+   % New
+   1x2 TOMLData array with keys:
+   ```
+
+2. Documentation: Update terminology consistently
+   - Function reference pages
+   - Class reference pages
+   - Examples and tips sections
+
+3. Code comments: Use "keys" in comments where appropriate
+
+**No changes needed:**
+- Method names (`isfield`, `fieldnames`, `rmfield` all stay)
+- API behavior (everything works the same)
+- User code (backward compatible)
+
+### Summary
+
+Using "keys" as primary terminology:
+- ✅ Aligns with YAML/TOML specifications
+- ✅ Matches expectations of target users
+- ✅ Consistent with primary API (`keys` method)
+- ✅ Maintains MATLAB compatibility (field aliases)
+- ✅ No breaking changes
+
+**Status:** Approved, not yet implemented
+
+---
+
 ## References
 
 ### Related MATLAB Functions

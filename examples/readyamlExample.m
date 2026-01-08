@@ -56,7 +56,7 @@ yamlBlockArrays = [
 writelines(yamlBlockArrays,"block_arrays.yaml");
 blockData = readyaml("block_arrays.yaml");
 %[text] Block-style arrays work the same as flow-style
-blockData.ports
+blockData.ports %[output:7d48cbf4]
 %%
 %[text] ## Mixed-Type Arrays
 %[text] Arrays with mixed types become cell arrays
@@ -69,7 +69,7 @@ yamlMixed = [
 writelines(yamlMixed,"mixed_array.yaml");
 mixedData = readyaml("mixed_array.yaml");
 %[text] Mixed-type arrays become cell arrays
-mixedData.mixed
+mixedData.mixed %[output:9e77c6aa]
 %%
 %[text] ## SequenceRule Option - Auto vs Cell
 %[text] Control how arrays are converted
@@ -80,12 +80,12 @@ yamlArrayTypes = [
 writelines(yamlArrayTypes,"array_types.yaml");
 %[text] Default: SequenceRule="auto" - use specialized arrays when possible
 autoData = readyaml("array_types.yaml");
-%[text] With SequenceRule='auto' (default):
+%[text] With SequenceRule="auto" (default):
 autoData.numbers
 %%
 %[text] SequenceRule="cell" - always use cell arrays for consistency
 cellData = readyaml("array_types.yaml", SequenceRule="cell");
-%[text] With SequenceRule='cell':
+%[text] With SequenceRule="cell":
 cellData.numbers
 %%
 %[text] Why use SequenceRule="cell"?
@@ -283,4 +283,10 @@ delete("basic_config.yaml", "nested_config.yaml", "flow_arrays.yaml", ...
 %---
 %[metadata:view]
 %   data: {"layout":"inline"}
+%---
+%[output:7d48cbf4]
+%   data: {"dataType":"matrix","outputData":{"columns":1,"name":"ans","rows":3,"type":"double","value":[["8080"],["8443"],["9000"]]}}
+%---
+%[output:9e77c6aa]
+%   data: {"dataType":"tabular","outputData":{"columns":1,"header":"4×1 cell array","name":"ans","rows":4,"type":"cell","value":[["42"],["\"text\""],["1"],["3.1400"]]}}
 %---

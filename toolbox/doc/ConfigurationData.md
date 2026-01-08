@@ -21,7 +21,7 @@ ConfigurationData serves as the base class for [YAMLData](YAMLData.md) and [TOML
 ## Object Functions
 
 ### Data Access
-- `keys` — Get list of field names in insertion order
+- `keys` — Get list of keys in insertion order
 - `isfield` — Check if field exists
 - `fieldnames` — Get field names (alias for keys)
 - `iskey` — Check if key exists (alias for isfield)

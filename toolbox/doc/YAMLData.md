@@ -45,7 +45,7 @@ Format of the source data.
 ## Object Functions
 
 ### Data Access
-- [`keys`](#keys) — Get list of field names
+- [`keys`](#keys) — Get list of keys
 - [`isfield`](#isfield) — Check if field exists
 - [`fieldnames`](#fieldnames) — Get field names (alias for keys)
 - [`iskey`](#iskey) — Check if key exists (alias for isfield)
