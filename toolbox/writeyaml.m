@@ -74,7 +74,7 @@ function writeyaml(data, filename, options)
                 'Unable to open file "%s" for writing', filename);
         end
 
-        cleanupObj = onCleanup(@() fclose(fid));
+        cleanupObj = onCleanup(@ fclose(fid));
         fprintf(fid, '%s', yamlText);
     catch ME
         error('yamlToolbox:yamlwrite:FileWriteError', ...
@@ -249,7 +249,7 @@ end
 function yamlText = mapToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing)
     %MAPTOYAML Convert containers.Map to YAML
 
-    keys = data.keys();
+    keys = data.keys;
     yamlLines = cell(length(keys), 1);
 
     for i = 1:length(keys)

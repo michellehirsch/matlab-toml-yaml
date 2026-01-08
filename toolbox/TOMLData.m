@@ -15,15 +15,15 @@ classdef TOMLData < ConfigurationData
     %   Copyright 2025 The MathWorks, Inc.
     
     methods
-        function obj = TOMLData()
+        function obj = TOMLData
             %TOMLDATA Construct TOMLData object
-            obj@ConfigurationData();
+            obj@ConfigurationData;
             obj.SourceFormat = "toml";
         end
         
         function show(obj)
             %SHOW Display the data in TOML format
-            %   data.show() writes the TOMLData to a temporary file and
+            %   data.show writes the TOMLData to a temporary file and
             %   displays the TOML content in the command window.
             %
             %   This is useful for viewing the TOML representation of the data.

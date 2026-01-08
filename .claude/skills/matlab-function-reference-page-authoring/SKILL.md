@@ -117,12 +117,12 @@ Y = mean(X,dim)
   - You don't need to mention inheritance relationships (e.g., "subclass of") unless critical to understanding
   - It's acceptable to say "a ClassName object" when introducing it in output arguments or similar contexts
 - Never use empty parentheses when referring to functions or methods in prose:
-  - Write "Use `copy` to create..." not "Use `copy()` to create..."
-  - Write "The `show` method displays..." not "The `show()` method displays..."
+  - Write "Use `copy` to create..." not "Use `copy` to create..."
+  - Write "The `show` method displays..." not "The `show` method displays..."
   - Exception: Empty parentheses are fine in code examples and syntax sections
 - Always use function syntax for method calls, never dot notation:
-  - Write `show(obj)` not `obj.show()`
-  - Write `copy(data)` not `data.copy()`
+  - Write `show(obj)` not `obj.show`
+  - Write `copy(data)` not `data.copy`
   - Exception: Property access uses dot notation: `obj.PropertyName`
 - Follow MATLAB coding guidelines resource for additional standards
 ---

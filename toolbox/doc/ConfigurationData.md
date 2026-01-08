@@ -9,45 +9,14 @@ ConfigurationData provides a foundation for configuration data containers with d
 ### Syntax
 
 ```matlab
-data = ConfigurationData()
+data = ConfigurationData
 ```
 
 ### Description
 
-`data = ConfigurationData()` creates an empty ConfigurationData object.
+`data = ConfigurationData` creates an empty ConfigurationData object.
 
 ConfigurationData serves as the base class for [YAMLData](YAMLData.md) and [TOMLData](TOMLData.md). Users typically work with the subclasses rather than creating ConfigurationData instances directly.
-
-## Properties
-
-### Data
-Internal storage for configuration data.
-*Type:* `containers.Map`
-*Access:* Public
-
-Container that stores all configuration key-value pairs.
-
-### KeyAliases
-Mapping from valid MATLAB names to original keys with special characters.
-*Type:* `containers.Map`
-*Access:* Public
-
-Enables access to keys containing special characters (hyphens, spaces, dots) through valid MATLAB identifiers.
-
-### OriginalKeys
-List of keys in original insertion order.
-*Type:* string array
-*Access:* Public
-
-Preserves the order in which keys were added, ensuring consistent output when writing to files.
-
-### SourceFormat
-Format of the source data.
-*Type:* string scalar
-*Access:* Protected (read-only)
-*Default:* `"unknown"`
-
-Indicates the configuration format (e.g., `"yaml"`, `"toml"`).
 
 ## Object Functions
 
@@ -77,7 +46,7 @@ Indicates the configuration format (e.g., `"yaml"`, `"toml"`).
 Access and modify fields using dot notation:
 
 ```matlab
-data = ConfigurationData();
+data = ConfigurationData;
 data.server.host = "localhost";
 data.server.port = 8080;
 host = data.server.host;  % "localhost"
@@ -88,7 +57,7 @@ host = data.server.host;  % "localhost"
 Use dynamic field names for keys with special characters:
 
 ```matlab
-data = ConfigurationData();
+data = ConfigurationData;
 data.("app-name") = "MyApp";
 data.("build-system").requires = ["setuptools"];
 appName = data.("app-name");  % "MyApp"
@@ -99,7 +68,7 @@ appName = data.("app-name");  % "MyApp"
 Work with keys and fields:
 
 ```matlab
-data = ConfigurationData();
+data = ConfigurationData;
 data.host = "localhost";
 data.port = 8080;
 data.debug = true;
@@ -124,7 +93,7 @@ Build structured configuration:
 
 ```matlab
 % Create empty ConfigurationData
-config = ConfigurationData();
+config = ConfigurationData;
 
 % Add nested structure
 config.database.host = "localhost";
@@ -142,7 +111,7 @@ Work with structs and maps:
 
 ```matlab
 % Create ConfigurationData
-data = ConfigurationData();
+data = ConfigurationData;
 data.server.host = "localhost";
 data.server.port = 8080;
 
@@ -161,7 +130,7 @@ Understand reference semantics:
 
 ```matlab
 % Create original
-original = ConfigurationData();
+original = ConfigurationData;
 original.value = 100;
 
 % Assignment creates reference
@@ -180,7 +149,7 @@ original.value  % 200 (not modified)
 Order is maintained for consistent output:
 
 ```matlab
-config = ConfigurationData();
+config = ConfigurationData;
 config.zebra = 1;
 config.apple = 2;
 config.monkey = 3;
@@ -224,7 +193,7 @@ ConfigurationData extends `handle`:
 - Use `copy` method for independent copies
 
 ```matlab
-data1 = ConfigurationData();
+data1 = ConfigurationData;
 data2 = data1;          % Reference (shares data)
 data3 = copy(data1);    % Independent copy
 ```

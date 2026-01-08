@@ -95,7 +95,7 @@ workflow.steps(1).uses
 %[text] ## Exploring Unknown TOML Files
 %[text] Use keys and isfield to explore TOML structure
 %[text] Keys in project:
-project.keys()
+project.keys
 %%
 %[text] Check if specific fields exist
 if isfield(project, "project")
@@ -107,7 +107,7 @@ end
 %%
 %[text] Use show for formatted display
 %[text] Project structure:
-project.show()
+project.show
 %%
 %[text] ## Data Types in TOML
 %[text] TOML supports various data types

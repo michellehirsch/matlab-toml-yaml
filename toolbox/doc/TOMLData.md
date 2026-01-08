@@ -9,13 +9,13 @@ TOMLData represents structured configuration data from TOML files with dot notat
 ### Syntax
 
 ```matlab
-data = TOMLData()
+data = TOMLData
 data = readtoml(filename)
 ```
 
 ### Description
 
-`data = TOMLData()` creates an empty TOMLData object.
+`data = TOMLData` creates an empty TOMLData object.
 
 `data = readtoml(filename)` creates a TOMLData object by reading from a TOML file. See [readtoml](readtoml.md).
 
@@ -70,7 +70,7 @@ Format of the source data.
 Access fields using dot notation:
 
 ```matlab
-data = TOMLData();
+data = TOMLData;
 data.project.name = "my-package";
 data.project.version = "1.0.0";
 name = data.project.name;  % "my-package"
@@ -81,7 +81,7 @@ name = data.project.name;  % "my-package"
 Use dynamic field names for keys with special characters:
 
 ```matlab
-data = TOMLData();
+data = TOMLData;
 data.("build-system").requires = ["setuptools"; "wheel"];
 data.("build-system").("build-backend") = "setuptools.build_meta";
 backend = data.("build-system").("build-backend");
@@ -92,7 +92,7 @@ backend = data.("build-system").("build-backend");
 TOMLData handles TOML datetime types:
 
 ```matlab
-data = TOMLData();
+data = TOMLData;
 data.created = datetime("now");
 data.updated = datetime("2025-01-08");
 ```
@@ -105,7 +105,7 @@ Build a pyproject.toml programmatically:
 
 ```matlab
 % Create TOMLData
-project = TOMLData();
+project = TOMLData;
 
 % Build system configuration
 project.("build-system").requires = ["setuptools>=61.0"; "wheel"];
@@ -164,13 +164,13 @@ Preview TOML output:
 
 ```matlab
 % Create configuration
-config = TOMLData();
+config = TOMLData;
 config.server.host = "localhost";
 config.server.port = 8080;
 config.debug = true;
 
 % Display as TOML
-config.show();
+config.show;
 % [server]
 % host = "localhost"
 % port = 8080
@@ -212,10 +212,10 @@ For comprehensive examples, see [readtomlExample.m](../../examples/readtomlExamp
 TOMLData extends `handle`, meaning:
 - Assignment creates references, not copies
 - Modifications affect all references
-- Use `copy()` for independent copies
+- Use `copy` for independent copies
 
 ```matlab
-data1 = TOMLData();
+data1 = TOMLData;
 data2 = data1;          % Reference, not copy
 data3 = copy(data1);    % Independent copy
 ```

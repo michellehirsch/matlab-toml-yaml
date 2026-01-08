@@ -70,7 +70,7 @@ By choosing `read<type>` / `write<type>`:
 
 ## Parameter Naming
 
-**Decision:** Use `SequenceRule` (not `ArrayFormat`) in `readyaml()`
+**Decision:** Use `SequenceRule` (not `ArrayFormat`) in `readyaml`
 
 **Parameters:**
 - `readyaml(file, "SequenceRule", "auto"|"cell")` - How to convert sequences
@@ -167,13 +167,13 @@ ConfigurationData (abstract base)
 
 **Common features (in base):**
 - Dot notation access: `config.database.host`
-- Key management: `keys()`, `iskey()`, `remove()`
-- Field access: `fieldnames()`, `isfield()`, `rmfield()`
-- Display methods: `show()`, `disp()`
-- Struct compatibility: `struct()`
+- Key management: `keys`, `iskey`, `remove`
+- Field access: `fieldnames`, `isfield`, `rmfield`
+- Display methods: `show`, `disp`
+- Struct compatibility: `struct`
 
 **Format-specific (in subclasses):**
-- File I/O: `readyaml()`, `writetoml()`
+- File I/O: `readyaml`, `writetoml`
 - Format-specific metadata (future)
 - Format-specific validation (future)
 
@@ -198,7 +198,7 @@ Keys with hyphens, spaces, or special characters:
 
 ### Method Syntax
 
-**Always use:** `method(obj)` **not** `obj.method()`
+**Always use:** `method(obj)` **not** `obj.method`
 
 ```matlab
 % Correct
@@ -207,14 +207,14 @@ show(data)
 isfield(config, "database")
 
 % Incorrect
-config.keys()
-data.show()
+config.keys
+data.show
 config.isfield("database")
 ```
 
 **Rationale:** 
 - Standard MATLAB convention
-- Consistent with built-in functions (`fieldnames()`, `struct()`)
+- Consistent with built-in functions (`fieldnames`, `struct`)
 - Only deviate when explicitly requested
 
 ### String Literals

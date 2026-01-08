@@ -170,7 +170,7 @@ special.("pull-request").("target-branch")
 %[text] ## Exploring Unknown YAML Files
 %[text] Use keys, isfield, and show to explore structure
 %[text] Top-level keys in GitHub Actions workflow:
-ghActions.keys()
+ghActions.keys
 %%
 %[text] Check for specific fields
 if isfield(ghActions, "jobs")
@@ -185,7 +185,7 @@ end
 %%
 %[text] Use show for formatted display
 %[text] Database configuration structure:
-dbConfig.show()
+dbConfig.show
 %%
 %[text] ## Data Types in YAML
 %[text] YAML supports various data types

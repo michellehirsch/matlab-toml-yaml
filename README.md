@@ -43,7 +43,7 @@ deps = config.("build-system").requires;
 
 ```matlab
 % Create data
-config = YAMLData();
+config = YAMLData;
 config.name = 'MyApp';
 config.database.host = 'localhost';
 config.database.port = 5432;
@@ -79,12 +79,12 @@ writeyaml(config, 'config.yaml', 'ArrayStyle', 'block');
 ### YAML
 - `readyaml(filename)` - Read YAML file, returns YAMLData object
 - `writeyaml(data, filename)` - Write YAML file
-- `YAMLData()` - Create YAML data object
+- `YAMLData` - Create YAML data object
 
 ### TOML
 - `readtoml(filename)` - Read TOML file, returns TOMLData object
 - `writetoml(data, filename)` - Write TOML file
-- `TOMLData()` - Create TOML data object
+- `TOMLData` - Create TOML data object
 
 ### Common Options
 
@@ -108,16 +108,16 @@ Both extend `ConfigurationData` with format-specific features:
 
 ```matlab
 % Create and populate
-config = YAMLData();
+config = YAMLData;
 config.version = '1.0.0';
 config.database.host = 'localhost';
 
 % Access keys
-keys = config.keys();           % Get all keys
+keys = config.keys;           % Get all keys
 exists = isfield(config, 'db'); % Check existence
 
 % Display full content
-config.show();                  % Shows formatted YAML/TOML
+config.show;                  % Shows formatted YAML/TOML
 
 % Convert to struct
 s = struct(config);             % Standard MATLAB struct

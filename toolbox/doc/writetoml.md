@@ -103,7 +103,7 @@ Create and write TOML configuration:
 
 ```matlab
 % Create TOMLData
-config = TOMLData();
+config = TOMLData;
 config.project.name = "my-package";
 config.project.version = "1.0.0";
 config.project.authors = ["Alice"; "Bob"];
@@ -118,7 +118,7 @@ Choose between inline and expanded table styles:
 
 ```matlab
 % Create nested configuration
-data = TOMLData();
+data = TOMLData;
 data.database.connection.host = "localhost";
 data.database.connection.port = 5432;
 data.database.pool.size = 10;
@@ -140,7 +140,7 @@ Customize array style and spacing:
 
 ```matlab
 % Create data with arrays
-config = TOMLData();
+config = TOMLData;
 config.dependencies.packages = ["numpy"; "pandas"; "scipy"];
 config.build.requires = ["setuptools"; "wheel"];
 
@@ -156,7 +156,7 @@ writetoml(config,"requirements.toml", ...
 Create a pyproject.toml with proper formatting:
 
 ```matlab
-project = TOMLData();
+project = TOMLData;
 project.("build-system").requires = ["setuptools>=61.0"; "wheel"];
 project.("build-system").("build-backend") = "setuptools.build_meta";
 project.project.name = "my-package";

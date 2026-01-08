@@ -6,9 +6,9 @@ classdef ConfigurationData < handle & ...
     %   Supports keys with special characters like hyphens.
     %   
     %   Note: This is a handle class. To create an independent copy,
-    %   use the copy() method: newData = copy(data)
+    %   use the copy method: newData = copy(data)
     
-    properties (Access = public)
+    properties (Access = public, Hidden = true)
         Data containers.Map
         KeyAliases containers.Map
         OriginalKeys string
@@ -19,7 +19,7 @@ classdef ConfigurationData < handle & ...
     end
     
     methods
-        function obj = ConfigurationData()
+        function obj = ConfigurationData
             obj.Data = containers.Map('KeyType', 'char', 'ValueType', 'any');
             obj.KeyAliases = containers.Map('KeyType', 'char', 'ValueType', 'char');
             obj.OriginalKeys = string.empty;
@@ -27,7 +27,7 @@ classdef ConfigurationData < handle & ...
         
         function newObj = copy(obj)
             %COPY Create a deep copy of the ConfigurationData object
-            newObj = ConfigurationData();
+            newObj = ConfigurationData;
             newObj.SourceFormat = obj.SourceFormat;
             
             % Deep copy the Data map
@@ -66,7 +66,7 @@ classdef ConfigurationData < handle & ...
         end
         
         function s = struct(obj)
-            s = struct();
+            s = struct;
             for i = 1:length(obj.OriginalKeys)
                 key = obj.OriginalKeys(i);
                 value = obj.Data(char(key));
@@ -104,7 +104,7 @@ classdef ConfigurationData < handle & ...
         
         function names = fieldnames(obj)
             %FIELDNAMES Get field names (alias for keys)
-            names = obj.keys();
+            names = obj.keys;
         end
         
         function tf = iskey(obj, key)
@@ -266,7 +266,7 @@ classdef ConfigurationData < handle & ...
         end
         
         function varargout = dotReference(obj, indexOp, ~)
-            % Handle both dot notation (.) and array indexing ()
+            % Handle both dot notation (.) and array indexing 
             
             if strcmp(indexOp(1).Type, 'Dot')
                 % Dot notation: obj.key
@@ -337,12 +337,12 @@ classdef ConfigurationData < handle & ...
                         nested = obj.wrapNested(nested);
                     elseif ~isa(nested, 'ConfigurationData')
                         % Scalar value exists - replace with ConfigurationData
-                        nested = ConfigurationData();
+                        nested = ConfigurationData;
                         nested.SourceFormat = obj.SourceFormat;
                     end
                 else
                     % Create new nested ConfigurationData
-                    nested = ConfigurationData();
+                    nested = ConfigurationData;
                     nested.SourceFormat = obj.SourceFormat;
                 end
                 
@@ -375,7 +375,7 @@ classdef ConfigurationData < handle & ...
                 % Unwrap ConfigurationData to Map (but keep OriginalKeys order)
                 if isa(value, 'ConfigurationData')
                     % Store the ConfigurationData directly to preserve order
-                    % value = value.map();  % DON'T convert to map - loses order!
+                    % value = value.map;  % DON'T convert to map - loses order!
                     % Just store the ConfigurationData object
                 end
                 
@@ -406,7 +406,7 @@ classdef ConfigurationData < handle & ...
         end
         
         function nested = wrapNested(obj, mapData)
-            nested = ConfigurationData();
+            nested = ConfigurationData;
             nested.Data = mapData;
             nested.OriginalKeys = string(keys(mapData));
             
@@ -422,7 +422,7 @@ classdef ConfigurationData < handle & ...
         
         function s = mapToStruct(obj, m)
             %MAPTOSTRUCT Convert containers.Map to struct recursively (private helper)
-            s = struct();
+            s = struct;
             mapKeys = keys(m);
             for i = 1:length(mapKeys)
                 key = mapKeys{i};

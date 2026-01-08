@@ -45,7 +45,7 @@ function writetoml(data, filename, options)
 %
 % Examples:
 %   Write TOMLData to file
-%       config = TOMLData();
+%       config = TOMLData;
 %       config.project.name = "my-package";
 %       config.project.version = "1.0.0";
 %       writetoml(config, 'pyproject.toml');
@@ -101,7 +101,7 @@ function writetoml(data, filename, options)
     addSectionSpacing = strcmp(options.SectionSpacing, 'loose');
 
     % Create options struct for passing to serialization functions
-    serializeOpts = struct();
+    serializeOpts = struct;
     serializeOpts.useFlowArrays = useFlowArrays;
     serializeOpts.indentSize = options.NumIndentationSpaces;
     serializeOpts.addSectionSpacing = addSectionSpacing;
@@ -132,10 +132,10 @@ end
 
 function s = configDataToStruct(data)
     % Convert ConfigurationData to struct, preserving key order
-    s = struct();
+    s = struct;
     
     if isa(data, 'ConfigurationData')
-        keys = data.keys();
+        keys = data.keys;
         for i = 1:length(keys)
             key = char(keys(i));
             value = data.(key);
@@ -177,7 +177,7 @@ function tomlStr = serializeToml(data, opts)
 
     % Get keys based on type
     if isa(data, 'ConfigurationData')
-        allKeys = data.keys();
+        allKeys = data.keys;
     else
         allKeys = string(fieldnames(data));
     end
@@ -275,7 +275,7 @@ function tomlStr = serializeTable(tableName, tableData, prefix, opts)
     elseif isstruct(tableData) || isa(tableData, 'ConfigurationData')
         % Regular table - get keys
         if isa(tableData, 'ConfigurationData')
-            allKeys = tableData.keys();
+            allKeys = tableData.keys;
         else
             allKeys = string(fieldnames(tableData));
         end
@@ -330,7 +330,7 @@ function tomlStr = serializeStructContent(data, ~, opts)
 
     % Get keys
     if isa(data, 'ConfigurationData')
-        allKeys = data.keys();
+        allKeys = data.keys;
     else
         allKeys = string(fieldnames(data));
     end
@@ -479,7 +479,7 @@ function str = serializeInlineTable(tbl, opts)
 
     % Get keys
     if isa(tbl, 'ConfigurationData')
-        tableKeys = tbl.keys();
+        tableKeys = tbl.keys;
     else
         tableKeys = string(fieldnames(tbl));
     end
@@ -540,7 +540,7 @@ function useInline = shouldUseInlineTableArray(tableArray, style)
 
             % Get keys
             if isa(elem, 'ConfigurationData')
-                keys = elem.keys();
+                keys = elem.keys;
             else
                 keys = string(fieldnames(elem));
             end

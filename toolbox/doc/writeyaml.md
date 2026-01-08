@@ -67,7 +67,7 @@ Create and write YAML configuration:
 
 ```matlab
 % Create YAMLData
-config = YAMLData();
+config = YAMLData;
 config.app.name = "MyApp";
 config.app.version = "1.0.0";
 config.app.port = 8080;
@@ -82,7 +82,7 @@ Choose between block and flow style for arrays:
 
 ```matlab
 % Create data with arrays
-data = YAMLData();
+data = YAMLData;
 data.ports = [8080; 8443; 9000];
 data.servers = ["localhost"; "api.example.com"];
 
@@ -104,7 +104,7 @@ Adjust spacing and indentation:
 
 ```matlab
 % Create nested configuration
-config = YAMLData();
+config = YAMLData;
 config.database.host = "localhost";
 config.database.port = 5432;
 config.cache.enabled = true;

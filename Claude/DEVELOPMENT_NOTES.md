@@ -170,7 +170,7 @@ Result: Only `items(3)` with `name = "third"` is stored.
 **Status:** 
 - ❌ Reading: Broken
 - ✅ Writing: Works correctly
-- **Cause:** Handle reference issue in `handleArrayOfTables()` function
+- **Cause:** Handle reference issue in `handleArrayOfTables` function
 - **Workaround:** None currently
 - **Priority:** High
 
@@ -219,7 +219,7 @@ None currently.
 - **Issue:** Only last element stored when reading `[[items]]` sections
 - **Impact:** Data loss when reading certain TOML files
 - **Status:** Under investigation
-- **Location:** `handleArrayOfTables()` in readtoml.m
+- **Location:** `handleArrayOfTables` in readtoml.m
 - **Theory:** Handle reference not properly tracking array elements
 
 ### Medium Priority

@@ -12,7 +12,7 @@
 %%
 %[text] ## Creating ConfigurationData Objects
 %[text] Create a new ConfigurationData object
-config = ConfigurationData();
+config = ConfigurationData;
 %[text] Empty ConfigurationData object:
 config %[output:78054ccd]
 %%
@@ -54,7 +54,7 @@ config.database.host
 %%
 %[text] ## Exploring Configuration Structure
 %[text] Use keys to list all top-level keys
-allKeys = config.keys();
+allKeys = config.keys;
 %[text] All top-level keys:
 allKeys %[output:16387c3a]
 %%
@@ -73,7 +73,7 @@ end %[output:group:9f860c58]
 %%
 %[text] ## Handle Class Behavior
 %[text] ConfigurationData is a handle class - assignments create references
-config1 = ConfigurationData();
+config1 = ConfigurationData;
 config1.value = 42;
 %[text] This creates a reference, not a copy
 config2 = config1;
@@ -81,7 +81,7 @@ config2.value = 100;
 %[text] Original is modified because config2 is a reference
 config1.value
 %%
-%[text] Use copy() to create an independent copy
+%[text] Use copy to create an independent copy
 config3 = copy(config1);
 config3.value = 200;
 %[text] Original is NOT modified - config1 still has value 100
@@ -100,7 +100,7 @@ configStruct %[output:80771474]
 %%
 %[text] ## TOMLData - Specialized for TOML Files
 %[text] TOMLData extends ConfigurationData for TOML-specific features
-tomlData = TOMLData();
+tomlData = TOMLData;
 tomlData.project.name = "my-package";
 tomlData.project.version = "1.0.0";
 tomlData.("build-system").requires = ["setuptools>=61.0", "wheel"];
@@ -119,7 +119,7 @@ readTomlData
 %%
 %[text] ## YAMLData - Specialized for YAML Files
 %[text] YAMLData extends ConfigurationData for YAML-specific features
-yamlData = YAMLData();
+yamlData = YAMLData;
 yamlData.name = "CI";
 yamlData.on.push.branches = ["main", "develop"];
 yamlData.jobs.build.("runs-on") = "ubuntu-latest";
@@ -139,13 +139,13 @@ readYamlData
 %[text] ## Working with Arrays of ConfigurationData
 %[text] Create arrays of configuration objects
 steps = YAMLData.empty;
-steps(1) = YAMLData();
+steps(1) = YAMLData;
 steps(1).name = "Checkout";
 steps(1).uses = "actions/checkout@v4";
-steps(2) = YAMLData();
+steps(2) = YAMLData;
 steps(2).name = "Build";
 steps(2).run = "make build";
-steps(3) = YAMLData();
+steps(3) = YAMLData;
 steps(3).name = "Test";
 steps(3).run = "make test";
 %[text] Access array elements
@@ -159,38 +159,38 @@ steps(1).name
 %%
 %[text] ## Formatted Display with show
 %[text] Use show for a formatted display of the configuration
-workflow = YAMLData();
+workflow = YAMLData;
 workflow.name = "CI Pipeline";
-step1 = YAMLData();
+step1 = YAMLData;
 step1.name = "Checkout";
 step1.uses = "actions/checkout@v4";
-step2 = YAMLData();
+step2 = YAMLData;
 step2.name = "Build";
 step2.run = "make build";
 workflow.jobs.build.steps = [step1; step2];
 %[text] Formatted display:
-workflow.show() %[output:4bc748d8]
+workflow.show %[output:4bc748d8]
 %%
 %[text] ## Removing Fields
 %[text] Remove fields from configuration
-removeExample = ConfigurationData();
+removeExample = ConfigurationData;
 removeExample.keep1 = "value1";
 removeExample.remove_me = "value2";
 removeExample.keep2 = "value3";
 %[text] Before removal:
-removeExample.keys() %[output:399668a6]
+removeExample.keys %[output:399668a6]
 %[text] Remove a field
 removeExample = rmfield(removeExample, "remove_me");
 %[text] After removal:
-removeExample.keys() %[output:5dc4ce6f]
+removeExample.keys %[output:5dc4ce6f]
 %%
-%[text] Alternative syntax: remove()
+%[text] Alternative syntax: remove
 removeExample.temporary = "temp value";
 removeExample = remove(removeExample, "temporary");
 %%
 %[text] ## Modifying Nested Structures
 %[text] Add and modify nested configuration
-app = ConfigurationData();
+app = ConfigurationData;
 app.server.host = "localhost";
 app.server.port = 8080;
 %[text] Initial server config:
@@ -233,7 +233,7 @@ type("converted.toml") %[output:53e5cc41]
 %[text] ## Practical Example: Managing Application Configuration
 %[text] Complete example of application configuration management
 %[text] Create application configuration
-appConfig = ConfigurationData();
+appConfig = ConfigurationData;
 appConfig.application.name = "WebService";
 appConfig.application.version = "2.0.0";
 appConfig.application.environment = "production";

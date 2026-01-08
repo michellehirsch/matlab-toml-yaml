@@ -1,4 +1,4 @@
-function test_multiline_strings()
+function test_multiline_strings
 % Test multi-line string support in TOML parser
 
 % Test 1: Basic multi-line string

@@ -9,13 +9,13 @@ YAMLData represents structured configuration data from YAML files with dot notat
 ### Syntax
 
 ```matlab
-data = YAMLData()
+data = YAMLData
 data = readyaml(filename)
 ```
 
 ### Description
 
-`data = YAMLData()` creates an empty YAMLData object.
+`data = YAMLData` creates an empty YAMLData object.
 
 `data = readyaml(filename)` creates a YAMLData object by reading from a YAML file. See [readyaml](readyaml.md).
 
@@ -70,7 +70,7 @@ Format of the source data.
 Access fields using dot notation:
 
 ```matlab
-data = YAMLData();
+data = YAMLData;
 data.app.name = "MyApp";
 data.app.version = "1.0.0";
 value = data.app.name;  % "MyApp"
@@ -81,7 +81,7 @@ value = data.app.name;  % "MyApp"
 Use dynamic field names for keys with special characters:
 
 ```matlab
-data = YAMLData();
+data = YAMLData;
 data.("app-name") = "MyApp";
 data.("build-system").requires = ["setuptools"; "wheel"];
 appName = data.("app-name");  % "MyApp"
@@ -92,7 +92,7 @@ appName = data.("app-name");  % "MyApp"
 YAMLData objects can contain arrays:
 
 ```matlab
-data = YAMLData();
+data = YAMLData;
 data.ports = [8080; 8443; 9000];
 firstPort = data.ports(1);  % 8080
 ```
@@ -105,7 +105,7 @@ Build configuration data programmatically:
 
 ```matlab
 % Create empty YAMLData
-config = YAMLData();
+config = YAMLData;
 
 % Add fields using dot notation
 config.database.host = "localhost";
@@ -203,7 +203,7 @@ YAMLData extends `handle`, meaning:
 - Use `copy` for independent copies
 
 ```matlab
-data1 = YAMLData();
+data1 = YAMLData;
 data2 = data1;          % Reference, not copy
 data3 = copy(data1);    % Independent copy
 ```

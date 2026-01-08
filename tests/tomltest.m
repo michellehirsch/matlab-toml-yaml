@@ -73,7 +73,7 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
             testCase.verifyEqual(data.numbers, [1, 2, 3, 4]);
             testCase.verifyEqual(data.strings, ["red", "green", "blue"]);
-            % Note: "empty" conflicts with MATLAB's empty() method
+            % Note: "empty" conflicts with MATLAB's empty method
             % Use Data map directly as workaround
             testCase.verifyEqual(data.Data('empty'), []);
         end
@@ -314,7 +314,7 @@ classdef tomltest < matlab.unittest.TestCase
         %% Writing Options Tests
         function testWriteArrayStyleFlow(testCase)
             % Test writing with flow array style (default)
-            data = TOMLData();
+            data = TOMLData;
             data.numbers = [1, 2, 3];
             data.strings = ["a", "b", "c"];
 
@@ -328,7 +328,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWriteArrayStyleBlock(testCase)
             % Test writing with block array style
-            data = TOMLData();
+            data = TOMLData;
             data.numbers = [1, 2, 3];
 
             filename = 'test.toml';
@@ -346,7 +346,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWriteNumIndentationSpaces(testCase)
             % Test custom indentation
-            data = TOMLData();
+            data = TOMLData;
             data.numbers = [1, 2, 3];
 
             filename = 'test.toml';
@@ -361,7 +361,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWriteSectionSpacingLoose(testCase)
             % Test loose section spacing (default)
-            data = TOMLData();
+            data = TOMLData;
             data.section1.value = 1;
             data.section2.value = 2;
 
@@ -381,7 +381,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWriteSectionSpacingCompact(testCase)
             % Test compact section spacing
-            data = TOMLData();
+            data = TOMLData;
             data.section1.value = 1;
             data.section2.value = 2;
 
@@ -401,7 +401,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWritePrecision(testCase)
             % Test numeric precision control
-            data = TOMLData();
+            data = TOMLData;
             data.pi_value = pi;
 
             % Test with precision = 3
@@ -419,7 +419,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWriteCombinedOptions(testCase)
             % Test multiple options combined
-            data = TOMLData();
+            data = TOMLData;
             data.values = [1, 2, 3];
             data.float_val = 3.14159;
             data.section.nested = "value";
@@ -446,7 +446,7 @@ classdef tomltest < matlab.unittest.TestCase
 
         function testWriteRoundTripWithOptions(testCase)
             % Test round-trip with various options
-            original = TOMLData();
+            original = TOMLData;
             original.name = "test";
             original.numbers = [1, 2, 3];
             original.settings.value = 42;

@@ -99,7 +99,7 @@ end
 function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat)
     %PARSEBLOCK Parse a block of YAML lines
 
-    data = struct();
+    data = struct;
     fields = {};
     values = {};
     nextLine = startLine;
@@ -204,11 +204,11 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
                 data = consolidateArray(values, arrayFormat);
             end
         else
-            data = YAMLData();
+            data = YAMLData;
         end
     else
         % This is a mapping - return as YAMLData
-        data = YAMLData();
+        data = YAMLData;
         for i = 1:length(fields)
             data.(fields{i}) = values{i};
         end
@@ -300,7 +300,7 @@ function [itemData, nextLine] = parseListItemMapping(lines, startLine, dashInden
     end
     
     % Build the mapping for this list item
-    itemData = YAMLData();
+    itemData = YAMLData;
     for i = 1:length(itemFields)
         itemData.(itemFields{i}) = itemValues{i};
     end

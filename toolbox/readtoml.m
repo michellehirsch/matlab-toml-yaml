@@ -18,7 +18,7 @@ function data = readtoml(filename, options)
 %       version = config.("project").("version");
 %
 %   Display as TOML
-%       config.show();
+%       config.show;
 %
 %   Convert to struct
 %       s = struct(config);
@@ -58,7 +58,7 @@ function data = parseToml(content, datetimeType)
     % Parse TOML content string and return TOMLData object
     
     % Initialize root TOMLData
-    data = TOMLData();
+    data = TOMLData;
     currentTable = data;
     currentTablePath = "";
     currentArrayIndex = 0;  % Track if we're in an array of tables
@@ -145,7 +145,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleTable(ro
             for k = 1:numel(nestedKeys)
                 key = char(nestedKeys(k));
                 if ~isfield(current, key)
-                    current.(key) = TOMLData();
+                    current.(key) = TOMLData;
                 end
                 if k < numel(nestedKeys)
                     current = current.(key);
@@ -178,7 +178,7 @@ function data = ensureDataPath(data, pathKeys, currentPath)
     key = char(cleanKey(strtrim(pathKeys(1))));
 
     if ~isfield(data, key)
-        data.(key) = TOMLData();
+        data.(key) = TOMLData;
     end
 
     % Recursively ensure rest of path
@@ -211,7 +211,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
     end
 
     % Create new element
-    newElement = TOMLData();
+    newElement = TOMLData;
     
     
     if ~isfield(parent, lastKey)
@@ -279,7 +279,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
             k = char(cleanKey(strtrim(keys(i))));
 
             if ~isfield(currentData, k)
-                currentData.(k) = TOMLData();
+                currentData.(k) = TOMLData;
             end
             currentData = currentData.(k);
         end
@@ -394,7 +394,7 @@ function data = setDataPath(data, pathKeys, value)
         if isfield(data, key)
             data.(key) = setDataPath(data.(key), pathKeys(2:end), value);
         else
-            data.(key) = setDataPath(TOMLData(), pathKeys(2:end), value);
+            data.(key) = setDataPath(TOMLData, pathKeys(2:end), value);
         end
     end
 end
@@ -413,7 +413,7 @@ function data = updateDataPath(data, pathKeys, value, levelsFromEnd)
         if isfield(data, key)
             data.(key) = updateDataPath(data.(key), pathKeys(2:end), value, levelsFromEnd - 1);
         else
-            data.(key) = updateDataPath(TOMLData(), pathKeys(2:end), value, levelsFromEnd - 1);
+            data.(key) = updateDataPath(TOMLData, pathKeys(2:end), value, levelsFromEnd - 1);
         end
     end
 end
@@ -636,7 +636,7 @@ function tbl = parseInlineTable(tableStr, datetimeType)
     content = extractBetween(tableStr, 2, strlength(tableStr) - 1);
     content = strtrim(content);
 
-    tbl = TOMLData();  % Return TOMLData instead of struct
+    tbl = TOMLData;  % Return TOMLData instead of struct
 
     if strlength(content) == 0
         return;

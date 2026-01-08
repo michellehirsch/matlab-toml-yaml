@@ -124,7 +124,7 @@ classdef yamltest < matlab.unittest.TestCase
         %% Basic Writing Tests
         function testWriteSimpleYAML(testCase)
             % Test writing a simple YAML file
-            data = YAMLData();
+            data = YAMLData;
             data.name = 'Test';
             data.version = 1.0;
             data.enabled = true;
@@ -143,7 +143,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteNestedYAML(testCase)
             % Test writing nested structures
-            data = YAMLData();
+            data = YAMLData;
             data.database.host = 'localhost';
             data.database.port = 5432;
             
@@ -158,7 +158,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteWithArrayStyle(testCase, ArrayStyle)
             % Test writing with different array styles
-            data = YAMLData();
+            data = YAMLData;
             data.ports = [8080, 8443];
             
             filename = fullfile(pwd, 'output.yaml');
@@ -176,7 +176,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteWithSectionSpacing(testCase, SectionSpacing)
             % Test writing with different section spacing
-            data = YAMLData();
+            data = YAMLData;
             data.section1 = 'value1';
             data.section2 = 'value2';
             
@@ -194,7 +194,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteDefaultFilename(testCase)
             % Test writing with default filename
-            data = YAMLData();
+            data = YAMLData;
             data.test = 'value';
             
             writeyaml(data);
@@ -205,7 +205,7 @@ classdef yamltest < matlab.unittest.TestCase
         %% Round-trip Tests
         function testRoundTripSimple(testCase)
             % Test simple round-trip
-            original = YAMLData();
+            original = YAMLData;
             original.name = 'Test';
             original.value = 123;
             
@@ -219,7 +219,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testRoundTripNested(testCase)
             % Test nested structure round-trip
-            original = YAMLData();
+            original = YAMLData;
             original.server.host = 'localhost';
             original.server.port = 8080;
             original.database.url = 'jdbc:postgresql://db:5432';
@@ -237,7 +237,7 @@ classdef yamltest < matlab.unittest.TestCase
             % Test array round-trip
             % Note: YAML sequences don't preserve row vs column orientation
             % They are normalized to column vectors on read
-            original = YAMLData();
+            original = YAMLData;
             original.numbers = [1, 2, 3];
             original.strings = ["a", "b", "c"];
 
@@ -252,7 +252,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testRoundTripSpecialCharacters(testCase)
             % Test special character keys round-trip
-            original = YAMLData();
+            original = YAMLData;
             original.("pull-request").branches = "main";
             original.("some-key") = "value";
             
@@ -266,29 +266,29 @@ classdef yamltest < matlab.unittest.TestCase
         
         %% YAMLData Methods Tests
         function testShowMethod(testCase)
-            % Test show() method exists and runs without error
-            data = YAMLData();
+            % Test show method exists and runs without error
+            data = YAMLData;
             data.test = 'value';
             
             % Should not error
-            testCase.verifyWarningFree(@() data.show());
+            testCase.verifyWarningFree(@ data.show);
         end
         
         function testKeysMethod(testCase)
-            % Test keys() method
-            data = YAMLData();
+            % Test keys method
+            data = YAMLData;
             data.first = 1;
             data.second = 2;
             data.third = 3;
             
-            k = data.keys();
+            k = data.keys;
             
             testCase.verifyEqual(k, ["first", "second", "third"]);
         end
         
         function testIsFieldMethod(testCase)
-            % Test isfield() method
-            data = YAMLData();
+            % Test isfield method
+            data = YAMLData;
             data.exists = 'yes';
             
             testCase.verifyTrue(isfield(data, 'exists'));
@@ -297,7 +297,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testStructConversion(testCase)
             % Test conversion to struct
-            data = YAMLData();
+            data = YAMLData;
             data.name = "Test";  % Use string literal
             data.value = 123;
 
@@ -321,7 +321,7 @@ classdef yamltest < matlab.unittest.TestCase
             data = readyaml(filename);
             
             testCase.verifyClass(data, 'YAMLData');
-            testCase.verifyEqual(length(data.keys()), 0);
+            testCase.verifyEqual(length(data.keys), 0);
         end
         
         function testCommentsIgnored(testCase)

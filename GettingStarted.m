@@ -37,8 +37,8 @@ dbHost = server.database.host %[output:4fdcf276]
 username = server.database.credentials.username %[output:93262560]
 logLevel = server.logging.level %[output:22d1d835]
 %%
-%[text] ## The show() Method
-%[text] For deeply nested structures, use `show()` to display the full content in YAML format. You can also just click on the "Show all values" hyperlink:
+%[text] ## The show Method
+%[text] For deeply nested structures, use `show` to display the full content in YAML format. You can also just click on the "Show all values" hyperlink:
 show(server) %[output:6194d526]
 %%
 %[text] ## Introspection
@@ -46,7 +46,7 @@ show(server) %[output:6194d526]
 %[text] Get all top-level keys:
 topKeys = keys(server) %[output:061450cc]
 %%
-%[text] The `fieldnames()` method works too:
+%[text] The `fieldnames` method works too:
 topFields = fieldnames(server) %[output:110fedab]
 %%
 %[text] Check if a key exists:
@@ -147,7 +147,7 @@ disp("Literal strings avoid double-backslash escaping")
 %[text] - Read YAML and TOML files into intuitive data objects
 %[text] - Access values with dot notation, including keys with special characters
 %[text] - Use automatic aliasing for hyphenated keys
-%[text] - Explore configuration files with `keys()` and `isfield()`
+%[text] - Explore configuration files with `keys` and `isfield`
 %[text] - Modify configurations programmatically
 %[text] - Understand how arrays are converted (`SequenceRule`)
 %[text] - Write files with formatting control (`ArrayStyle`, `SectionSpacing`, `StringEscapeStyle`) \

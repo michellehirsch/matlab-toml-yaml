@@ -1,0 +1,9 @@
+{
+    "servers": {
+        "matlab": {
+            "type": "stdio",
+            "command": "/Users/michellehirsch/Coding/mcpserver/matlab-mcp-core-server",
+            "args": []
+        }
+    }
+}

@@ -12,9 +12,9 @@ classdef YAMLData < ConfigurationData
     %   See also: ConfigurationData, readyaml, writeyaml
     
     methods
-        function obj = YAMLData()
+        function obj = YAMLData
             %YAMLDATA Construct YAML configuration data object
-            obj@ConfigurationData();
+            obj@ConfigurationData;
         end
         
         function show(obj)
@@ -24,7 +24,7 @@ classdef YAMLData < ConfigurationData
             %   command line.
             %
             %   Example:
-            %       data.show()
+            %       data.show
             %
             %   See also writeyaml
             
@@ -49,7 +49,7 @@ classdef YAMLData < ConfigurationData
     methods (Access = protected)
         function newObj = wrapNested(obj, mapData)
             %WRAPNESTED Wrap nested Map as YAMLData (override)
-            newObj = YAMLData();
+            newObj = YAMLData;
             newObj.Data = mapData;
             newObj.OriginalKeys = string(keys(mapData));
             
