@@ -26,22 +26,35 @@ classdef TOMLData < ConfigurationData
             %   data.show writes the TOMLData to a temporary file and
             %   displays the TOML content in the command window.
             %
+            %   For arrays, displays each element as an array of tables
+            %   using [[item]] syntax.
+            %
             %   This is useful for viewing the TOML representation of the data.
-            
-            try
-                % Write to temporary file
-                tempFile = tempname;
-                writetoml(obj, tempFile);
-                
-                % Read and display
-                content = fileread(tempFile);
-                fprintf('%s\n', content);
-                
-                % Clean up
-                delete(tempFile);
-            catch
-                % Fallback to regular display if writetoml fails
-                disp(obj);
+
+            if isscalar(obj)
+                % Scalar case - write directly
+                try
+                    tempFile = tempname;
+                    writetoml(obj, tempFile);
+                    content = fileread(tempFile);
+                    fprintf('%s\n', content);
+                    delete(tempFile);
+                catch
+                    disp(obj);
+                end
+            else
+                % Array case - wrap in container and write as array of tables
+                try
+                    wrapper = TOMLData;
+                    wrapper.item = obj;
+                    tempFile = tempname;
+                    writetoml(wrapper, tempFile, TableArrayStyle="expanded");
+                    content = fileread(tempFile);
+                    fprintf('%s\n', content);
+                    delete(tempFile);
+                catch
+                    disp(obj);
+                end
             end
         end
     end

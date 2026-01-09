@@ -23,22 +23,31 @@ classdef YAMLData < ConfigurationData
             %   This is useful for viewing deeply nested structures at the
             %   command line.
             %
+            %   For arrays, displays each element as a YAML list item.
+            %
             %   Example:
             %       data.show
             %
             %   See also writeyaml
-            
-            % Write to temporary file and read back
+
             tempFile = [tempname '.yaml'];
             try
-                writeyaml(obj, tempFile);
+                if isscalar(obj)
+                    % Scalar case - write directly
+                    writeyaml(obj, tempFile);
+                else
+                    % Array case - wrap in container and write as list
+                    wrapper = YAMLData;
+                    wrapper.item = obj;
+                    writeyaml(wrapper, tempFile);
+                end
                 yamlText = fileread(tempFile);
                 fprintf('%s\n', yamlText);
-            catch ME
+            catch
                 % If writeyaml fails, fall back to default display
                 disp(obj);
             end
-            
+
             % Clean up
             if isfile(tempFile)
                 delete(tempFile);
