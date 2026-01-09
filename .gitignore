@@ -38,3 +38,7 @@ codegen/
 # SimBiology backup files
 *.sbproj.backup
 *.sbproj.bak
+
+# Test artifacts (roundtrip temp files)
+tests/roundtrip_*
+tests/test_*.ini
