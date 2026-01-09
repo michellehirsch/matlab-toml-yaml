@@ -10,8 +10,6 @@ This is a list of stuff on Michelle's mind to try to tackle
 
 # Jan 9 noon
 TOML
-* Display Still says "with properties". 
-* Contained display still says "with N fields"
 * Need arraystyle=auto that uses heuristic
 Use case: matlab.toml. I want path to be block, dependencies to each be flow. These have 2 items (maybe 3?)
 * make show() work on an array. Ex: sc = readtoml("SqueakClassifier/matlab.toml")
@@ -26,3 +24,4 @@ short.name
 ```
 
 * Make a few long form examples for writing (maybe)
+* readtoml errors: tests/SampleFiles/complex_workflow.toml

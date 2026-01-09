@@ -1,0 +1,21 @@
+name = "Deep Squeak"
+description = "Deep Squeak is a tool that uses machine vision to accelerate bioacoustics research. It is used to detect and cassify rodent ultrasonic vocalizations."
+
+[folders]
+path = [
+    "Functions",
+    "Functions/Colormaps",
+    "Functions/Import and Export",
+    "Functions/Network Training",
+    "Functions/Variational Autoencoder",
+    "Networks",
+]
+
+[dependencies]
+Colormaps = {version = "*", id = "1c16f29e-2d1d-4275-afe7-34757bae6c57"}
+
+[project]
+shortcuts = [
+    {name = "DeepSqueak", path = "DeepSqueak.fig"},
+]
+
