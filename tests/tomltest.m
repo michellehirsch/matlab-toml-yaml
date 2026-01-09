@@ -463,5 +463,138 @@ classdef tomltest < matlab.unittest.TestCase
             testCase.verifyEqual(restored.numbers(:), [1; 2; 3]);
             testCase.verifyEqual(restored.settings.value, 42);
         end
+
+        %% Roundtrip Tests with Sample Files
+        function testRoundtripSimpleConfig(testCase)
+            testCase.roundtripTest('simple_config.toml');
+        end
+
+        function testRoundtripAllTypes(testCase)
+            testCase.roundtripTest('all_types.toml');
+        end
+
+        function testRoundtripArraysDemo(testCase)
+            testCase.roundtripTest('arrays_demo.toml');
+        end
+
+        function testRoundtripNestedTables(testCase)
+            testCase.roundtripTest('nested_tables.toml');
+        end
+
+        function testRoundtripArrayOfTables(testCase)
+            testCase.roundtripTest('array_of_tables.toml');
+        end
+
+        function testRoundtripMatlabProject(testCase)
+            testCase.roundtripTest('matlab_project.toml');
+        end
+
+        function testRoundtripSimpleProject(testCase)
+            testCase.roundtripTest('simple_project.toml');
+        end
+
+        function testRoundtripComplexWorkflow(testCase)
+            testCase.roundtripTest('complex_workflow.toml');
+        end
+
+        function testRoundtripPyprojectComplex(testCase)
+            testCase.roundtripTest('pyproject_complex.toml');
+        end
+
+        function testRoundtripTestArrayOfTables(testCase)
+            testCase.roundtripTest('test_array_of_tables.toml');
+        end
+
+        function testRoundtripGeneratedConfig(testCase)
+            testCase.roundtripTest('generated_config.toml');
+        end
+
+        function testRoundtripModifiedConfig(testCase)
+            testCase.roundtripTest('modified_config.toml');
+        end
+    end
+
+    methods (Access = private)
+        function roundtripTest(testCase, filename)
+            % Perform roundtrip test: read -> write -> read -> compare
+            sampleDir = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles');
+            originalFile = fullfile(sampleDir, filename);
+
+            % Read original
+            original = readtoml(originalFile);
+
+            % Write to temp file
+            tempFile = fullfile(pwd, ['roundtrip_' filename]);
+            writetoml(original, tempFile);
+
+            % Read back
+            restored = readtoml(tempFile);
+
+            % Compare semantically
+            testCase.verifyDataEqual(original, restored, filename);
+        end
+
+        function verifyDataEqual(testCase, original, restored, context)
+            % Recursively compare two ConfigurationData objects
+            % Allows for key reordering but requires same keys and values
+
+            % Handle arrays of ConfigurationData (array of tables)
+            if isa(original, 'ConfigurationData') && numel(original) > 1
+                testCase.verifyEqual(numel(restored), numel(original), ...
+                    sprintf('Array length mismatch for %s', context));
+                for j = 1:numel(original)
+                    testCase.verifyDataEqual(original(j), restored(j), ...
+                        sprintf('%s(%d)', context, j));
+                end
+                return;
+            end
+
+            origKeys = sort(original.keys);
+            restKeys = sort(restored.keys);
+
+            testCase.verifyEqual(restKeys, origKeys, ...
+                sprintf('Keys mismatch in %s', context));
+
+            for i = 1:length(origKeys)
+                key = origKeys(i);
+                origVal = original.Data(char(key));
+                restVal = restored.Data(char(key));
+
+                keyContext = sprintf('%s.%s', context, key);
+
+                if isa(origVal, 'ConfigurationData')
+                    % Recursive comparison for nested objects (includes subclasses like TOMLData)
+                    testCase.verifyTrue(isa(restVal, 'ConfigurationData'), ...
+                        sprintf('Expected ConfigurationData for %s', keyContext));
+                    if isa(restVal, 'ConfigurationData')
+                        testCase.verifyDataEqual(origVal, restVal, keyContext);
+                    end
+                elseif isnumeric(origVal)
+                    % Compare numeric values (allow row/column differences)
+                    testCase.verifyEqual(restVal(:), origVal(:), ...
+                        'AbsTol', 1e-10, ...
+                        sprintf('Numeric mismatch for %s', keyContext));
+                elseif islogical(origVal)
+                    testCase.verifyEqual(restVal, origVal, ...
+                        sprintf('Logical mismatch for %s', keyContext));
+                elseif isstring(origVal) || ischar(origVal)
+                    testCase.verifyEqual(string(restVal), string(origVal), ...
+                        sprintf('String mismatch for %s', keyContext));
+                elseif isa(origVal, 'datetime')
+                    % Compare datetimes with tolerance
+                    testCase.verifyTrue(isa(restVal, 'datetime'), ...
+                        sprintf('Expected datetime for %s', keyContext));
+                    if isa(restVal, 'datetime')
+                        % Use seconds to compare instead of deprecated datenum
+                        testCase.verifyLessThan(abs(seconds(restVal - origVal)), 1, ...
+                            sprintf('Datetime mismatch for %s', keyContext));
+                    end
+                else
+                    % Generic comparison
+                    testCase.verifyEqual(restVal, origVal, ...
+                        sprintf('Value mismatch for %s', keyContext));
+                end
+            end
+        end
     end
 end
