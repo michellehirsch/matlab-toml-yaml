@@ -9,7 +9,8 @@ function writetoml(data, filename, options)
 %   WRITETOML(..., Name, Value) specifies additional options using
 %   name-value pairs:
 %
-%   'ArrayStyle' - Style for arrays (default: 'flow')
+%   'ArrayStyle' - Style for arrays (default: 'auto')
+%                  'auto'  - Use heuristics (flow for small arrays, block for large)
 %                  'flow'  - Use inline style as [1, 2, 3]
 %                  'block' - Use multi-line style with one item per line
 %
@@ -86,7 +87,7 @@ function writetoml(data, filename, options)
     arguments
         data {mustBeA(data, ["TOMLData", "ConfigurationData", "struct"])}
         filename (1,1) string = "untitled.toml"
-        options.ArrayStyle {mustBeMember(options.ArrayStyle, {'flow', 'block'})} = 'flow'
+        options.ArrayStyle {mustBeMember(options.ArrayStyle, {'auto', 'flow', 'block'})} = 'auto'
         options.NumIndentationSpaces (1,1) {mustBeInteger, mustBePositive} = 2
         options.SectionSpacing {mustBeMember(options.SectionSpacing, {'compact', 'loose'})} = 'loose'
         options.Precision (1,1) {mustBeInteger, mustBePositive} = 6
@@ -97,12 +98,11 @@ function writetoml(data, filename, options)
     end
 
     % Convert options for internal use
-    useFlowArrays = strcmp(options.ArrayStyle, 'flow');
     addSectionSpacing = strcmp(options.SectionSpacing, 'loose');
 
     % Create options struct for passing to serialization functions
     serializeOpts = struct;
-    serializeOpts.useFlowArrays = useFlowArrays;
+    serializeOpts.arrayStyle = options.ArrayStyle;
     serializeOpts.indentSize = options.NumIndentationSpaces;
     serializeOpts.addSectionSpacing = addSectionSpacing;
     serializeOpts.precision = options.Precision;
@@ -287,7 +287,10 @@ function tomlStr = serializeTable(tableName, tableData, prefix, opts)
             isTableValue = (isstruct(value) || isa(value, 'ConfigurationData')) && numel(value) == 1;
             isTableArray = (isstruct(value) || isa(value, 'ConfigurationData')) && numel(value) > 1;
 
-            if isTableArray && shouldUseInlineTableArray(value, opts.tableArrayStyle)
+            if isTableValue && shouldUseInlineTable(value, opts.tableStyle)
+                % Inline tables are written as key-value pairs
+                pairs = [pairs, key]; %#ok<AGROW>
+            elseif isTableArray && shouldUseInlineTableArray(value, opts.tableArrayStyle)
                 % Inline table arrays are written as key-value pairs
                 pairs = [pairs, key]; %#ok<AGROW>
             elseif isTableValue || isTableArray
@@ -455,7 +458,10 @@ end
 function str = serializeArray(arr, opts, depth)
     % Serialize array to TOML format
 
-    if opts.useFlowArrays
+    % Determine whether to use flow style for this array
+    useFlow = shouldUseFlowArray(arr, opts);
+
+    if useFlow
         % Flow style: [item1, item2, item3]
         str = "[";
 
@@ -485,6 +491,37 @@ function str = serializeArray(arr, opts, depth)
 
         closeIndent = repmat(' ', 1, depth * opts.indentSize);
         str = str + closeIndent + "]";
+    end
+end
+
+function useFlow = shouldUseFlowArray(arr, opts)
+    % Determine whether to use flow style for an array
+
+    if strcmp(opts.arrayStyle, 'flow')
+        useFlow = true;
+    elseif strcmp(opts.arrayStyle, 'block')
+        useFlow = false;
+    else % 'auto'
+        % Heuristic: use flow if array is small enough
+        % - 3 or fewer items AND
+        % - total serialized length <= 60 characters
+
+        if numel(arr) > 3
+            useFlow = false;
+            return;
+        end
+
+        % Estimate total length by serializing each element
+        totalLen = 2; % for [ and ]
+        for i = 1:numel(arr)
+            elemStr = serializeValue(arr(i), opts, 0);
+            totalLen = totalLen + strlength(elemStr);
+            if i < numel(arr)
+                totalLen = totalLen + 2; % for ", "
+            end
+        end
+
+        useFlow = totalLen <= 60;
     end
 end
 
@@ -536,6 +573,60 @@ function str = serializeArrayOfTables(tableArray, opts)
     str = str + "]";
 end
 
+function useInline = shouldUseInlineTable(tbl, style)
+    % Determine whether to use inline table syntax based on style setting
+
+    if strcmp(style, 'inline')
+        useInline = true;
+    elseif strcmp(style, 'expanded')
+        useInline = false;
+    else % 'auto'
+        % Heuristic: use inline if table has ≤3 keys, all simple values,
+        % and total serialized length <= 60 characters
+
+        % Get keys
+        if isa(tbl, 'ConfigurationData')
+            tableKeys = tbl.keys;
+        else
+            tableKeys = string(fieldnames(tbl));
+        end
+
+        % Too many keys?
+        if numel(tableKeys) > 3
+            useInline = false;
+            return;
+        end
+
+        % Check if any values are complex (nested tables or arrays of tables)
+        for i = 1:numel(tableKeys)
+            value = getValue(tbl, tableKeys(i));
+            if isstruct(value) || isa(value, 'ConfigurationData')
+                useInline = false;
+                return;
+            end
+        end
+
+        % Estimate total length
+        totalLen = 2; % for { and }
+        for i = 1:numel(tableKeys)
+            key = tableKeys(i);
+            value = getValue(tbl, key);
+            % key = value, (approximate)
+            totalLen = totalLen + strlength(key) + 3; % key, " = "
+            if isstring(value) || ischar(value)
+                totalLen = totalLen + strlength(string(value)) + 2; % quotes
+            else
+                totalLen = totalLen + 10; % estimate for numbers/bools
+            end
+            if i < numel(tableKeys)
+                totalLen = totalLen + 2; % ", "
+            end
+        end
+
+        useInline = totalLen <= 60;
+    end
+end
+
 function useInline = shouldUseInlineTableArray(tableArray, style)
     % Determine whether to use inline array of tables based on style setting
 
@@ -556,20 +647,20 @@ function useInline = shouldUseInlineTableArray(tableArray, style)
 
             % Get keys
             if isa(elem, 'ConfigurationData')
-                keys = elem.keys;
+                tableKeys = elem.keys;
             else
-                keys = string(fieldnames(elem));
+                tableKeys = string(fieldnames(elem));
             end
 
             % Too many fields?
-            if numel(keys) > 3
+            if numel(tableKeys) > 3
                 useInline = false;
                 return;
             end
 
             % Check if any values are complex (nested tables)
-            for j = 1:numel(keys)
-                value = getValue(elem, keys(j));
+            for j = 1:numel(tableKeys)
+                value = getValue(elem, tableKeys(j));
                 if isstruct(value) || isa(value, 'ConfigurationData')
                     useInline = false;
                     return;
