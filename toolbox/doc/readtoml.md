@@ -41,7 +41,7 @@ TOML data as a TOMLData object.
 *Type:* [TOMLData](TOMLData.md)
 
 [TOMLData](TOMLData.md) supports:
-- Dot notation for field access: `data.field`
+- Dot notation for key access: `data.field`
 - Special character keys using dynamic field names: `data.("field-name")`
 - Conversion to struct: `s = struct(data)`
 - Methods: `keys`, `isfield`, `show`, `copy`
@@ -115,7 +115,7 @@ For comprehensive examples including Python project files and nested tables, see
 ## Tips
 
 - Use `DatetimeType="string"` when you need custom datetime parsing or want to preserve the original format.
-- Access fields with special characters (hyphens, dots) using dynamic field names: `data.("field-name")`.
+- Access keys with special characters (hyphens, dots) using dynamic field names: `data.("field-name")`.
 - Convert TOMLData to standard structs using `struct(data)` for compatibility with code expecting struct inputs.
 - TOMLData is a handle class. Use `copy` to create independent copies when needed.
 

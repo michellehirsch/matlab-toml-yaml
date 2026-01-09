@@ -26,7 +26,7 @@ function data = readini(filename, options)
     %   See also: writeini, IniData, readyaml, readtoml
     
     arguments
-        filename {mustBeTextScalar}
+        filename {mustBeFile}
         options.SequenceRule {mustBeMember(options.SequenceRule, {'auto', 'cell'})} = 'auto'
     end
     

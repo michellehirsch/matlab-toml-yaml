@@ -295,7 +295,7 @@ Implement intelligent property display for arrays:
 - If different: display union of keys with variation note
 - Hide `SourceFormat` and other internal properties from array display
 
-**Status:** Approved, not yet implemented
+**Status:** Implemented (2026-01-08)
 
 ---
 
@@ -380,7 +380,7 @@ Using "keys" as primary terminology:
 - ✅ Maintains MATLAB compatibility (field aliases)
 - ✅ No breaking changes
 
-**Status:** Approved, not yet implemented
+**Status:** Implemented (2026-01-08)
 
 ---
 
