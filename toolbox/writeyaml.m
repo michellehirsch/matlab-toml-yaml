@@ -74,8 +74,18 @@ function writeyaml(data, filename, options)
                 'Unable to open file "%s" for writing', filename);
         end
 
-        cleanupObj = onCleanup(@ fclose(fid));
-        fprintf(fid, '%s', yamlText);
+        % Write and ensure file is closed even on error
+        try
+            fprintf(fid, '%s', yamlText);
+            fclose(fid);
+        catch innerME
+            % Attempt to close file if still open
+            if exist('fid','var') && fid ~= -1
+                try fclose(fid); catch, end
+            end
+            error('yamlToolbox:yamlwrite:FileWriteError', ...
+                'Unable to write to file "%s": %s', filename, innerME.message);
+        end
     catch ME
         error('yamlToolbox:yamlwrite:FileWriteError', ...
             'Unable to write to file "%s": %s', filename, ME.message);

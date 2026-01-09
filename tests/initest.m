@@ -1,4 +1,16 @@
 classdef initest < matlab.unittest.TestCase
+    methods (TestClassSetup)
+        function addToPath(testCase)
+            % Add toolbox folder to path
+            testCase.applyFixture(matlab.unittest.fixtures.PathFixture('../toolbox'));
+        end
+    end
+    methods (TestMethodSetup)
+        function createTempFile(testCase)
+            % Create temporary working folder for tests
+            testCase.applyFixture(matlab.unittest.fixtures.WorkingFolderFixture);
+        end
+    end
     methods (Test)
         function testReadSimpleINI(testCase)
             % Test reading a simple INI file
