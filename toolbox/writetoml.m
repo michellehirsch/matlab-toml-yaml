@@ -254,15 +254,8 @@ function tomlStr = serializeTable(tableName, tableData, prefix, opts)
         % Array of tables - check TableArrayStyle
         useInlineArray = shouldUseInlineTableArray(tableData, opts.tableArrayStyle);
 
-        % Nested arrays of tables cannot be written inline (TOML limitation)
-        % They must use [[table.subtable]] expanded syntax
-        if useInlineArray && strlength(prefix) > 0
-            useInlineArray = false;
-        end
-
         if useInlineArray
             % Write as inline array of inline tables: key = [{x=1}, {x=2}]
-            % Only valid at root level
             tomlStr = tableName + " = " + serializeArrayOfTables(tableData, opts) + newline;
         else
             % Write as expanded array of tables using [[table]] syntax
@@ -290,7 +283,14 @@ function tomlStr = serializeTable(tableName, tableData, prefix, opts)
             key = allKeys(i);
             value = getValue(tableData, key);
 
-            if isstruct(value) || isa(value, 'ConfigurationData')
+            % Check if this is a table or array of tables
+            isTableValue = (isstruct(value) || isa(value, 'ConfigurationData')) && numel(value) == 1;
+            isTableArray = (isstruct(value) || isa(value, 'ConfigurationData')) && numel(value) > 1;
+
+            if isTableArray && shouldUseInlineTableArray(value, opts.tableArrayStyle)
+                % Inline table arrays are written as key-value pairs
+                pairs = [pairs, key]; %#ok<AGROW>
+            elseif isTableValue || isTableArray
                 subtables = [subtables, key]; %#ok<AGROW>
             else
                 pairs = [pairs, key]; %#ok<AGROW>
@@ -442,6 +442,10 @@ function str = serializeValue(value, opts, depth)
         % ConfigurationData as inline table
         str = serializeInlineTable(value, opts);
 
+    elseif (isstruct(value) || isa(value, 'ConfigurationData')) && ~isscalar(value)
+        % Array of tables - serialize as inline array of inline tables
+        str = serializeArrayOfTables(value, opts);
+
     else
         error('tomlToolbox:writetoml:UnsupportedType', ...
             'Cannot serialize value of type: %s', class(value));
@@ -517,16 +521,16 @@ function str = serializeInlineTable(tbl, opts)
 end
 
 function str = serializeArrayOfTables(tableArray, opts)
-    % Serialize array of tables as inline array: [{x=1}, {x=2}]
+    % Serialize array of tables as inline array with one entry per line:
+    % [
+    %     {x = 1, y = 2},
+    %     {x = 3, y = 4},
+    % ]
 
-    str = "[";
+    str = "[" + newline;
 
     for i = 1:numel(tableArray)
-        str = str + serializeInlineTable(tableArray(i), opts);
-
-        if i < numel(tableArray)
-            str = str + ", ";
-        end
+        str = str + "    " + serializeInlineTable(tableArray(i), opts) + "," + newline;
     end
 
     str = str + "]";

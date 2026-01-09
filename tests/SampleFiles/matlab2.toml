@@ -1,0 +1,11 @@
+name = "Squeak Classifier"
+
+[project]
+shortcuts = [
+    {name = "Edit Times Table App", path = "utilities/editTimesTable.m", group = "Launch Points"},
+    {name = "Run All Tests", path = "utilities/runTheseTests.m", group = "Test"},
+    {name = "Play Times Table", path = "source/timestable.mlapp", icon = "iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAA/UlEQVR42mP4DwVPXn/8f/f5u/+kAgYQ8eX7r/9Coe3/y+ftIt2Ap28+/hcIbfuvnz2NPAM+f/v5/9vPX/8DmpaRZwCMgWzAPWBYKCX2/xcEeitn2lbSDRCN6Pg/ceOJ/7///P0vENJGnAERHav+1y7eiyIJihVQ+BBlADq49ujVf6Gw9v9VC/aQbsD95+/Bmg9deUh8ICIDkGYQFgGGBQiDwLefv8Fs/pDW/zKxPf///vuH3wvo4N3n7//3X7wPZoMCFpZqGUiNd86A5v8BzcsIByI+APJC7/pjpBmwZN9FuN9lY3v/96w9SroLnCrn/+cObP7vXb+E9EDEBQA5TLGwuMrTKgAAAABJRU5ErkJggg==", group = "Launch Points"},
+    {name = "Requirements", path = "utilities/openRequirementsDocument.m", group = "Documentation"},
+]
+
+[dependencies]

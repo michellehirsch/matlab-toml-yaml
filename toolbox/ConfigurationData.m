@@ -147,6 +147,24 @@ classdef ConfigurationData < handle & ...
     
     methods (Access = protected)
         % CustomDisplay implementation
+        function header = getHeader(obj)
+            %GETHEADER Customize header to use "keys" instead of "properties"
+            if isscalar(obj)
+                className = matlab.mixin.CustomDisplay.getClassNameForHeader(obj);
+                nKeys = length(obj.OriginalKeys);
+                if nKeys == 0
+                    header = sprintf('  %s with no keys\n', className);
+                elseif nKeys == 1
+                    header = sprintf('  %s with keys:\n', className);
+                else
+                    header = sprintf('  %s with keys:\n', className);
+                end
+            else
+                % Non-scalar handled by displayNonScalarObject
+                header = getHeader@matlab.mixin.CustomDisplay(obj);
+            end
+        end
+
         function displayScalarObject(obj)
             header = getHeader(obj);
             disp(header);
@@ -245,14 +263,11 @@ classdef ConfigurationData < handle & ...
                     % Scalar ConfigurationData - show actual subclass name
                     nFields = length(value.OriginalKeys);
                     className = class(value);
-                    if nFields == 1
-                        str = sprintf('[1×1 %s]', className);
-                    else
-                        str = sprintf('[1×1 %s with %d fields]', className, nFields);
-                    end
+                    str = sprintf('[1×1 %s with %d %s]', className, nFields, ConfigurationData.pluralize("key", nFields));
                 end
             elseif isa(value, 'containers.Map')
-                str = sprintf('[1×1 ConfigurationData with %d fields]', value.Count);
+                nKeys = value.Count;
+                str = sprintf('[1×1 ConfigurationData with %d %s]', nKeys, ConfigurationData.pluralize("key", nKeys));
             elseif ischar(value)
                 if length(value) > 50
                     str = sprintf('''%s...'' [1×%d char]', value(1:50), length(value));
@@ -485,15 +500,26 @@ classdef ConfigurationData < handle & ...
             for i = 1:length(mapKeys)
                 key = mapKeys{i};
                 value = oldMap(key);
-                
+
                 % Recursively handle nested Maps
                 if isa(value, 'containers.Map')
                     value = copyMap([], value);
                 elseif isa(value, 'ConfigurationData')
                     value = copy(value);
                 end
-                
+
                 newMap(key) = value;
+            end
+        end
+    end
+
+    methods (Static, Access = private)
+        function word = pluralize(singular, count)
+            %PLURALIZE Return singular or plural form based on count
+            if count == 1
+                word = singular;
+            else
+                word = singular + "s";
             end
         end
     end
