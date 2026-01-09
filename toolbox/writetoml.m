@@ -227,8 +227,10 @@ end
 
 function value = getValue(data, key)
     % Get value from struct or ConfigurationData
+    % Use Data map directly for ConfigurationData to avoid method name collisions
+    % (e.g., 'empty' key conflicts with the empty() method)
     if isa(data, 'ConfigurationData')
-        value = data.(char(key));
+        value = data.Data(char(key));
     else
         value = data.(key);
     end
@@ -386,13 +388,17 @@ end
 function str = serializeValue(value, opts, depth)
     % Serialize a value to TOML format
 
-    if islogical(value)
-        % Boolean
+    if islogical(value) && isscalar(value)
+        % Scalar boolean
         if value
             str = "true";
         else
             str = "false";
         end
+
+    elseif islogical(value) && ~isscalar(value)
+        % Boolean array
+        str = serializeArray(value, opts, depth);
 
     elseif ischar(value)
         % Char array - treat as string
@@ -407,8 +413,14 @@ function str = serializeValue(value, opts, depth)
         str = serializeArray(value, opts, depth);
 
     elseif isdatetime(value)
-        % DateTime
-        str = string(value, 'yyyy-MM-dd''T''HH:mm:ssXXX');
+        % DateTime - handle with or without timezone
+        if isempty(value.TimeZone)
+            % Local datetime (no timezone)
+            str = string(value, 'yyyy-MM-dd''T''HH:mm:ss');
+        else
+            % Offset datetime (with timezone)
+            str = string(value, 'yyyy-MM-dd''T''HH:mm:ssXXX');
+        end
 
     elseif isnumeric(value) && isscalar(value)
         % Number - use precision parameter
@@ -619,13 +631,20 @@ function useLiteral = shouldUseLiteralString(value)
         return;
     end
 
-    % If contains common escape sequences, use escaped
-    if contains(value, '\n') || contains(value, '\t') || contains(value, '\r') || contains(value, '\"')
+    % If contains actual control characters (not the text "\n"), use escaped
+    % These are the actual newline/tab/carriage-return characters
+    if contains(value, newline) || contains(value, sprintf('\t')) || contains(value, sprintf('\r'))
         useLiteral = false;
         return;
     end
 
-    % Looks like a path or similar - use literal
+    % If contains single quotes (can't be in literal strings), use escaped
+    if contains(value, "'")
+        useLiteral = false;
+        return;
+    end
+
+    % String has backslashes but no control characters - use literal to preserve them
     useLiteral = true;
 end
 

@@ -190,64 +190,163 @@ end
 
 function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfTables(rootData, tableName, arrayOfTables)
     % Handle [[array.of.tables]] syntax
+    % This includes nested arrays like [[jobs.steps]] where jobs is already an array
 
     keys = splitDottedKey(tableName);
     tablePath = char(tableName);
 
-    % Ensure parent path exists
-    if numel(keys) > 1
-        rootData = ensureDataPath(rootData, keys(1:end-1), "");
+    % Check if this is a nested array within an existing array-of-tables
+    % e.g., [[jobs.steps]] where [[jobs]] is already tracked
+    parentArrayPath = "";
+    parentArrayIndex = 0;
+    for k = 1:numel(keys)-1
+        testPath = char(join(keys(1:k), "."));
+        if isKey(arrayOfTables, testPath)
+            parentArrayPath = testPath;
+            parentArrayIndex = arrayOfTables(testPath);
+        end
     end
 
     % Handle array element
     lastKey = char(strtrim(keys(end)));
 
-    % Navigate to the parent context
-    if numel(keys) > 1
-        parentPath = join(keys(1:end-1), ".");
-        parent = getDataPath(rootData, parentPath);
-    else
-        parent = rootData;
-    end
+    if strlength(parentArrayPath) > 0
+        % Nested array-of-tables within parent array element
+        % Navigate to the specific parent array element
+        parentArray = getDataPath(rootData, parentArrayPath);
+        parentElement = parentArray(parentArrayIndex);
 
-    % Create new element
-    newElement = TOMLData;
-    
-    
-    if ~isfield(parent, lastKey)
-        % First element - just assign
-        parent.(lastKey) = newElement;
-        arrayIndex = 1;
-        arrayPath = tablePath;
-        arrayOfTables(tablePath) = arrayIndex;
-    elseif isKey(arrayOfTables, tablePath)
-        % Append to existing array
-        currentArray = parent.(lastKey);
-        if isa(currentArray, 'TOMLData')
-            parent.(lastKey) = [currentArray, newElement];
-        else
-            error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
-                'Key "%s" is not a TOMLData array', lastKey);
+        % Get remaining path after the parent array
+        remainingPath = extractAfter(tableName, parentArrayPath + ".");
+        remainingKeys = splitDottedKey(remainingPath);
+
+        % Ensure intermediate path exists within the parent element
+        if numel(remainingKeys) > 1
+            current = parentElement;
+            for k = 1:numel(remainingKeys)-1
+                nestedKey = char(strtrim(remainingKeys(k)));
+                if ~isfield(current, nestedKey)
+                    current.(nestedKey) = TOMLData;
+                end
+                current = current.(nestedKey);
+            end
         end
+
+        % Navigate to the direct parent of the array we're adding to
+        if numel(remainingKeys) > 1
+            directParentPath = join(remainingKeys(1:end-1), ".");
+            parent = getDataPathFromObj(parentElement, directParentPath);
+        else
+            parent = parentElement;
+        end
+
+        % Create new element
+        newElement = TOMLData;
+
+        if ~isfield(parent, lastKey)
+            % First element
+            parent.(lastKey) = newElement;
+            arrayIndex = 1;
+            arrayPath = tablePath;
+            arrayOfTables(tablePath) = arrayIndex;
+        elseif isKey(arrayOfTables, tablePath)
+            % Append to existing array
+            currentArray = parent.(lastKey);
+            if isa(currentArray, 'TOMLData')
+                parent.(lastKey) = [currentArray, newElement];
+            else
+                error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                    'Key "%s" is not a TOMLData array', lastKey);
+            end
             arrayIndex = arrayOfTables(tablePath) + 1;
             arrayPath = tablePath;
             arrayOfTables(tablePath) = arrayIndex;
+        else
+            error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                'Key "%s" already exists and is not an array of tables', lastKey);
+        end
+
+        % Write the modified parent element back to the parent array
+        parentArray(parentArrayIndex) = parentElement;
+
+        % Write the parent array back to rootData
+        parentArrayKeys = splitDottedKey(parentArrayPath);
+        if numel(parentArrayKeys) > 1
+            rootData = setDataPath(rootData, parentArrayKeys(1:end-1), ...
+                setDataPath(getDataPath(rootData, join(parentArrayKeys(1:end-1), ".")), ...
+                    parentArrayKeys(end), parentArray));
+        else
+            rootData.(char(parentArrayKeys(1))) = parentArray;
+        end
+
+        tableRef = newElement;
     else
-        error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
-            'Key "%s" already exists and is not an array of tables', lastKey);
+        % Top-level array-of-tables (original behavior)
+
+        % Ensure parent path exists
+        if numel(keys) > 1
+            rootData = ensureDataPath(rootData, keys(1:end-1), "");
+        end
+
+        % Navigate to the parent context
+        if numel(keys) > 1
+            parentPath = join(keys(1:end-1), ".");
+            parent = getDataPath(rootData, parentPath);
+        else
+            parent = rootData;
+        end
+
+        % Create new element
+        newElement = TOMLData;
+
+        if ~isfield(parent, lastKey)
+            % First element - just assign
+            parent.(lastKey) = newElement;
+            arrayIndex = 1;
+            arrayPath = tablePath;
+            arrayOfTables(tablePath) = arrayIndex;
+        elseif isKey(arrayOfTables, tablePath)
+            % Append to existing array
+            currentArray = parent.(lastKey);
+            if isa(currentArray, 'TOMLData')
+                parent.(lastKey) = [currentArray, newElement];
+            else
+                error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                    'Key "%s" is not a TOMLData array', lastKey);
+            end
+            arrayIndex = arrayOfTables(tablePath) + 1;
+            arrayPath = tablePath;
+            arrayOfTables(tablePath) = arrayIndex;
+        else
+            error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                'Key "%s" already exists and is not an array of tables', lastKey);
+        end
+
+        % Write parent back to rootData
+        if numel(keys) > 1
+            parentPath = keys(1:end-1);
+            rootData = setDataPath(rootData, parentPath, parent);
+        else
+            rootData = parent;
+        end
+
+        tableRef = newElement;
     end
-    
-    % Write parent back to rootData
-    % fprintf('  Writing back to rootData\n');
-    if numel(keys) > 1
-        parentPath = keys(1:end-1);
-        rootData = setDataPath(rootData, parentPath, parent);
-    else
-        rootData = parent;
+end
+
+function tableRef = getDataPathFromObj(data, tablePath)
+    % Get reference at given path from a specific object (not rootData)
+    if strlength(tablePath) == 0
+        tableRef = data;
+        return;
     end
-    % fprintf('  After writeback, length(rootData.%s) = %d\n', lastKey, length(rootData.(lastKey)));
-    
-    tableRef = newElement;
+
+    keys = splitDottedKey(tablePath);
+    tableRef = data;
+
+    for i = 1:numel(keys)
+        tableRef = tableRef.(char(cleanKey(keys(i))));
+    end
 end
 
 function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arrayIndex, arrayPath, line, datetimeType)
@@ -300,9 +399,11 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
 
         % Update tableRef in rootData
         if strlength(tablePath) == 0
-            rootData = updateDataPath(rootData, keys, currentData, numel(keys) - 1);
+            rootData = updateDataPath(rootData, keys(:), currentData, numel(keys) - 1);
         else
-            rootData = updateDataPath(rootData, [splitDottedKey(tablePath); keys], currentData, numel(keys) - 1);
+            % Ensure both are column vectors before concatenation
+            tablePathKeys = splitDottedKey(tablePath);
+            rootData = updateDataPath(rootData, [tablePathKeys(:); keys(:)], currentData, numel(keys) - 1);
         end
         tableRef = getDataPath(rootData, tablePath);
     else
@@ -762,10 +863,24 @@ end
 
 function tf = isDateTime(str)
     % Check if string is a datetime value
-    
-    % Simple check for ISO 8601 format
-    pattern = '\d{4}-\d{2}-\d{2}';
-    tf = ~isempty(regexp(char(str), pattern, 'once'));
+
+    str = char(str);
+
+    % Check for date (yyyy-MM-dd) with optional time
+    datePattern = '^\d{4}-\d{2}-\d{2}';
+    if ~isempty(regexp(str, datePattern, 'once'))
+        tf = true;
+        return;
+    end
+
+    % Check for local time only (HH:mm:ss or HH:mm:ss.fraction)
+    timePattern = '^\d{2}:\d{2}:\d{2}';
+    if ~isempty(regexp(str, timePattern, 'once'))
+        tf = true;
+        return;
+    end
+
+    tf = false;
 end
 
 function dt = parseDatetime(str)

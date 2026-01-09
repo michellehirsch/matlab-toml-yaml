@@ -61,6 +61,11 @@ classdef ConfigurationData < handle & ...
         end
         
         function tf = isfield(obj, key)
+            % Handle arrays - check first element only
+            if numel(obj) > 1
+                tf = isfield(obj(1), key);
+                return;
+            end
             resolvedKey = obj.resolveKey(key);
             tf = ~isempty(resolvedKey);
         end
