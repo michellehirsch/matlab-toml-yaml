@@ -7,3 +7,22 @@ This is a list of stuff on Michelle's mind to try to tackle
 * Consider if should factor into 3 repos: make toml and yaml separate, both bringing in ConfigurationData as a Git reference
 * Put the classes into namespace: matlab.io.config
 * Keep chipping away at array behavior to make sure it feels natural. Is there something we can do when a user accesses a field in an array. Struct outputs a CSL, but we can have heterogeneous keys in an array.
+
+# Jan 9 noon
+TOML
+* Display Still says "with properties". 
+* Contained display still says "with N fields"
+* Need arraystyle=auto that uses heuristic
+Use case: matlab.toml. I want path to be block, dependencies to each be flow. These have 2 items (maybe 3?)
+* make show() work on an array. Ex: sc = readtoml("SqueakClassifier/matlab.toml")
+sc.project.shortcuts
+
+* Improve error message when try to index into a key of an array, e.g.
+``` matlab
+sc = readtoml("SqueakClassifier/matlab.toml")
+sc.project.shortcuts
+short = sc.project.shortcuts;
+short.name
+```
+
+* Make a few long form examples for writing (maybe)
