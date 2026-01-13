@@ -10,10 +10,12 @@ This is a list of stuff on Michelle's mind to try to tackle
 
 # Jan 9 noon
 TOML
-* Need arraystyle=auto that uses heuristic
-Use case: matlab.toml. I want path to be block, dependencies to each be flow. These have 2 items (maybe 3?)
-* make show() work on an array. Ex: sc = readtoml("SqueakClassifier/matlab.toml")
-sc.project.shortcuts
+* make show() work on an array. Ex: t = readtoml("tests/SampleFiles/matlab2.toml")
+t.project.shortcuts
+
+* Support indexing to expand array:
+t = readtoml("tests/SampleFiles/matlab.toml")
+t.project.shortcuts(2) = t.project.shortcuts(1) % This errors
 
 * Improve error message when try to index into a key of an array, e.g.
 ``` matlab
