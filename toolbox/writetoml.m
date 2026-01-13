@@ -614,7 +614,12 @@ function useInline = shouldUseInlineTable(tbl, style)
             % key = value, (approximate)
             totalLen = totalLen + strlength(key) + 3; % key, " = "
             if isstring(value) || ischar(value)
-                totalLen = totalLen + strlength(string(value)) + 2; % quotes
+                % Handle string arrays - sum all lengths
+                strLens = strlength(string(value));
+                totalLen = totalLen + sum(strLens(:)) + 2; % quotes
+            elseif isnumeric(value) && ~isscalar(value)
+                % Numeric array - estimate based on element count
+                totalLen = totalLen + numel(value) * 5 + numel(value) - 1; % numbers + commas
             else
                 totalLen = totalLen + 10; % estimate for numbers/bools
             end
@@ -623,7 +628,7 @@ function useInline = shouldUseInlineTable(tbl, style)
             end
         end
 
-        useInline = totalLen <= 60;
+        useInline = (totalLen <= 60);
     end
 end
 

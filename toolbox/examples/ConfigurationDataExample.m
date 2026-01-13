@@ -304,38 +304,14 @@ delete("sample.toml", "sample.yaml", "converted.yaml", "converted.toml", ...
 %[output:8c90c38a]
 %   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n\n    name: \"MyApp\"\n    version: \"1.0.0\"\n    port: 8080\n    debug: true\n"}}
 %---
-%[output:428a8beb]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Application name: MyApp\""}}
-%---
-%[output:086ee490]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Version: 1.0.0\""}}
-%---
-%[output:963d7cc6]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Port: 8080\""}}
-%---
-%[output:1481c01a]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Debug mode: true\""}}
-%---
 %[output:699558d7]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"MyApplication\""}}
-%---
-%[output:3005dc2b]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"MyApplication\""}}
-%---
-%[output:1f669042]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"MyApplication\""}}
 %---
 %[output:1eda3551]
 %   data: {"dataType":"matrix","outputData":{"columns":7,"header":"1×7 string array","name":"ans","rows":1,"type":"string","value":[["name","version","port","debug","app-name","max-connections","build-version"]]}}
 %---
 %[output:8e67bf86]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n\n    host: \"localhost\"\n    port: 5432\n    credentials: [1×1 ConfigurationData with 2 fields]\n\n    <a href=\"matlab:show(ans)\">Show all values<\/a>\n"}}
-%---
-%[output:5b968451]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Database host: localhost\""}}
-%---
-%[output:9abaf086]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Database username: admin\""}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with keys:\n\n    host: \"localhost\"\n    port: 5432\n    credentials: [1×1 ConfigurationData with 2 keys]\n\n    <a href=\"matlab:show(ans)\">Show all values<\/a>\n"}}
 %---
 %[output:16387c3a]
 %   data: {"dataType":"matrix","outputData":{"columns":8,"header":"1×8 string array","name":"allKeys","rows":1,"type":"string","value":[["name","version","port","debug","app-name","max-connections","build-version","database"]]}}
@@ -349,15 +325,6 @@ delete("sample.toml", "sample.yaml", "converted.yaml", "converted.toml", ...
 %[output:5a8b9627]
 %   data: {"dataType":"text","outputData":{"text":"Name field exists\n","truncated":false}}
 %---
-%[output:3a88b3bc]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"config1.value after modifying config2: 100\""}}
-%---
-%[output:6ee506f7]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"config1.value after modifying copy: 100\""}}
-%---
-%[output:19acfb99]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"config3.value (independent copy): 200\""}}
-%---
 %[output:80771474]
 %   data: {"dataType":"textualVariable","outputData":{"header":"struct with fields:","name":"configStruct","value":"               name: \"MyApp\"\n            version: \"1.0.0\"\n               port: 8080\n              debug: 1\n           app_name: \"MyApplication\"\n    max_connections: 100\n      build_version: \"2.0.0\"\n           database: [1×1 struct]\n"}}
 %---
@@ -367,32 +334,14 @@ delete("sample.toml", "sample.yaml", "converted.yaml", "converted.toml", ...
 %[output:6fc9d96e]
 %   data: {"dataType":"text","outputData":{"text":"\n[project]\nname = \"my-package\"\nversion = \"1.0.0\"\n\n[build-system]\nrequires = [\"setuptools>=61.0\", \"wheel\"]\n","truncated":false}}
 %---
-%[output:392afcfe]
-%   data: {"dataType":"textualVariable","outputData":{"name":"readTomlData","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with properties:\n\n    project: [1×1 TOMLData with 2 fields]\n    build-system: [1×1 TOMLData]\n\n    <a href=\"matlab:show(readTomlData)\">Show all values<\/a>\n"}}
-%---
-%[output:2569b8f7]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Class: TOMLData\""}}
-%---
 %[output:2c8d6421]
 %   data: {"dataType":"textualVariable","outputData":{"name":"yamlData","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    name: \"CI\"\n    on: [1×1 ConfigurationData]\n    jobs: [1×1 ConfigurationData]\n\n    <a href=\"matlab:show(yamlData)\">Show all values<\/a>\n"}}
 %---
 %[output:22e83765]
 %   data: {"dataType":"text","outputData":{"text":"\nname: CI\n\non:\n  push:\n    branches:\n      - main\n      - develop\n\njobs:\n  build:\n    runs-on: ubuntu-latest\n","truncated":false}}
 %---
-%[output:02db1d29]
-%   data: {"dataType":"textualVariable","outputData":{"name":"readYamlData","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with properties:\n\n    name: \"CI\"\n    on: [1×1 YAMLData]\n    jobs: [1×1 YAMLData]\n\n    <a href=\"matlab:show(readYamlData)\">Show all values<\/a>\n"}}
-%---
-%[output:79ec4c90]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Class: YAMLData\""}}
-%---
 %[output:754f286f]
 %   data: {"dataType":"text","outputData":{"text":"Step 1: Checkout\nStep 2: Build\nStep 3: Test\n","truncated":false}}
-%---
-%[output:4a6c9794]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"First step name: Checkout\""}}
-%---
-%[output:749891bc]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Last step name: Test\""}}
 %---
 %[output:4bc748d8]
 %   data: {"dataType":"text","outputData":{"text":"name: CI Pipeline\n\njobs:\n  build:\n    steps:\n      - name: Checkout\n        uses: actions\/checkout@v4\n      - name: Build\n        run: make build\n","truncated":false}}
@@ -408,15 +357,6 @@ delete("sample.toml", "sample.yaml", "converted.yaml", "converted.toml", ...
 %---
 %[output:700a871f]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('ConfigurationData')\" style=\"font-weight:bold\">ConfigurationData<\/a> with properties:\n\n    host: \"localhost\"\n    port: 9000\n    ssl: true\n    ssl_cert: \"\/path\/to\/cert.pem\"\n"}}
-%---
-%[output:4350b568]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"TOML data source format: toml\""}}
-%---
-%[output:79e69cd7]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"YAML data source format: unknown\""}}
-%---
-%[output:508b4724]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Manual ConfigurationData source format: unknown\""}}
 %---
 %[output:4d65c9f1]
 %   data: {"dataType":"text","outputData":{"text":"\n[project]\nname = \"my-package\"\nversion = \"1.0.0\"\n\n[build-system]\nrequires = [\"setuptools>=61.0\", \"wheel\"]\n","truncated":false}}

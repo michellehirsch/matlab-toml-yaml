@@ -30,23 +30,12 @@ function data = readini(filename, options)
         options.SequenceRule {mustBeMember(options.SequenceRule, {'auto', 'cell'})} = 'auto'
     end
     
-    % Read file contents
-    if ~isfile(filename)
-        error('readini:FileNotFound', 'File "%s" not found.', filename);
-    end
-    
-    fileID = fopen(filename, 'r', 'n', 'UTF-8');
-    if fileID == -1
-        error('readini:OpenFailed', 'Cannot open file "%s".', filename);
-    end
-    
+    % Read file contents using built-in readlines (R2020b+)
     try
-        lines = readlines(fileID);
+        lines = readlines(filename, Encoding="UTF-8");
     catch ME
-        fclose(fileID);
-        rethrow(ME);
+        error('readini:ReadFailed', 'Cannot read file "%s": %s', filename, ME.message);
     end
-    fclose(fileID);
     
     % Parse INI format
     data = INIData();
@@ -183,15 +172,4 @@ function value = parseValue(valueStr)
     
     % Default to char
     value = char(valueStr);
-end
-
-function lines = readlines(fileID)
-    %READLINES Read all lines from file handle
-    lines = string.empty;
-    while ~feof(fileID)
-        line = fgetl(fileID);
-        if ischar(line)
-            lines(end+1) = string(line);
-        end
-    end
 end

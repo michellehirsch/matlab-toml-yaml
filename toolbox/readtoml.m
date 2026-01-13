@@ -426,7 +426,14 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
             end
         end
         % Update in rootData
-        if arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
+        % For handle objects (ConfigurationData, TOMLData), the assignment above
+        % already modified the object in place, so we may not need to re-navigate.
+        % However, for nested arrays, getDataPath can fail when intermediate
+        % elements are arrays. Skip the re-navigation for handle objects.
+        if isa(tableRef, 'handle')
+            % Handle object - modifications already applied in place
+            % No need to re-navigate and update rootData
+        elseif arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
             % Array element update (direct or nested table within array)
             arrayKeys = split(arrayPath, ".");
             currentArray = getDataPath(rootData, arrayPath);
