@@ -1,0 +1,8 @@
+[[users]]
+name = "Alice"
+[users.permissions]
+read = true
+[[users]]
+name = "Bob"
+[users.permissions]
+read = false

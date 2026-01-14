@@ -1,0 +1,2 @@
+classdef TestDynamic < dynamicprops
+end
