@@ -241,8 +241,47 @@ assert(data.users(1).permissions.admin == true);
 
 ---
 
+## Investigation: `parenDotAssign` Built-in Method
+
+**Date:** 2026-01-14
+
+The `RedefinesDot` mixin provides two concrete methods—`parenDotAssign` and `parenDotListLength`—that handle assignment statements with built-in parentheses indexing immediately followed by customized dot indexing, such as `obj(idx).prop = val`.
+
+### Testing `parenDotAssign`
+
+We created a minimal test class (`research/TestParenDot.m`) to explore this capability:
+
+```matlab
+% Test 1: Direct array indexing - WORKS
+arr = [TestParenDot(), TestParenDot()];
+arr(2).name = 'Suzie';  % SUCCESS - parenDotAssign handles this
+
+% Test 2: Through a parent object - FAILS
+parent = TestParenDot();
+parent.users(2).name = 'Charlie';  % FAILED: "The 'Name' property is only supported..."
+```
+
+### Key Finding
+
+**`parenDotAssign` only works for direct array indexing**, i.e., when the `RedefinesDot` object itself is indexed:
+- ✅ `arr(2).name = value` — Works because `arr` is the `RedefinesDot` object
+- ❌ `parent.users(2).name = value` — Fails because `parent` is the `RedefinesDot` object, not `users`
+
+The pattern `parent.users(2).name = value` routes through `parent`'s `dotAssign`, which receives the full chain but doesn't know how to handle the `()` indexing in the middle.
+
+### Conclusion
+
+**`parenDotAssign` does not solve Issues #2 and #3.** A custom `subsasgn` override is still required. The `subsasgn` approach will be **complementary** to `RedefinesDot`, not a replacement:
+
+1. `RedefinesDot` continues to handle: `obj.field`, `obj.field = value`, `obj.field.subfield = value`
+2. `subsasgn` intercepts specifically: `obj.field(idx).subfield = value` pattern
+3. All other patterns delegate back to the default behavior
+
+---
+
 ## References
 
 - [MATLAB Documentation: matlab.mixin.indexing.RedefinesDot](https://www.mathworks.com/help/matlab/matlab_oop/customize-object-indexing.html)
 - ConfigurationData implementation: `toolbox/ConfigurationData.m`
 - Test file: `tests/tomltest.m::testNestedTablesInArrays`
+- Research files: `research/TestParenDot.m`, `research/testTestParenDot.m`

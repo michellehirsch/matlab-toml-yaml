@@ -381,37 +381,70 @@ classdef ConfigurationData < handle & ...
         
         function obj = dotAssign(obj, indexOp, varargin)
             key = indexOp(1).Name;
-            
-            % Handle chained assignment: obj.a.b.c = value
+
+            % Handle chained assignment: obj.a.b.c = value or obj.a(idx).b = value
             if length(indexOp) > 1
-                % Get or create the nested object
-                if isKey(obj.Data, key)
-                    nested = obj.Data(key);
-                    % Wrap if it's a Map
-                    if isa(nested, 'containers.Map')
-                        nested = obj.wrapNested(nested);
-                    elseif ~isa(nested, 'ConfigurationData')
-                        % Scalar value exists - replace with ConfigurationData
+                % Check if next operation is Paren (array indexing)
+                if indexOp(2).Type == matlab.indexing.IndexingOperationType.Paren
+                    % Pattern: obj.field(idx)... = value
+                    % Get the array
+                    if ~isKey(obj.Data, key)
+                        error('ConfigurationData:InvalidIndex', ...
+                            'Cannot index into non-existent field ''%s''', key);
+                    end
+                    arr = obj.Data(key);
+
+                    % Extract index
+                    idx = indexOp(2).Indices{:};
+
+                    % Get the element
+                    elem = arr(idx);
+
+                    % Apply remaining chain to element
+                    if length(indexOp) > 2
+                        % More operations after the paren: obj.field(idx).subfield = value
+                        elem = dotAssign(elem, indexOp(3:end), varargin{:});
+                    else
+                        % Direct element replacement: obj.field(idx) = value
+                        elem = varargin{end};
+                    end
+
+                    % Write element back to array
+                    arr(idx) = elem;
+
+                    % Store array back
+                    obj.Data(key) = arr;
+                else
+                    % Pattern: obj.field.subfield = value (next op is Dot)
+                    % Get or create the nested object
+                    if isKey(obj.Data, key)
+                        nested = obj.Data(key);
+                        % Wrap if it's a Map
+                        if isa(nested, 'containers.Map')
+                            nested = obj.wrapNested(nested);
+                        elseif ~isa(nested, 'ConfigurationData')
+                            % Scalar value exists - replace with ConfigurationData
+                            nested = ConfigurationData;
+                            nested.SourceFormat = obj.SourceFormat;
+                        end
+                    else
+                        % Create new nested ConfigurationData
                         nested = ConfigurationData;
                         nested.SourceFormat = obj.SourceFormat;
                     end
-                else
-                    % Create new nested ConfigurationData
-                    nested = ConfigurationData;
-                    nested.SourceFormat = obj.SourceFormat;
+
+                    % Recursively assign to nested object
+                    nested = dotAssign(nested, indexOp(2:end), varargin{:});
+
+                    % Store the nested ConfigurationData directly (preserve order)
+                    obj.Data(key) = nested;
                 end
-                
-                % Recursively assign to nested object
-                nested = dotAssign(nested, indexOp(2:end), varargin{:});
-                
-                % Store the nested ConfigurationData directly (preserve order)
-                obj.Data(key) = nested;
-                
+
                 % Track order
                 if ~any(obj.OriginalKeys == key)
                     obj.OriginalKeys(end+1) = key;
                 end
-                
+
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
                 if ~strcmp(validKey, key)
@@ -443,7 +476,7 @@ classdef ConfigurationData < handle & ...
                 end
             end
         end
-        
+
         function resolvedKey = resolveKey(obj, key)
             key = char(key);
             
