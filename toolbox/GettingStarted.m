@@ -1,6 +1,6 @@
 %[text] # Configuration File I/O - Getting Started
 %[text] Learn how to read and write YAML and TOML configuration files in MATLAB with intuitive dot notation access. The example files are provided with the toolbox. `cd` MATLAB to the toolbox root (the location of this file) to access the examples.
-%[text:tableOfContents]{"heading":"**Table of Contents**"}
+%[text:tableOfContents]{"heading":"Table of Contents"}
 %[text] ## Reading YAML Files
 %%
 %[text] ### Reading a Basic YAML File
