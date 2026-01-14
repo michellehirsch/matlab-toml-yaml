@@ -60,11 +60,11 @@ Error: Too many input arguments.
 
 **What happens:**
 - MATLAB calls `subsasgn(data, S)` where S is:
-  ```matlab
-  S(1).type = '.', S(1).subs = 'users'
-  S(2).type = '()', S(2).subs = {2}  
-  S(3).type = '.', S(3).subs = 'permissions'
-  ```
+```matlab
+S(1).type = '.', S(1).subs = 'users'
+S(2).type = '()', S(2).subs = {2}  
+S(3).type = '.', S(3).subs = 'permissions'
+```
 - `RedefinesDot` calls `dotAssign(obj, indexOp, value)` 
 - But `dotAssign` receives `indexOp(1).Name = 'users'` and doesn't know how to handle the `()` indexing in `indexOp(2)`
 - The mixin doesn't support this pattern: **`.field(index).subfield = value`**
