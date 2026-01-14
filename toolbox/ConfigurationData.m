@@ -433,13 +433,13 @@ classdef ConfigurationData < handle & ...
                         if isa(nested, 'containers.Map')
                             nested = obj.wrapNested(nested);
                         elseif ~isa(nested, 'ConfigurationData')
-                            % Scalar value exists - replace with ConfigurationData
-                            nested = ConfigurationData;
+                            % Scalar value exists - replace with same class as parent
+                            nested = feval(class(obj));
                             nested.SourceFormat = obj.SourceFormat;
                         end
                     else
-                        % Create new nested ConfigurationData
-                        nested = ConfigurationData;
+                        % Create new nested object of same class as parent
+                        nested = feval(class(obj));
                         nested.SourceFormat = obj.SourceFormat;
                     end
 
