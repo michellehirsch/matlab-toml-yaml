@@ -328,7 +328,7 @@ function tomlStr = serializeTable(tableName, tableData, prefix, opts)
     end
 end
 
-function tomlStr = serializeStructContent(data, ~, opts)
+function tomlStr = serializeStructContent(data, parentPath, opts)
     % Serialize struct or ConfigurationData content without table header
 
     tomlStr = "";
@@ -349,13 +349,13 @@ function tomlStr = serializeStructContent(data, ~, opts)
         end
     end
 
-    % Handle nested tables
+    % Handle nested tables - pass parentPath so nested tables get correct prefix
     for i = 1:numel(allKeys)
         key = allKeys(i);
         value = getValue(data, key);
 
         if isstruct(value) || isa(value, 'ConfigurationData')
-            tomlStr = tomlStr + serializeTable(key, value, "", opts);
+            tomlStr = tomlStr + serializeTable(key, value, parentPath, opts);
         end
     end
 end
