@@ -13,10 +13,10 @@ writelines(yamlContent,"basic_config.yaml");
 %[text] Read the YAML file
 config = readyaml("basic_config.yaml");
 %[text] YAMLData object:
-config
+config %[output:9d2914d0]
 %%
 %[text] Access values using dot notation
-config.("app-name")
+config.("app-name") %[output:870f5a7b]
 %%
 %[text] ## Nested YAML Structures
 %[text] YAML supports nested mappings (dictionaries)
@@ -30,7 +30,7 @@ yamlNested = [
 writelines(yamlNested,"nested_config.yaml");
 dbConfig = readyaml("nested_config.yaml");
 %[text] Navigate nested structures
-dbConfig.database.credentials.username
+dbConfig.database.credentials.username %[output:878829ce]
 %%
 %[text] ## YAML Arrays - Flow Style
 %[text] Flow-style arrays use \[item1, item2, item3\] syntax
@@ -40,7 +40,7 @@ yamlFlowArrays = [
 writelines(yamlFlowArrays,"flow_arrays.yaml");
 flowData = readyaml("flow_arrays.yaml");
 %[text] Arrays are converted to MATLAB arrays based on type
-flowData.ports
+flowData.ports %[output:7d48cbf4]
 %%
 %[text] ## YAML Arrays - Block Style
 %[text] Block-style arrays use dash notation
@@ -56,7 +56,7 @@ yamlBlockArrays = [
 writelines(yamlBlockArrays,"block_arrays.yaml");
 blockData = readyaml("block_arrays.yaml");
 %[text] Block-style arrays work the same as flow-style
-blockData.ports %[output:7d48cbf4]
+blockData.ports %[output:6396fa3d]
 %%
 %[text] ## Mixed-Type Arrays
 %[text] Arrays with mixed types become cell arrays
@@ -81,12 +81,12 @@ writelines(yamlArrayTypes,"array_types.yaml");
 %[text] Default: SequenceRule="auto" - use specialized arrays when possible
 autoData = readyaml("array_types.yaml");
 %[text] With SequenceRule="auto" (default):
-autoData.numbers
+autoData.numbers %[output:948071b5]
 %%
 %[text] SequenceRule="cell" - always use cell arrays for consistency
 cellData = readyaml("array_types.yaml", SequenceRule="cell");
 %[text] With SequenceRule="cell":
-cellData.numbers
+cellData.numbers %[output:89327b5e]
 %%
 %[text] Why use SequenceRule="cell"?
 %[text] Use SequenceRule='cell' when:
@@ -108,13 +108,17 @@ writelines(yamlSteps,"workflow_steps.yaml");
 workflow = readyaml("workflow_steps.yaml");
 %[text] Access array of mappings with indexing
 %[text] GitHub Actions workflow steps:
-for i = 1:numel(workflow.steps)
-    fprintf("Step %d: %s\n", i, workflow.steps(i).name);
-    fprintf("  Uses: %s\n", workflow.steps(i).uses);
-end
+for i = 1:numel(workflow.steps) %[output:group:1cdb82b5]
+    fprintf("Step %d: %s\n", i, workflow.steps(i).name); %[output:9efc0758] %[output:83292f4d] %[output:772f2ecb]
+    fprintf("  Uses: %s\n", workflow.steps(i).uses); %[output:9717da0e] %[output:4b24b677] %[output:15015521]
+end %[output:group:1cdb82b5]
 %%
 %[text] Access individual step properties
-workflow.steps(1).name
+workflow.steps(1).name %[output:1a3af68f]
+%%
+%[text] Extract all values from an array using arrayfun
+%[text] To get all names from the array at once:
+allNames = arrayfun(@(x) x.name, workflow.steps) %[output:6ccb243a] %[output:5895b5a4]
 %%
 %[text] ## Complex GitHub Actions Workflow
 %[text] Real-world GitHub Actions YAML with nested structures
@@ -284,9 +288,54 @@ delete("basic_config.yaml", "nested_config.yaml", "flow_arrays.yaml", ...
 %[metadata:view]
 %   data: {"layout":"inline"}
 %---
+%[output:9d2914d0]
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 8080\n    debug: true\n"}}
+%---
+%[output:870f5a7b]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"MyApplication\""}}
+%---
+%[output:878829ce]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"admin\""}}
+%---
 %[output:7d48cbf4]
+%   data: {"dataType":"matrix","outputData":{"columns":1,"name":"ans","rows":3,"type":"double","value":[["8080"],["8443"],["9000"]]}}
+%---
+%[output:6396fa3d]
 %   data: {"dataType":"matrix","outputData":{"columns":1,"name":"ans","rows":3,"type":"double","value":[["8080"],["8443"],["9000"]]}}
 %---
 %[output:9e77c6aa]
 %   data: {"dataType":"tabular","outputData":{"columns":1,"header":"4×1 cell array","name":"ans","rows":4,"type":"cell","value":[["42"],["\"text\""],["1"],["3.1400"]]}}
+%---
+%[output:948071b5]
+%   data: {"dataType":"matrix","outputData":{"columns":1,"name":"ans","rows":3,"type":"double","value":[["1"],["2"],["3"]]}}
+%---
+%[output:89327b5e]
+%   data: {"dataType":"tabular","outputData":{"columns":1,"header":"3×1 cell array","name":"ans","rows":3,"type":"cell","value":[["1"],["2"],["3"]]}}
+%---
+%[output:9efc0758]
+%   data: {"dataType":"text","outputData":{"text":"Step 1: Checkout\n","truncated":false}}
+%---
+%[output:9717da0e]
+%   data: {"dataType":"text","outputData":{"text":"  Uses: actions\/checkout@v4\n","truncated":false}}
+%---
+%[output:83292f4d]
+%   data: {"dataType":"text","outputData":{"text":"Step 2: Setup MATLAB\n","truncated":false}}
+%---
+%[output:4b24b677]
+%   data: {"dataType":"text","outputData":{"text":"  Uses: matlab-actions\/setup-matlab@v2\n","truncated":false}}
+%---
+%[output:772f2ecb]
+%   data: {"dataType":"text","outputData":{"text":"Step 3: Run tests\n","truncated":false}}
+%---
+%[output:15015521]
+%   data: {"dataType":"text","outputData":{"text":"  Uses: matlab-actions\/run-tests@v2\n","truncated":false}}
+%---
+%[output:1a3af68f]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Checkout\""}}
+%---
+%[output:6ccb243a]
+%   data: {"dataType":"text","outputData":{"text":"All step names:\n","truncated":false}}
+%---
+%[output:5895b5a4]
+%   data: {"dataType":"text","outputData":{"text":"    \"Checkout\"    \"Setup MATLAB\"    \"Run tests\"\n\n","truncated":false}}
 %---

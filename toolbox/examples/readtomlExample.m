@@ -92,6 +92,10 @@ end
 %[text] Access individual step properties
 workflow.steps(1).uses
 %%
+%[text] Extract all values from an array using arrayfun
+%[text] To get all names from the array at once:
+allNames = arrayfun(@(x) x.name, workflow.steps)
+%%
 %[text] ## Exploring Unknown TOML Files
 %[text] Use keys and isfield to explore TOML structure
 %[text] Keys in project:
