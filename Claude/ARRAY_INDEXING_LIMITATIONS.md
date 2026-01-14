@@ -13,15 +13,26 @@ The `ConfigurationData` class uses `matlab.mixin.indexing.RedefinesDot` which pr
 
 ## The Three Problematic Cases
 
+### Setup for Reproduction
+
+```matlab
+% Load a TOML file with an array of tables
+data = readtoml("tests/SampleFiles/array_of_tables.toml");
+
+% This file contains [[users]] with 3 elements, each having name, email, permissions, etc.
+% data.users is a 1x3 TOMLData array
+```
+
 ### 1. `data.users.name` → "Too many input arguments"
 
 **What happens:**
-- `data.users` returns a 1x2 array of `TOMLData` objects
-- `.name` is then applied to this array, which tries to call `dotReference` on **each element** 
+- `data.users` returns a 1x3 array of `TOMLData` objects
+- `.name` is then applied to this array, which tries to call `dotReference` on **each element**
 - This attempts to return multiple values (comma-separated list), causing the error
 
 **Example:**
 ```matlab
+>> data = readtoml("tests/SampleFiles/array_of_tables.toml");
 >> data.users.name
 Error: Too many input arguments.
 ```
@@ -60,6 +71,7 @@ Error: Too many input arguments.
 
 **Example:**
 ```matlab
+>> data = readtoml("tests/SampleFiles/array_of_tables.toml");
 >> data.users(2).permissions = []
 Error: The 'Name' property is only supported for indexing operations whose Type property is Dot.
 ```
@@ -68,9 +80,7 @@ Error: The 'Name' property is only supported for indexing operations whose Type 
 - **Absolutely yes!** This is fundamental functionality that users expect
 - This is the most critical issue to fix
 
-**Recommendation:**
-- **This MUST be fixed** by overriding `subsasgn` to handle this indexing pattern explicitly
-- **Priority: HIGH** - Expected behavior, blocks common use cases
+**Status: FIXED** (2026-01-14) - Enhanced `dotAssign` to handle `Paren` type in indexOp chain.
 
 ---
 
@@ -79,15 +89,14 @@ Error: The 'Name' property is only supported for indexing operations whose Type 
 **What happens:**
 Same root cause as Issue #2 - assignment to a field within an array element.
 
-**Example:**
+**Example (before fix):**
 ```matlab
+>> data = readtoml("tests/SampleFiles/array_of_tables.toml");
 >> data.users(2).name = "Suzie"
 Error: The 'Name' property is only supported for indexing operations whose Type property is Dot.
 ```
 
-**Recommendation:**
-- Same fix as Issue #2
-- **Priority: HIGH** - Expected behavior
+**Status: FIXED** (2026-01-14) - Same fix as Issue #2.
 
 ---
 
@@ -193,13 +202,29 @@ ConfigurationData should aim for similar behavior where practical, but can devia
 
 ---
 
-## Summary of Recommendations
+## Summary and Resolution Status
 
-| Issue | Pattern | Priority | Solution |
-|-------|---------|----------|----------|
-| #1 | `data.users.name` | **Low** | Better error message; document limitation |
-| #2 | `data.users(2).permissions = value` | **HIGH** | Override `subsasgn` |
-| #3 | `data.users(2).name = value` | **HIGH** | Override `subsasgn` |
+| Issue | Pattern | Priority | Status |
+|-------|---------|----------|--------|
+| #1 | `data.users.name` | **Low** | Open - Better error message needed |
+| #2 | `data.users(2).permissions = value` | **HIGH** | **FIXED** (2026-01-14) |
+| #3 | `data.users(2).name = value` | **HIGH** | **FIXED** (2026-01-14) |
+
+### Resolution for Issues #2 and #3
+
+**Date:** 2026-01-14
+
+Issues #2 and #3 were fixed by enhancing `dotAssign` in `ConfigurationData.m` to handle `Paren` type operations in the `indexOp` chain.
+
+**Key insight:** We discovered that `dotAssign` actually receives the full indexing chain including `Paren` operations (not just `Dot` operations). The fix detects when `indexOp(2).Type == Paren` and handles it by:
+1. Getting the array from `obj.Data(key)`
+2. Indexing into it with `indexOp(2).Indices`
+3. Recursively applying the remaining chain to that element
+4. Writing the modified element back to the array
+
+**Note:** We initially attempted to override `subsasgn`, but discovered that `RedefinesDot` explicitly forbids this. The `dotAssign` enhancement was the correct solution.
+
+**Tests:** See `tests/subsasgnTest.m` for validation tests.
 
 ---
 
