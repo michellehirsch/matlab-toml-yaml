@@ -294,6 +294,27 @@ classdef tomltest < matlab.unittest.TestCase
             testCase.verifyEqual(s.title, "Test");
             testCase.verifyEqual(s.database.port, 5432);
         end
+
+        function testStructConversionWithArrayOfTables(testCase)
+            % Test struct() with array of tables (GitHub issue #2)
+            sampleDir = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles');
+            data = readtoml(fullfile(sampleDir, 'array_of_tables.toml'));
+
+            % Convert to struct - this should not error
+            s = struct(data);
+
+            % Verify the array was converted correctly
+            testCase.verifyClass(s.users, 'struct');
+            testCase.verifyEqual(numel(s.users), 3);
+            testCase.verifyEqual(s.users(1).name, "Alice");
+            testCase.verifyEqual(s.users(2).name, "Bob");
+            testCase.verifyEqual(s.users(3).name, "Charlie");
+
+            % Verify nested struct within array element
+            testCase.verifyClass(s.users(1).permissions, 'struct');
+            testCase.verifyEqual(s.users(1).permissions.admin, false);
+        end
+
         function testSpecialCharacterKeys(testCase)
             % Test keys with special characters using parentheses notation
             tomlContent = ['"my-key" = 1' newline ...

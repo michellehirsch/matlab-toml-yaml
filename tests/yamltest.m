@@ -307,7 +307,33 @@ classdef yamltest < matlab.unittest.TestCase
             testCase.verifyEqual(s.name, "Test");
             testCase.verifyEqual(s.value, 123);
         end
-        
+
+        function testStructConversionWithSequenceOfMappings(testCase)
+            % Test struct() with sequence of mappings (GitHub issue #2)
+            yamlText = sprintf(['users:\n' ...
+                '  - name: Alice\n' ...
+                '    role: admin\n' ...
+                '  - name: Bob\n' ...
+                '    role: user']);
+
+            filename = fullfile(pwd, 'test.yaml');
+            fid = fopen(filename, 'w');
+            fprintf(fid, '%s', yamlText);
+            fclose(fid);
+
+            data = readyaml(filename);
+
+            % Convert to struct - this should not error
+            s = struct(data);
+
+            % Verify the array was converted correctly
+            testCase.verifyClass(s.users, 'struct');
+            testCase.verifyEqual(numel(s.users), 2);
+            testCase.verifyEqual(s.users(1).name, "Alice");
+            testCase.verifyEqual(s.users(2).name, "Bob");
+            testCase.verifyEqual(s.users(1).role, "admin");
+        end
+
         %% Edge Cases
         function testEmptyYAML(testCase)
             % Test reading empty YAML
