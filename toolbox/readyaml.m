@@ -130,14 +130,18 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
             
             % Check if there's content on the same line as the dash
             if ~isempty(itemContent)
-                % Check if it's a mapping item: "- key: value"
+                % Check if it's a quoted string first - if so, treat as scalar
+                isQuotedString = (startsWith(itemContent, '"') && endsWith(itemContent, '"')) || ...
+                                 (startsWith(itemContent, '''') && endsWith(itemContent, ''''));
+
+                % Check if it's a mapping item: "- key: value" (but not a quoted string containing ':')
                 colonIdx = find(itemContent == ':', 1);
-                if ~isempty(colonIdx) && colonIdx > 1
+                if ~isQuotedString && ~isempty(colonIdx) && colonIdx > 1
                     % It's a mapping - parse this item and any continuation
                     [itemData, nextLine] = parseListItemMapping(lines, nextLine, indent, arrayFormat);
                     values{end+1} = itemData; %#ok<AGROW>
                 else
-                    % It's a simple scalar value
+                    % It's a simple scalar value (including quoted strings)
                     value = parseValue(itemContent, arrayFormat);
                     values{end+1} = value; %#ok<AGROW>
                     nextLine = nextLine + 1;
