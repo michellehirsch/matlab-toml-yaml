@@ -75,14 +75,20 @@ classdef ConfigurationData < handle & ...
             for i = 1:length(obj.OriginalKeys)
                 key = obj.OriginalKeys(i);
                 value = obj.Data(char(key));
-                
+
                 if isa(value, 'ConfigurationData')
-                    value = struct(value);
+                    if isscalar(value)
+                        value = struct(value);
+                    else
+                        % Handle array of ConfigurationData objects
+                        structArray = arrayfun(@struct, value);
+                        value = structArray;
+                    end
                 elseif isa(value, 'containers.Map')
                     % Recursively convert Map to struct
                     value = obj.mapToStruct(value);
                 end
-                
+
                 fieldName = matlab.lang.makeValidName(char(key));
                 s.(fieldName) = value;
             end
