@@ -48,11 +48,21 @@ Error: Too many input arguments.
 - However, with `RedefinesDot`, this is very tricky because `dotReference` is called on the array as a whole, not individually on each element
 - Making this work requires returning multiple outputs from `dotReference`, which `dotListLength` is supposed to control, but the implementation is complex
 
-**Recommendation:**
-- **Provide a better error message** explaining that the user needs to index first
-- Suggested error: `"Cannot access field 'name' on array of ConfigurationData without indexing. Use data.users(1).name or loop over elements."`
-- Making this work properly would require overriding `subsref` entirely (high complexity, medium value)
-- **Priority: Low** - Document the limitation and provide clear error message
+**Status: RESOLVED** (2026-01-14) - Improved error message with workarounds.
+
+**New error message:**
+```
+Cannot access field 'name' on a [1 3] array of TOMLData objects.
+Index into the array first, e.g., obj(1).name or use:
+  arrayfun(@(x) x.name, obj)
+```
+
+**Design decision:** We chose not to implement comma-separated list behavior (like structs) because:
+1. `ConfigurationData` arrays can have heterogeneous keys, making behavior unpredictable
+2. Code relying on this would be fragile and fail at runtime depending on data content
+3. Simple workarounds exist (`arrayfun`, loops)
+
+See `Claude/DESIGN_array_dot_reference.md` for full rationale.
 
 ---
 
@@ -206,7 +216,7 @@ ConfigurationData should aim for similar behavior where practical, but can devia
 
 | Issue | Pattern | Priority | Status |
 |-------|---------|----------|--------|
-| #1 | `data.users.name` | **Low** | Open - Better error message needed |
+| #1 | `data.users.name` | **Low** | **RESOLVED** (2026-01-14) - Helpful error message |
 | #2 | `data.users(2).permissions = value` | **HIGH** | **FIXED** (2026-01-14) |
 | #3 | `data.users(2).name = value` | **HIGH** | **FIXED** (2026-01-14) |
 

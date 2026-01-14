@@ -321,8 +321,18 @@ classdef ConfigurationData < handle & ...
         end
         
         function varargout = dotReference(obj, indexOp, ~)
-            % Handle both dot notation (.) and array indexing 
-            
+            % Handle both dot notation (.) and array indexing
+
+            % Check for unsupported array dot-reference: arr.field where arr is non-scalar
+            if ~isscalar(obj)
+                fieldName = indexOp(1).Name;
+                error('ConfigurationData:ArrayDotReference', ...
+                    ['Cannot access field ''%s'' on a %s array of %s objects.\n' ...
+                     'Index into the array first, e.g., obj(1).%s or use:\n' ...
+                     '  arrayfun(@(x) x.%s, obj)'], ...
+                    fieldName, mat2str(size(obj)), class(obj), fieldName, fieldName);
+            end
+
             if strcmp(indexOp(1).Type, 'Dot')
                 % Dot notation: obj.key
                 key = indexOp(1).Name;
