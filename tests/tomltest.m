@@ -74,8 +74,8 @@ classdef tomltest < matlab.unittest.TestCase
             testCase.verifyEqual(data.numbers, [1, 2, 3, 4]);
             testCase.verifyEqual(data.strings, ["red", "green", "blue"]);
             % Note: "empty" conflicts with MATLAB's empty method
-            % Use Data map directly as workaround
-            testCase.verifyEqual(data.Data('empty'), []);
+            % Use getData method as workaround (dictionary requires cell unwrapping)
+            testCase.verifyEqual(data.getData('empty'), []);
         end
         function testTables(testCase)
             % Test table parsing
@@ -578,8 +578,8 @@ classdef tomltest < matlab.unittest.TestCase
 
             for i = 1:length(origKeys)
                 key = origKeys(i);
-                origVal = original.Data(char(key));
-                restVal = restored.Data(char(key));
+                origVal = original.getData(char(key));
+                restVal = restored.getData(char(key));
 
                 keyContext = sprintf('%s.%s', context, key);
 

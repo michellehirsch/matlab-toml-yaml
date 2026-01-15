@@ -102,7 +102,7 @@ function data = parseToml(content, datetimeType)
                 [fullLine, i] = accumulateMultiLineValue(lines, i);
                 line = fullLine;
             end
-            [data, currentTable] = parseKeyValue(data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath, line, datetimeType);
+            [data, currentTable] = parseKeyValue(data, currentTable, currentTablePath, currentArrayIndex, currentArrayPath, line, datetimeType, arrayOfTables);
             i = i + 1;
         end
     end
@@ -129,36 +129,27 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleTable(ro
         % Nested table in array context - navigate to array element first
         arrayKeys = split(arrayPath, ".");
         arrayData = getDataPath(rootData, arrayPath);
-        
+
         % Get the current array element
         currentElement = arrayData(arrayIndex);
-        
+
         % Get the nested path
         if tableName == arrayPath
             tableRef = currentElement;
         else
             nestedPath = extractAfter(tableName, arrayPath + ".");
             nestedKeys = split(nestedPath, ".");
-            
-            % Ensure nested path exists in the element
-            current = currentElement;
-            for k = 1:numel(nestedKeys)
-                key = char(nestedKeys(k));
-                if ~isfield(current, key)
-                    current.(key) = TOMLData;
-                end
-                if k < numel(nestedKeys)
-                    current = current.(key);
-                end
-            end
-            
+
+            % Ensure nested path exists - use helper that handles value semantics
+            currentElement = ensureNestedPath(currentElement, nestedKeys);
+
             % Navigate to the final nested table
-            tableRef = current;
+            tableRef = currentElement;
             for k = 1:numel(nestedKeys)
-                tableRef = tableRef.(char(nestedKeys(k)));
+                tableRef = tableRef.(char(cleanKey(nestedKeys(k))));
             end
         end
-        
+
         % Update the array element back
         arrayData(arrayIndex) = currentElement;
         rootData = setDataPath(rootData, arrayKeys, arrayData);
@@ -185,6 +176,72 @@ function data = ensureDataPath(data, pathKeys, currentPath)
     if numel(pathKeys) > 1
         nestedData = data.(key);
         data.(key) = ensureDataPath(nestedData, pathKeys(2:end), currentPath);
+    end
+end
+
+function data = ensureNestedPath(data, pathKeys)
+    % Ensure nested path exists, handling value semantics correctly
+    % This recursively creates paths and writes back modifications
+    if isempty(pathKeys)
+        return;
+    end
+
+    key = char(cleanKey(strtrim(pathKeys(1))));
+
+    if ~isfield(data, key)
+        data.(key) = TOMLData;
+    end
+
+    % Recursively ensure rest of path and write back
+    if numel(pathKeys) > 1
+        nestedData = data.(key);
+        data.(key) = ensureNestedPath(nestedData, pathKeys(2:end));
+    end
+end
+
+function data = setNestedValue(data, pathKeys, finalKey, value)
+    % Set a value at a nested path, handling value semantics correctly
+    % pathKeys: keys to navigate to the parent table
+    % finalKey: the key to set in the final table
+    % value: the value to set
+    if isempty(pathKeys)
+        data.(char(finalKey)) = value;
+        return;
+    end
+
+    key = char(cleanKey(strtrim(pathKeys(1))));
+    nestedData = data.(key);
+
+    if numel(pathKeys) == 1
+        % At the final level, set the value
+        nestedData.(char(finalKey)) = value;
+    else
+        % Recursively navigate and set
+        nestedData = setNestedValue(nestedData, pathKeys(2:end), finalKey, value);
+    end
+
+    % Write back the modified nested data
+    data.(key) = nestedData;
+end
+
+function data = setNestedValueDirect(data, pathKeys, value)
+    % Set a value at a nested path (replaces entire object at that path)
+    % pathKeys: keys to navigate to the target
+    % value: the value to set at that path
+    if isempty(pathKeys)
+        data = value;
+        return;
+    end
+
+    key = char(cleanKey(strtrim(pathKeys(1))));
+
+    if numel(pathKeys) == 1
+        % At the final level, set the value
+        data.(key) = value;
+    else
+        % Recursively navigate and set
+        nestedData = data.(key);
+        data.(key) = setNestedValueDirect(nestedData, pathKeys(2:end), value);
     end
 end
 
@@ -220,50 +277,68 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
         remainingPath = extractAfter(tableName, parentArrayPath + ".");
         remainingKeys = splitDottedKey(remainingPath);
 
-        % Ensure intermediate path exists within the parent element
+        % Ensure intermediate path exists within the parent element (with value semantics)
         if numel(remainingKeys) > 1
-            current = parentElement;
-            for k = 1:numel(remainingKeys)-1
-                nestedKey = char(strtrim(remainingKeys(k)));
-                if ~isfield(current, nestedKey)
-                    current.(nestedKey) = TOMLData;
-                end
-                current = current.(nestedKey);
-            end
-        end
-
-        % Navigate to the direct parent of the array we're adding to
-        if numel(remainingKeys) > 1
-            directParentPath = join(remainingKeys(1:end-1), ".");
-            parent = getDataPathFromObj(parentElement, directParentPath);
-        else
-            parent = parentElement;
+            parentElement = ensureNestedPath(parentElement, remainingKeys(1:end-1));
         end
 
         % Create new element
         newElement = TOMLData;
 
-        if ~isfield(parent, lastKey)
-            % First element
-            parent.(lastKey) = newElement;
-            arrayIndex = 1;
-            arrayPath = tablePath;
-            arrayOfTables(tablePath) = arrayIndex;
-        elseif isKey(arrayOfTables, tablePath)
-            % Append to existing array
-            currentArray = parent.(lastKey);
-            if isa(currentArray, 'TOMLData')
-                parent.(lastKey) = [currentArray, newElement];
+        if numel(remainingKeys) > 1
+            % Get the direct parent and modify it
+            directParentPath = join(remainingKeys(1:end-1), ".");
+            parent = getDataPathFromObj(parentElement, directParentPath);
+
+            if ~isfield(parent, lastKey)
+                % First element
+                parent.(lastKey) = newElement;
+                arrayIndex = 1;
+                arrayPath = tablePath;
+                arrayOfTables(tablePath) = arrayIndex;
+            elseif isKey(arrayOfTables, tablePath)
+                % Append to existing array
+                currentArray = parent.(lastKey);
+                if isa(currentArray, 'TOMLData')
+                    parent.(lastKey) = [currentArray, newElement];
+                else
+                    error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                        'Key "%s" is not a TOMLData array', lastKey);
+                end
+                arrayIndex = arrayOfTables(tablePath) + 1;
+                arrayPath = tablePath;
+                arrayOfTables(tablePath) = arrayIndex;
             else
                 error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
-                    'Key "%s" is not a TOMLData array', lastKey);
+                    'Key "%s" already exists and is not an array of tables', lastKey);
             end
-            arrayIndex = arrayOfTables(tablePath) + 1;
-            arrayPath = tablePath;
-            arrayOfTables(tablePath) = arrayIndex;
+
+            % Write back the modified parent to parentElement using the path
+            parentElement = setNestedValueDirect(parentElement, remainingKeys(1:end-1), parent);
         else
-            error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
-                'Key "%s" already exists and is not an array of tables', lastKey);
+            % Direct child of parent element
+            if ~isfield(parentElement, lastKey)
+                % First element
+                parentElement.(lastKey) = newElement;
+                arrayIndex = 1;
+                arrayPath = tablePath;
+                arrayOfTables(tablePath) = arrayIndex;
+            elseif isKey(arrayOfTables, tablePath)
+                % Append to existing array
+                currentArray = parentElement.(lastKey);
+                if isa(currentArray, 'TOMLData')
+                    parentElement.(lastKey) = [currentArray, newElement];
+                else
+                    error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                        'Key "%s" is not a TOMLData array', lastKey);
+                end
+                arrayIndex = arrayOfTables(tablePath) + 1;
+                arrayPath = tablePath;
+                arrayOfTables(tablePath) = arrayIndex;
+            else
+                error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
+                    'Key "%s" already exists and is not an array of tables', lastKey);
+            end
         end
 
         % Write the modified parent element back to the parent array
@@ -271,13 +346,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
 
         % Write the parent array back to rootData
         parentArrayKeys = splitDottedKey(parentArrayPath);
-        if numel(parentArrayKeys) > 1
-            rootData = setDataPath(rootData, parentArrayKeys(1:end-1), ...
-                setDataPath(getDataPath(rootData, join(parentArrayKeys(1:end-1), ".")), ...
-                    parentArrayKeys(end), parentArray));
-        else
-            rootData.(char(parentArrayKeys(1))) = parentArray;
-        end
+        rootData = setDataPath(rootData, parentArrayKeys, parentArray);
 
         tableRef = newElement;
     else
@@ -349,9 +418,9 @@ function tableRef = getDataPathFromObj(data, tablePath)
     end
 end
 
-function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arrayIndex, arrayPath, line, datetimeType)
+function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arrayIndex, arrayPath, line, datetimeType, arrayOfTables)
     % Parse key = value line
-    
+
     % Find first '=' not in quotes
     eqPos = findUnquotedChar(line, '=');
 
@@ -419,8 +488,8 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
         % Update in rootData (value semantics require explicit write-back)
         if arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
             % Array element update (direct or nested table within array)
-            arrayKeys = split(arrayPath, ".");
-            currentArray = getDataPath(rootData, arrayPath);
+            % Use array-aware navigation for nested arrays
+            currentArray = getArrayAtPath(rootData, arrayPath, arrayOfTables);
 
             % Get the array element
             element = currentArray(arrayIndex);
@@ -429,22 +498,15 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
                 % Direct array element field
                 element.(char(key)) = value;
             else
-                % Nested table within array element - navigate and set
+                % Nested table within array element - use helper for value semantics
                 relativePath = extractAfter(tablePath, arrayPath + ".");
                 relativeKeys = split(relativePath, ".");
-
-                % Navigate to parent of the field we want to set
-                current = element;
-                for k = 1:numel(relativeKeys)
-                    current = current.(char(relativeKeys(k)));
-                end
-                % Set the value in the nested table
-                current.(char(key)) = value;
+                element = setNestedValue(element, relativeKeys, key, value);
             end
 
             % Write the modified element back to the array
             currentArray(arrayIndex) = element;
-            rootData = setDataPath(rootData, arrayKeys, currentArray);
+            rootData = setArrayAtPath(rootData, arrayPath, arrayOfTables, currentArray);
             tableRef = currentArray(arrayIndex);
         elseif strlength(tablePath) == 0
             rootData = tableRef;
@@ -458,9 +520,9 @@ end
 function data = setDataPath(data, pathKeys, value)
     % Set a value at a specific path
     if numel(pathKeys) == 1
-        data.(char(pathKeys(1))) = value;
+        data.(char(cleanKey(pathKeys(1)))) = value;
     else
-        key = char(pathKeys(1));
+        key = char(cleanKey(pathKeys(1)));
         if isfield(data, key)
             data.(key) = setDataPath(data.(key), pathKeys(2:end), value);
         else
@@ -476,7 +538,7 @@ function data = updateDataPath(data, pathKeys, value, levelsFromEnd)
         return;
     end
 
-    key = char(pathKeys(1));
+    key = char(cleanKey(pathKeys(1)));
     if numel(pathKeys) == 1
         data.(key) = value;
     else
@@ -500,6 +562,73 @@ function tableRef = getDataPath(data, tablePath)
 
     for i = 1:numel(keys)
         tableRef = tableRef.(char(cleanKey(keys(i))));
+    end
+end
+
+function arrayData = getArrayAtPath(data, arrayPath, arrayOfTables)
+    % Get array at path, handling nested arrays properly
+    % For nested paths like "jobs.steps", use arrayOfTables to navigate through parent arrays
+
+    pathKeys = splitDottedKey(arrayPath);
+
+    % Find parent arrays in the path
+    current = data;
+    for i = 1:numel(pathKeys)
+        key = char(cleanKey(pathKeys(i)));
+
+        % Check if this key points to a parent array
+        partialPath = char(join(pathKeys(1:i), "."));
+        if i < numel(pathKeys) && isKey(arrayOfTables, partialPath)
+            % This is a parent array - index into it
+            parentIndex = arrayOfTables(partialPath);
+            current = current.(key);
+            current = current(parentIndex);
+        else
+            % Regular field access
+            current = current.(key);
+        end
+    end
+
+    arrayData = current;
+end
+
+function data = setArrayAtPath(data, arrayPath, arrayOfTables, arrayData)
+    % Set array at path, handling nested arrays properly
+    % For nested paths like "jobs.steps", use arrayOfTables to navigate through parent arrays
+
+    pathKeys = splitDottedKey(arrayPath);
+
+    if numel(pathKeys) == 1
+        % Simple case - direct assignment
+        data.(char(cleanKey(pathKeys(1)))) = arrayData;
+    else
+        % Find the innermost parent array
+        parentArrayPath = "";
+        parentArrayIndex = 0;
+        for i = 1:numel(pathKeys)-1
+            partialPath = char(join(pathKeys(1:i), "."));
+            if isKey(arrayOfTables, partialPath)
+                parentArrayPath = partialPath;
+                parentArrayIndex = arrayOfTables(partialPath);
+            end
+        end
+
+        if strlength(parentArrayPath) > 0
+            % Navigate to parent array element and set the nested array
+            parentArray = getArrayAtPath(data, parentArrayPath, arrayOfTables);
+            parentElement = parentArray(parentArrayIndex);
+
+            % Get the remaining path after the parent array
+            remainingPath = extractAfter(arrayPath, parentArrayPath + ".");
+            parentElement = setNestedValueDirect(parentElement, splitDottedKey(remainingPath), arrayData);
+
+            % Write back
+            parentArray(parentArrayIndex) = parentElement;
+            data = setArrayAtPath(data, parentArrayPath, arrayOfTables, parentArray);
+        else
+            % No parent arrays - use regular setDataPath
+            data = setDataPath(data, pathKeys, arrayData);
+        end
     end
 end
 
