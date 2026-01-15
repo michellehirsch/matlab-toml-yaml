@@ -118,7 +118,7 @@ workflow.steps(1).name %[output:1a3af68f]
 %%
 %[text] Extract all values from an array using arrayfun
 %[text] To get all names from the array at once:
-allNames = arrayfun(@(x) x.name, workflow.steps) %[output:6ccb243a] %[output:5895b5a4]
+allNames = arrayfun(@(x) x.name, workflow.steps) %[output:59183ee0]
 %%
 %[text] ## Complex GitHub Actions Workflow
 %[text] Real-world GitHub Actions YAML with nested structures
@@ -149,14 +149,14 @@ writelines(yamlGitHubActions,"github_workflow.yaml");
 ghActions = readyaml("github_workflow.yaml");
 %[text] Navigate complex nested structure
 %[text] GitHub Actions workflow:
-fprintf("Workflow name: %s\n", ghActions.name);
-disp("Trigger on push branches:")
-for i = 1:numel(ghActions.on.push.branches)
-    fprintf("  - %s\n", ghActions.on.push.branches(i));
-end
-disp("Jobs:")
-disp("  Build job runs on: " + ghActions.jobs.build.("runs-on"))
-disp("  Test job runs on: " + ghActions.jobs.test.("runs-on"))
+fprintf("Workflow name: %s\n", ghActions.name); %[output:53a439e4]
+disp("Trigger on push branches:") %[output:15be4dcb]
+for i = 1:numel(ghActions.on.push.branches) %[output:group:5849a603]
+    fprintf("  - %s\n", ghActions.on.push.branches(i)); %[output:3c3c2a08]
+end %[output:group:5849a603]
+disp("Jobs:") %[output:905779f4]
+disp("  Build job runs on: " + ghActions.jobs.build.("runs-on")) %[output:8606f38b]
+disp("  Test job runs on: " + ghActions.jobs.test.("runs-on")) %[output:9370f1f1]
 %%
 %[text] ## Keys with Special Characters
 %[text] Use dynamic field access for keys with hyphens, underscores, or dots
@@ -169,27 +169,27 @@ yamlSpecialKeys = [
 writelines(yamlSpecialKeys,"special_keys.yaml");
 special = readyaml("special_keys.yaml");
 %[text] Access keys with special characters using quoted syntax
-special.("pull-request").("target-branch")
+special.("pull-request").("target-branch") %[output:72ed3579]
 %%
 %[text] ## Exploring Unknown YAML Files
 %[text] Use keys, isfield, and show to explore structure
 %[text] Top-level keys in GitHub Actions workflow:
-ghActions.keys
+ghActions.keys %[output:8097bbab]
 %%
 %[text] Check for specific fields
-if isfield(ghActions, "jobs")
-    disp("Workflow contains jobs")
+if isfield(ghActions, "jobs") %[output:group:03c2fbcb]
+    disp("Workflow contains jobs") %[output:970c9e3f]
     if isfield(ghActions.jobs, "build")
-        disp("  Build job exists")
+        disp("  Build job exists") %[output:78813401]
     end
     if isfield(ghActions.jobs, "test")
-        disp("  Test job exists")
+        disp("  Test job exists") %[output:451da295]
     end
-end
+end %[output:group:03c2fbcb]
 %%
 %[text] Use show for formatted display
 %[text] Database configuration structure:
-dbConfig.show
+dbConfig.show %[output:02043c92]
 %%
 %[text] ## Data Types in YAML
 %[text] YAML supports various data types
@@ -206,15 +206,15 @@ yamlTypes = [
 writelines(yamlTypes,"types.yaml");
 types = readyaml("types.yaml");
 %[text] YAML data types:
-fprintf("String: %s (class: %s)\n", types.string_val, class(types.string_val));
-fprintf("Quoted string: %s (class: %s)\n", types.quoted_string, class(types.quoted_string));
-fprintf("Integer: %d (class: %s)\n", types.integer_val, class(types.integer_val));
-fprintf("Float: %.5f (class: %s)\n", types.float_val, class(types.float_val));
-fprintf("Boolean true: %d (class: %s)\n", types.boolean_true, class(types.boolean_true));
-fprintf("Boolean false: %d (class: %s)\n", types.boolean_false, class(types.boolean_false));
-fprintf("Yes: %d (class: %s)\n", types.yes_val, class(types.yes_val));
-fprintf("No: %d (class: %s)\n", types.no_val, class(types.no_val));
-fprintf("Null: %s (class: %s)\n", string(types.null_val), class(types.null_val));
+fprintf("String: %s (class: %s)\n", types.string_val, class(types.string_val)); %[output:5dcee9b5]
+fprintf("Quoted string: %s (class: %s)\n", types.quoted_string, class(types.quoted_string)); %[output:1847497b]
+fprintf("Integer: %d (class: %s)\n", types.integer_val, class(types.integer_val)); %[output:445d4fda]
+fprintf("Float: %.5f (class: %s)\n", types.float_val, class(types.float_val)); %[output:1474d858]
+fprintf("Boolean true: %d (class: %s)\n", types.boolean_true, class(types.boolean_true)); %[output:6a6bef8f]
+fprintf("Boolean false: %d (class: %s)\n", types.boolean_false, class(types.boolean_false)); %[output:1f9aaa2b]
+fprintf("Yes: %d (class: %s)\n", types.yes_val, class(types.yes_val)); %[output:3617ab71]
+fprintf("No: %d (class: %s)\n", types.no_val, class(types.no_val)); %[output:9dce0d1b]
+fprintf("Null: %s (class: %s)\n", string(types.null_val), class(types.null_val)); %[output:38f6ae76]
 %%
 %[text] ## Converting to Struct
 %[text] Convert YAMLData to standard MATLAB struct when needed
@@ -228,7 +228,7 @@ serverConfig = readyaml("server.yaml");
 %[text] Convert to struct
 serverStruct = struct(serverConfig);
 %[text] Converted to struct:
-serverStruct
+serverStruct %[output:810e1689]
 %%
 %[text] ## Real-World Example: Docker Compose
 %[text] Read a realistic Docker Compose YAML configuration
@@ -256,15 +256,15 @@ writelines(dockerComposeYaml,"docker-compose.yaml");
 dockerCompose = readyaml("docker-compose.yaml");
 %[text] Access Docker Compose configuration
 %[text] Docker Compose configuration:
-fprintf("Version: %s\n", dockerCompose.version);
-disp("Web service:")
-fprintf("  Image: %s\n", dockerCompose.services.web.image);
-disp("  Ports:")
-disp(dockerCompose.services.web.ports)
-disp("Database service:")
-fprintf("  Image: %s\n", dockerCompose.services.db.image);
-disp("  Ports:")
-disp(dockerCompose.services.db.ports)
+fprintf("Version: %s\n", dockerCompose.version); %[output:624872fe]
+disp("Web service:") %[output:91c4776e]
+fprintf("  Image: %s\n", dockerCompose.services.web.image); %[output:94d4a265]
+disp("  Ports:") %[output:7cfa29fb]
+disp(dockerCompose.services.web.ports) %[output:54adbcff]
+disp("Database service:") %[output:174ba041]
+fprintf("  Image: %s\n", dockerCompose.services.db.image); %[output:295504df]
+disp("  Ports:") %[output:69c9f471]
+disp(dockerCompose.services.db.ports) %[output:530e8b50]
 %%
 %[text] ## Best Practices
 %[text] Best practices for reading YAML files:
@@ -333,9 +333,99 @@ delete("basic_config.yaml", "nested_config.yaml", "flow_arrays.yaml", ...
 %[output:1a3af68f]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"Checkout\""}}
 %---
-%[output:6ccb243a]
-%   data: {"dataType":"text","outputData":{"text":"All step names:\n","truncated":false}}
+%[output:59183ee0]
+%   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"allNames","rows":1,"type":"string","value":[["Checkout","Setup MATLAB","Run tests"]]}}
 %---
-%[output:5895b5a4]
-%   data: {"dataType":"text","outputData":{"text":"    \"Checkout\"    \"Setup MATLAB\"    \"Run tests\"\n\n","truncated":false}}
+%[output:53a439e4]
+%   data: {"dataType":"text","outputData":{"text":"Workflow name: CI\n","truncated":false}}
+%---
+%[output:15be4dcb]
+%   data: {"dataType":"text","outputData":{"text":"Trigger on push branches:\n","truncated":false}}
+%---
+%[output:3c3c2a08]
+%   data: {"dataType":"text","outputData":{"text":"  - main\n  - develop\n","truncated":false}}
+%---
+%[output:905779f4]
+%   data: {"dataType":"text","outputData":{"text":"Jobs:\n","truncated":false}}
+%---
+%[output:8606f38b]
+%   data: {"dataType":"text","outputData":{"text":"  Build job runs on: ubuntu-latest\n","truncated":false}}
+%---
+%[output:9370f1f1]
+%   data: {"dataType":"text","outputData":{"text":"  Test job runs on: ubuntu-latest\n","truncated":false}}
+%---
+%[output:72ed3579]
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"main\""}}
+%---
+%[output:8097bbab]
+%   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"ans","rows":1,"type":"string","value":[["name","on","jobs"]]}}
+%---
+%[output:970c9e3f]
+%   data: {"dataType":"text","outputData":{"text":"Workflow contains jobs\n","truncated":false}}
+%---
+%[output:78813401]
+%   data: {"dataType":"text","outputData":{"text":"  Build job exists\n","truncated":false}}
+%---
+%[output:451da295]
+%   data: {"dataType":"text","outputData":{"text":"  Test job exists\n","truncated":false}}
+%---
+%[output:02043c92]
+%   data: {"dataType":"text","outputData":{"text":"database:\n  host: localhost\n  port: 5432\n  credentials:\n    username: admin\n    password: secret\n","truncated":false}}
+%---
+%[output:5dcee9b5]
+%   data: {"dataType":"text","outputData":{"text":"String: Hello, World! (class: string)\n","truncated":false}}
+%---
+%[output:1847497b]
+%   data: {"dataType":"text","outputData":{"text":"Quoted string: Quoted text (class: string)\n","truncated":false}}
+%---
+%[output:445d4fda]
+%   data: {"dataType":"text","outputData":{"text":"Integer: 42 (class: double)\n","truncated":false}}
+%---
+%[output:1474d858]
+%   data: {"dataType":"text","outputData":{"text":"Float: 3.14159 (class: double)\n","truncated":false}}
+%---
+%[output:6a6bef8f]
+%   data: {"dataType":"text","outputData":{"text":"Boolean true: 1 (class: logical)\n","truncated":false}}
+%---
+%[output:1f9aaa2b]
+%   data: {"dataType":"text","outputData":{"text":"Boolean false: 0 (class: logical)\n","truncated":false}}
+%---
+%[output:3617ab71]
+%   data: {"dataType":"text","outputData":{"text":"Yes: 1 (class: logical)\n","truncated":false}}
+%---
+%[output:9dce0d1b]
+%   data: {"dataType":"text","outputData":{"text":"No: 0 (class: logical)\n","truncated":false}}
+%---
+%[output:38f6ae76]
+%   data: {"dataType":"text","outputData":{"text":"Null:  (class: double)\n","truncated":false}}
+%---
+%[output:810e1689]
+%   data: {"dataType":"textualVariable","outputData":{"header":"struct with fields:","name":"serverStruct","value":"    server: [1×1 struct]\n"}}
+%---
+%[output:624872fe]
+%   data: {"dataType":"text","outputData":{"text":"Version: 3.8\n","truncated":false}}
+%---
+%[output:91c4776e]
+%   data: {"dataType":"text","outputData":{"text":"Web service:\n","truncated":false}}
+%---
+%[output:94d4a265]
+%   data: {"dataType":"text","outputData":{"text":"  Image: nginx:latest\n","truncated":false}}
+%---
+%[output:7cfa29fb]
+%   data: {"dataType":"text","outputData":{"text":"  Ports:\n","truncated":false}}
+%---
+%[output:54adbcff]
+%   data: {"dataType":"text","outputData":{"text":"    \"8080:80\"\n    \"8443:443\"\n\n","truncated":false}}
+%---
+%[output:174ba041]
+%   data: {"dataType":"text","outputData":{"text":"Database service:\n","truncated":false}}
+%---
+%[output:295504df]
+%   data: {"dataType":"text","outputData":{"text":"  Image: postgres:15\n","truncated":false}}
+%---
+%[output:69c9f471]
+%   data: {"dataType":"text","outputData":{"text":"  Ports:\n","truncated":false}}
+%---
+%[output:530e8b50]
+%   data: {"dataType":"text","outputData":{"text":"5432:5432\n","truncated":false}}
 %---

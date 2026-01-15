@@ -1,65 +1,43 @@
-classdef ConfigurationData < handle & ...
-                             matlab.mixin.indexing.RedefinesDot & ...
+classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                              matlab.mixin.CustomDisplay
     %CONFIGURATIONDATA Base class for structured configuration data
-    %   Handle class with dot notation access to configuration data.
+    %   Value class with dot notation access to configuration data.
     %   Supports keys with special characters like hyphens.
-    %   
-    %   Note: This is a handle class. To create an independent copy,
-    %   use the copy method: newData = copy(data)
-    
+    %
+    %   This is a value class. Assignment creates an independent copy:
+    %       newData = data;  % newData is independent of data
+    %
+    %   The copy() method is provided for compatibility but is equivalent
+    %   to assignment for value classes.
+
     properties (Access = public, Hidden = true)
-        Data containers.Map
-        KeyAliases containers.Map
-        OriginalKeys string
+        Data dictionary = configureDictionary("string", "cell")
+        KeyAliases dictionary = configureDictionary("string", "string")
+        OriginalKeys string = string.empty
     end
-    
+
     properties (SetAccess = protected)
         SourceFormat string = "unknown"
     end
-    
+
     methods
         function obj = ConfigurationData
-            obj.Data = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            obj.KeyAliases = containers.Map('KeyType', 'char', 'ValueType', 'char');
+            obj.Data = configureDictionary("string", "cell");
+            obj.KeyAliases = configureDictionary("string", "string");
             obj.OriginalKeys = string.empty;
         end
-        
+
         function newObj = copy(obj)
-            %COPY Create a deep copy of the ConfigurationData object
-            newObj = ConfigurationData;
-            newObj.SourceFormat = obj.SourceFormat;
-            
-            % Deep copy the Data map
-            for i = 1:length(obj.OriginalKeys)
-                key = obj.OriginalKeys(i);
-                value = obj.Data(char(key));
-                
-                % Recursively copy ConfigurationData objects
-                if isa(value, 'ConfigurationData')
-                    value = copy(value);
-                elseif isa(value, 'containers.Map')
-                    value = obj.copyMap(value);
-                end
-                
-                newObj.Data(char(key)) = value;
-            end
-            
-            % Copy aliases
-            aliasKeys = keys(obj.KeyAliases);
-            for i = 1:length(aliasKeys)
-                key = aliasKeys{i};
-                newObj.KeyAliases(key) = obj.KeyAliases(key);
-            end
-            
-            % Copy order
-            newObj.OriginalKeys = obj.OriginalKeys;
+            %COPY Create an independent copy of the ConfigurationData object
+            %   With value semantics, assignment already creates a copy.
+            %   This method is retained for backwards compatibility.
+            newObj = obj;
         end
-        
+
         function k = keys(obj)
             k = obj.OriginalKeys;
         end
-        
+
         function tf = isfield(obj, key)
             % Handle arrays - check first element only
             if numel(obj) > 1
@@ -69,12 +47,12 @@ classdef ConfigurationData < handle & ...
             resolvedKey = obj.resolveKey(key);
             tf = ~isempty(resolvedKey);
         end
-        
+
         function s = struct(obj)
             s = struct;
             for i = 1:length(obj.OriginalKeys)
                 key = obj.OriginalKeys(i);
-                value = obj.Data(char(key));
+                value = obj.getData(key);
 
                 if isa(value, 'ConfigurationData')
                     if isscalar(value)
@@ -84,45 +62,46 @@ classdef ConfigurationData < handle & ...
                         structArray = arrayfun(@struct, value);
                         value = structArray;
                     end
-                elseif isa(value, 'containers.Map')
-                    % Recursively convert Map to struct
-                    value = obj.mapToStruct(value);
+                elseif isa(value, 'dictionary')
+                    % Recursively convert dictionary to struct
+                    value = obj.dictToStruct(value);
                 end
 
                 fieldName = matlab.lang.makeValidName(char(key));
                 s.(fieldName) = value;
             end
         end
-        
+
         function m = map(obj)
+            %MAP Convert to containers.Map (for compatibility)
             m = containers.Map('KeyType', 'char', 'ValueType', 'any');
             for i = 1:length(obj.OriginalKeys)
                 key = obj.OriginalKeys(i);
-                value = obj.Data(char(key));
-                
+                value = obj.getData(key);
+
                 if isa(value, 'ConfigurationData')
                     value = map(value);
                 end
-                
+
                 m(char(key)) = value;
             end
         end
-        
+
         function p = properties(obj)
             %PROPERTIES Return list of dynamic properties (keys)
             p = cellstr(obj.OriginalKeys);
         end
-        
+
         function names = fieldnames(obj)
             %FIELDNAMES Get field names (alias for keys)
             names = obj.keys;
         end
-        
+
         function tf = iskey(obj, key)
             %ISKEY Check if key exists (alias for isfield)
             tf = obj.isfield(key);
         end
-        
+
         function obj = rmfield(obj, key)
             %RMFIELD Remove a field
             resolvedKey = obj.resolveKey(key);
@@ -130,27 +109,27 @@ classdef ConfigurationData < handle & ...
                 error('ConfigurationData:InvalidKey', ...
                     'Key "%s" does not exist.', key);
             end
-            
-            % Remove from data
-            remove(obj.Data, resolvedKey);
-            
+
+            % Remove from data (dictionary requires capturing return)
+            obj.Data = remove(obj.Data, resolvedKey);
+
             % Remove from order tracking
             obj.OriginalKeys(obj.OriginalKeys == resolvedKey) = [];
-            
+
             % Remove alias if exists
             validKey = matlab.lang.makeValidName(char(key));
             if isKey(obj.KeyAliases, validKey)
-                remove(obj.KeyAliases, validKey);
+                obj.KeyAliases = remove(obj.KeyAliases, validKey);
             end
         end
-        
+
         function obj = remove(obj, key)
             %REMOVE Remove a key (alias for rmfield)
             obj = obj.rmfield(key);
         end
-        
+
     end
-    
+
     methods (Access = protected)
         % CustomDisplay implementation
         function header = getHeader(obj)
@@ -174,40 +153,40 @@ classdef ConfigurationData < handle & ...
         function displayScalarObject(obj)
             header = getHeader(obj);
             disp(header);
-            
+
             if length(obj.OriginalKeys) == 0
                 return;
             end
-            
+
             % Check if there's nested hierarchy
             hasHierarchy = false;
             for i = 1:length(obj.OriginalKeys)
-                value = obj.Data(char(obj.OriginalKeys(i)));
-                if isa(value, 'ConfigurationData') || isa(value, 'containers.Map')
+                value = obj.getData(obj.OriginalKeys(i));
+                if isa(value, 'ConfigurationData') || isa(value, 'dictionary')
                     hasHierarchy = true;
                     break;
                 end
             end
-            
+
             % Display each field
             for i = 1:length(obj.OriginalKeys)
                 key = obj.OriginalKeys(i);
-                value = obj.Data(char(key));
-                
+                value = obj.getData(key);
+
                 % Format the value for display
                 valueStr = obj.formatValue(value);
-                
+
                 fprintf('    %s: %s\n', key, valueStr);
             end
-            
+
             % Add footer with show link if there's hierarchy
             if hasHierarchy
                 fprintf('\n    <a href="matlab:show(%s)">Show all values</a>\n', inputname(1));
             end
-            
+
             fprintf('\n');
         end
-        
+
         function displayNonScalarObject(obj)
             % Display for object arrays
             dims = size(obj);
@@ -256,7 +235,7 @@ classdef ConfigurationData < handle & ...
             % Add show link for arrays (they always have potential hierarchy)
             fprintf('\n    <a href="matlab:show(%s)">Show all values</a>\n\n', inputname(1));
         end
-        
+
         function str = formatValue(~, value)
             % Format a value for display (similar to struct)
             if isa(value, 'ConfigurationData')
@@ -271,9 +250,9 @@ classdef ConfigurationData < handle & ...
                     className = class(value);
                     str = sprintf('[1×1 %s with %d %s]', className, nFields, ConfigurationData.pluralize("key", nFields));
                 end
-            elseif isa(value, 'containers.Map')
-                nKeys = value.Count;
-                str = sprintf('[1×1 ConfigurationData with %d %s]', nKeys, ConfigurationData.pluralize("key", nKeys));
+            elseif isa(value, 'dictionary')
+                nKeys = numEntries(value);
+                str = sprintf('[1×1 dictionary with %d %s]', nKeys, ConfigurationData.pluralize("entry", nKeys));
             elseif ischar(value)
                 if length(value) > 50
                     str = sprintf('''%s...'' [1×%d char]', value(1:50), length(value));
@@ -325,7 +304,7 @@ classdef ConfigurationData < handle & ...
         function n = dotListLength(~, ~, ~)
             n = 1;
         end
-        
+
         function varargout = dotReference(obj, indexOp, ~)
             % Handle both dot notation (.) and array indexing
 
@@ -342,27 +321,35 @@ classdef ConfigurationData < handle & ...
             if strcmp(indexOp(1).Type, 'Dot')
                 % Dot notation: obj.key
                 key = indexOp(1).Name;
+
+                % Check if accessing a real class property or method
+                % Properties (OriginalKeys, Data, etc.) need direct access
+                % Methods (setData, getData, etc.) should be callable
+                if isprop(obj, key) || ismethod(obj, key)
+                    value = obj.(key);
+                    if length(indexOp) > 1
+                        value = subsref(value, indexOp(2:end));
+                    end
+                    varargout{1} = value;
+                    return;
+                end
+
                 resolvedKey = obj.resolveKey(key);
-                
+
                 if isempty(resolvedKey)
                     error('ConfigurationData:InvalidKey', ...
                         'Key "%s" does not exist.', key);
                 end
-                
-                value = obj.Data(resolvedKey);
-                
-                % Wrap nested Maps in ConfigurationData (legacy support)
-                if isa(value, 'containers.Map')
-                    value = obj.wrapNested(value);
-                end
-                
+
+                value = obj.getData(resolvedKey);
+
                 % Handle chained indexing: obj.key(1).field or obj.key.field
                 if length(indexOp) > 1
                     if strcmp(indexOp(2).Type, 'Paren')
                         % Array indexing: obj.key(indices)
                         indices = indexOp(2).Indices{:};
                         value = value(indices);
-                        
+
                         % Handle further chaining: obj.key(1).field
                         if length(indexOp) > 2
                             if isa(value, 'ConfigurationData')
@@ -382,7 +369,7 @@ classdef ConfigurationData < handle & ...
                         end
                     end
                 end
-                
+
             elseif strcmp(indexOp(1).Type, 'Paren')
                 % Direct array indexing on obj: should not happen
                 error('ConfigurationData:UnsupportedIndexing', ...
@@ -391,10 +378,10 @@ classdef ConfigurationData < handle & ...
                 error('ConfigurationData:UnsupportedIndexing', ...
                     'Unsupported indexing type: %s', indexOp(1).Type);
             end
-            
+
             varargout{1} = value;
         end
-        
+
         function obj = dotAssign(obj, indexOp, varargin)
             key = indexOp(1).Name;
 
@@ -408,7 +395,7 @@ classdef ConfigurationData < handle & ...
                         error('ConfigurationData:InvalidIndex', ...
                             'Cannot index into non-existent field ''%s''', key);
                     end
-                    arr = obj.Data(key);
+                    arr = obj.getData(key);
 
                     % Extract index
                     idx = indexOp(2).Indices{:};
@@ -429,16 +416,13 @@ classdef ConfigurationData < handle & ...
                     arr(idx) = elem;
 
                     % Store array back
-                    obj.Data(key) = arr;
+                    obj = obj.setData(key, arr);
                 else
                     % Pattern: obj.field.subfield = value (next op is Dot)
                     % Get or create the nested object
                     if isKey(obj.Data, key)
-                        nested = obj.Data(key);
-                        % Wrap if it's a Map
-                        if isa(nested, 'containers.Map')
-                            nested = obj.wrapNested(nested);
-                        elseif ~isa(nested, 'ConfigurationData')
+                        nested = obj.getData(key);
+                        if ~isa(nested, 'ConfigurationData')
                             % Scalar value exists - replace with same class as parent
                             nested = feval(class(obj));
                             nested.SourceFormat = obj.SourceFormat;
@@ -453,7 +437,7 @@ classdef ConfigurationData < handle & ...
                     nested = dotAssign(nested, indexOp(2:end), varargin{:});
 
                     % Store the nested ConfigurationData directly (preserve order)
-                    obj.Data(key) = nested;
+                    obj = obj.setData(key, nested);
                 end
 
                 % Track order
@@ -469,23 +453,16 @@ classdef ConfigurationData < handle & ...
             else
                 % Simple assignment: obj.key = value
                 value = varargin{end};
-                
+
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
                 if ~strcmp(validKey, key)
                     obj.KeyAliases(validKey) = key;
                 end
-                
-                % Unwrap ConfigurationData to Map (but keep OriginalKeys order)
-                if isa(value, 'ConfigurationData')
-                    % Store the ConfigurationData directly to preserve order
-                    % value = value.map;  % DON'T convert to map - loses order!
-                    % Just store the ConfigurationData object
-                end
-                
+
                 % Store
-                obj.Data(key) = value;
-                
+                obj = obj.setData(key, value);
+
                 % Track order
                 if ~any(obj.OriginalKeys == key)
                     obj.OriginalKeys(end+1) = key;
@@ -493,72 +470,83 @@ classdef ConfigurationData < handle & ...
             end
         end
 
+        function obj = parenDotAssign(obj, indexOp, varargin)
+            % Handle method name conflicts (e.g., obj.empty = value)
+            % When a key matches a method name, MATLAB calls this instead of dotAssign
+            % because it interprets obj.methodName as a method call
+
+            key = indexOp(1).Name;
+            value = varargin{end};
+
+            % Store directly using setData to bypass method resolution
+            obj = obj.setData(key, value);
+
+            % Track order
+            if ~any(obj.OriginalKeys == key)
+                obj.OriginalKeys(end+1) = key;
+            end
+
+            % Create alias if needed
+            validKey = matlab.lang.makeValidName(key);
+            if ~strcmp(validKey, key)
+                obj.KeyAliases(validKey) = key;
+            end
+        end
+
+        function n = parenDotListLength(~, ~, ~)
+            n = 1;
+        end
+
         function resolvedKey = resolveKey(obj, key)
-            key = char(key);
-            
+            key = string(key);
+
             if isKey(obj.Data, key)
                 resolvedKey = key;
                 return;
             end
-            
+
             if isKey(obj.KeyAliases, key)
                 resolvedKey = obj.KeyAliases(key);
                 return;
             end
-            
+
             resolvedKey = '';
         end
-        
-        function nested = wrapNested(obj, mapData)
-            nested = ConfigurationData;
-            nested.Data = mapData;
-            nested.OriginalKeys = string(keys(mapData));
-            
-            % Create aliases for all keys
-            for i = 1:length(nested.OriginalKeys)
-                key = nested.OriginalKeys(i);
-                validKey = matlab.lang.makeValidName(char(key));
-                if ~strcmp(validKey, key)
-                    nested.KeyAliases(validKey) = char(key);
-                end
-            end
-        end
-        
-        function s = mapToStruct(obj, m)
-            %MAPTOSTRUCT Convert containers.Map to struct recursively (private helper)
+
+        function s = dictToStruct(obj, d)
+            %DICTTOSTRUCT Convert dictionary to struct recursively (private helper)
             s = struct;
-            mapKeys = keys(m);
-            for i = 1:length(mapKeys)
-                key = mapKeys{i};
-                value = m(key);
-                
-                % Recursively handle nested Maps
-                if isa(value, 'containers.Map')
-                    value = obj.mapToStruct(value);
+            dictKeys = keys(d);
+            for i = 1:length(dictKeys)
+                key = dictKeys(i);
+                val = d(key);
+                value = val{1};  % Unwrap from cell
+
+                % Recursively handle nested dictionaries
+                if isa(value, 'dictionary')
+                    value = obj.dictToStruct(value);
                 end
-                
-                fieldName = matlab.lang.makeValidName(key);
+
+                fieldName = matlab.lang.makeValidName(char(key));
                 s.(fieldName) = value;
             end
         end
-        
-        function newMap = copyMap(~, oldMap)
-            %COPYMAP Create a deep copy of a containers.Map (private helper)
-            newMap = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            mapKeys = keys(oldMap);
-            for i = 1:length(mapKeys)
-                key = mapKeys{i};
-                value = oldMap(key);
+    end
 
-                % Recursively handle nested Maps
-                if isa(value, 'containers.Map')
-                    value = copyMap([], value);
-                elseif isa(value, 'ConfigurationData')
-                    value = copy(value);
-                end
+    methods (Hidden)
+        % Helper methods for dictionary access (encapsulate cell wrapping)
+        % Public but hidden - needed for workarounds when key names conflict with methods
+        function value = getData(obj, key)
+            %GETDATA Get value from Data dictionary (unwraps cell)
+            key = string(key);
+            val = obj.Data(key);
+            value = val{1};
+        end
 
-                newMap(key) = value;
-            end
+        function obj = setData(obj, key, value)
+            %SETDATA Set value in Data dictionary (wraps in cell)
+            key = string(key);
+            obj.Data(key) = {value};
         end
     end
 

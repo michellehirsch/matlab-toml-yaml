@@ -1,6 +1,6 @@
 function data = readini(filename, options)
     %READINI Read INI file
-    %   data = READINI(filename) reads the INI file and returns an IniData object.
+    %   data = READINI(filename) reads the INI file and returns an INIData object.
     %
     %   The function parses Windows INI format with sections [SectionName] and
     %   key=value pairs. Comments start with ; or # on a separate line.
@@ -9,7 +9,7 @@ function data = readini(filename, options)
     %       filename - Path to INI file (char or string)
     %
     %   Output:
-    %       data - IniData object with configuration data
+    %       data - INIData object with configuration data
     %
     %   Example:
     %       config = readini('config.ini');
@@ -23,70 +23,56 @@ function data = readini(filename, options)
     %       - Whitespace: trimmed around keys/values
     %       - No multiline values (each line is separate)
     %
-    %   See also: writeini, IniData, readyaml, readtoml
-    
+    %   See also: writeini, INIData, readyaml, readtoml
+
     arguments
         filename {mustBeFile}
         options.SequenceRule {mustBeMember(options.SequenceRule, {'auto', 'cell'})} = 'auto'
     end
-    
+
     % Read file contents using built-in readlines (R2020b+)
     try
         lines = readlines(filename, Encoding="UTF-8");
     catch ME
         error('readini:ReadFailed', 'Cannot read file "%s": %s', filename, ME.message);
     end
-    
+
     % Parse INI format
     data = INIData();
-    currentSection = data;
-    currentSectionName = '';
-    
+    currentSectionName = "";
+
     for i = 1:length(lines)
         line = strtrim(lines(i));
         lineChar = char(line);  % Convert to char for operations
-        
+
         % Skip empty lines and comments
         if isempty(line) || startsWith(line, ';') || startsWith(line, '#')
             continue;
         end
-        
+
         % Section header: [SectionName]
         if startsWith(line, '[') && endsWith(line, ']')
             sectionName = extractBetween(line, '[', ']');
             sectionName = strtrim(sectionName);
-            
-            % Create or get section
+
+            % Create section if it doesn't exist (using dot notation)
             if ~isfield(data, sectionName)
-                newSection = INIData();
-                % Initialize OriginalKeys for the section
-                newSection.OriginalKeys = string.empty(1, 0);
-                data.Data(char(sectionName)) = newSection;
-                % Track the key
-                if ~any(data.OriginalKeys == sectionName)
-                    data.OriginalKeys(end+1) = sectionName;
-                end
-                % Create alias if needed
-                validKey = matlab.lang.makeValidName(char(sectionName));
-                if ~strcmp(validKey, char(sectionName))
-                    data.KeyAliases(validKey) = char(sectionName);
-                end
+                data.(sectionName) = INIData();
             end
-            currentSection = data.Data(char(sectionName));
             currentSectionName = sectionName;
             continue;
         end
-        
+
         % Key-value pair: key=value or key:value
         if contains(line, '=') || contains(line, ':')
             % Find delimiter (using char version for find function)
             eqIdx = find(lineChar == '=', 1);
             colonIdx = find(lineChar == ':', 1);
-            
+
             if isempty(eqIdx) && isempty(colonIdx)
                 continue;
             end
-            
+
             if isempty(eqIdx)
                 delimIdx = colonIdx;
             elseif isempty(colonIdx)
@@ -94,36 +80,19 @@ function data = readini(filename, options)
             else
                 delimIdx = min(eqIdx, colonIdx);
             end
-            
+
             key = strtrim(extractBefore(line, delimIdx));
             value = strtrim(extractAfter(line, delimIdx));
-            
+
             % Parse value: detect type
             parsedValue = parseValue(value);
-            
+
             % Store in current section (or root if no section)
-            if ~isempty(currentSectionName)
-                currentSection.Data(char(key)) = parsedValue;
-                % Track the key in the section
-                if ~any(currentSection.OriginalKeys == key)
-                    currentSection.OriginalKeys(end+1) = key;
-                end
-                % Create alias if needed
-                validKey = matlab.lang.makeValidName(char(key));
-                if ~strcmp(validKey, char(key))
-                    currentSection.KeyAliases(validKey) = char(key);
-                end
+            % Use dot notation which handles value semantics correctly
+            if currentSectionName ~= ""
+                data.(currentSectionName).(key) = parsedValue;
             else
-                data.Data(char(key)) = parsedValue;
-                % Track the key in root
-                if ~any(data.OriginalKeys == key)
-                    data.OriginalKeys(end+1) = key;
-                end
-                % Create alias if needed
-                validKey = matlab.lang.makeValidName(char(key));
-                if ~strcmp(validKey, char(key))
-                    data.KeyAliases(validKey) = char(key);
-                end
+                data.(key) = parsedValue;
             end
         end
     end
@@ -131,11 +100,11 @@ end
 
 function value = parseValue(valueStr)
     %PARSEVALUE Parse INI value string to MATLAB type
-    
+
     % Convert to string for consistent handling
     valueStr = string(valueStr);
     valueChar = lower(char(valueStr));
-    
+
     % Try logical (only explicit true/false/yes/no)
     if strcmp(valueChar, 'true') || strcmp(valueChar, 'yes')
         value = true;
@@ -144,32 +113,32 @@ function value = parseValue(valueStr)
         value = false;
         return;
     end
-    
+
     % Try comma-separated array BEFORE numeric check
     % (because str2double('1,2,3') returns 123)
     if contains(valueStr, ',')
         parts = split(valueStr, ',');
         parts = strtrim(parts);
-        
+
         % Try parsing as numeric array
         numArray = str2double(parts);
         if ~any(isnan(numArray))
             value = numArray';  % Transpose to row vector
             return;
         end
-        
+
         % Otherwise as string array (row vector)
         value = parts';
         return;
     end
-    
+
     % Try numeric
     numVal = str2double(valueStr);
     if ~isnan(numVal)
         value = numVal;
         return;
     end
-    
+
     % Default to char
     value = char(valueStr);
 end
