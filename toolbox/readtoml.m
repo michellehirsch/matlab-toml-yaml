@@ -384,18 +384,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
         end
 
         finalKey = char(cleanKey(strtrim(keys(end))));
-        try
-            currentData.(finalKey) = value;
-        catch ME
-            if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
-                currentData.Data(finalKey) = value;
-                if ~any(currentData.OriginalKeys == finalKey)
-                    currentData.OriginalKeys(end+1) = finalKey;
-                end
-            else
-                rethrow(ME);
-            end
-        end
+        currentData.(finalKey) = value;
 
         % Update tableRef in rootData
         if strlength(tablePath) == 0
@@ -407,13 +396,14 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
         end
         tableRef = getDataPath(rootData, tablePath);
     else
-        % Try direct assignment; if it fails due to method conflict, use workaround
+        % Simple assignment using dot notation
+        % Some keys conflict with method names (e.g., 'empty'), so use try-catch
         try
             tableRef.(char(key)) = value;
         catch ME
             if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
-                % Method name conflict - store directly in Data
-                tableRef.Data(char(key)) = value;
+                % Method name conflict - store directly using setData
+                tableRef = tableRef.setData(char(key), value);
                 if ~any(tableRef.OriginalKeys == key)
                     tableRef.OriginalKeys(end+1) = key;
                 end
@@ -425,15 +415,9 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
                 rethrow(ME);
             end
         end
-        % Update in rootData
-        % For handle objects (ConfigurationData, TOMLData), the assignment above
-        % already modified the object in place, so we may not need to re-navigate.
-        % However, for nested arrays, getDataPath can fail when intermediate
-        % elements are arrays. Skip the re-navigation for handle objects.
-        if isa(tableRef, 'handle')
-            % Handle object - modifications already applied in place
-            % No need to re-navigate and update rootData
-        elseif arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
+
+        % Update in rootData (value semantics require explicit write-back)
+        if arrayIndex > 0 && (strcmp(tablePath, arrayPath) || startsWith(tablePath, arrayPath + "."))
             % Array element update (direct or nested table within array)
             arrayKeys = split(arrayPath, ".");
             currentArray = getDataPath(rootData, arrayPath);
@@ -443,18 +427,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
 
             if strcmp(tablePath, arrayPath)
                 % Direct array element field
-                try
-                    element.(char(key)) = value;
-                catch ME
-                    if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
-                        element.Data(char(key)) = value;
-                        if ~any(element.OriginalKeys == key)
-                            element.OriginalKeys(end+1) = key;
-                        end
-                    else
-                        rethrow(ME);
-                    end
-                end
+                element.(char(key)) = value;
             else
                 % Nested table within array element - navigate and set
                 relativePath = extractAfter(tablePath, arrayPath + ".");
@@ -466,18 +439,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
                     current = current.(char(relativeKeys(k)));
                 end
                 % Set the value in the nested table
-                try
-                    current.(char(key)) = value;
-                catch ME
-                    if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
-                        current.Data(char(key)) = value;
-                        if ~any(current.OriginalKeys == key)
-                            current.OriginalKeys(end+1) = key;
-                        end
-                    else
-                        rethrow(ME);
-                    end
-                end
+                current.(char(key)) = value;
             end
 
             % Write the modified element back to the array

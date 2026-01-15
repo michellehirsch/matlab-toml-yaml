@@ -226,14 +226,8 @@ function tomlStr = serializeToml(data, opts)
 end
 
 function value = getValue(data, key)
-    % Get value from struct or ConfigurationData
-    % Use Data map directly for ConfigurationData to avoid method name collisions
-    % (e.g., 'empty' key conflicts with the empty() method)
-    if isa(data, 'ConfigurationData')
-        value = data.Data(char(key));
-    else
-        value = data.(key);
-    end
+    % Get value from struct or ConfigurationData using dot notation
+    value = data.(key);
 end
 
 function tomlStr = serializeTable(tableName, tableData, prefix, opts)

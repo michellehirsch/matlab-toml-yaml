@@ -5,7 +5,7 @@ function writeini(data, filename, options)
     %   The function generates Windows INI format with sections and key=value pairs.
     %
     %   Input:
-    %       data - IniData object, struct, or containers.Map
+    %       data - INIData object, struct, or containers.Map
     %       filename - Output file path (char or string)
     %       options - Optional name-value pairs:
     %           'SectionSpacing': 'compact' (default) or 'loose'
@@ -13,7 +13,7 @@ function writeini(data, filename, options)
     %
     %   Example:
     %       % Create INI data
-    %       config = IniData();
+    %       config = INIData();
     %       config.database.host = 'localhost';
     %       config.database.port = 5432;
     %       config.database.ssl = true;
@@ -29,36 +29,36 @@ function writeini(data, filename, options)
     %       [section2]
     %       key3=value3
     %
-    %   See also: readini, IniData, writeyaml, writetoml
-    
+    %   See also: readini, INIData, writeyaml, writetoml
+
     arguments
         data
         filename {mustBeTextScalar}
         options.SectionSpacing {mustBeMember(options.SectionSpacing, {'compact', 'loose'})} = 'compact'
         options.Precision {mustBeInteger, mustBeNonnegative} = 6
     end
-    
+
     % Convert to INIData if needed
     if isstruct(data)
         iniData = struct2ini(data);
     elseif isa(data, 'containers.Map')
         iniData = map2ini(data);
-    elseif isa(data, 'INIData')
+    elseif isa(data, 'INIData') || isa(data, 'ConfigurationData')
         iniData = data;
     else
         error('writeini:UnsupportedType', ...
             'Input must be INIData, struct, or containers.Map.');
     end
-    
+
     % Generate INI content
     iniText = configDataToINI(iniData, options.SectionSpacing, options.Precision);
-    
+
     % Write to file
     fileID = fopen(filename, 'w', 'n', 'UTF-8');
     if fileID == -1
         error('writeini:OpenFailed', 'Cannot open file "%s" for writing.', filename);
     end
-    
+
     try
         fprintf(fileID, '%s', iniText);
     catch ME
@@ -69,51 +69,51 @@ function writeini(data, filename, options)
 end
 
 function iniText = configDataToINI(data, sectionSpacing, precision)
-    %CONFIGDATATOINI Convert IniData to INI text format
-    
+    %CONFIGDATATOINI Convert INIData to INI text format
+
     lines = {};
-    
+
     for i = 1:length(data.OriginalKeys)
         key = data.OriginalKeys(i);
-        value = data.Data(char(key));
-        
+        value = data.(key);  % Use dot notation
+
         if isa(value, 'ConfigurationData')
             % Section header
-            lines{end+1} = sprintf('[%s]', key);
-            
+            lines{end+1} = sprintf('[%s]', key); %#ok<AGROW>
+
             % Section key-value pairs
             for j = 1:length(value.OriginalKeys)
                 subkey = value.OriginalKeys(j);
-                subvalue = value.Data(char(subkey));
-                
+                subvalue = value.(subkey);  % Use dot notation
+
                 if isa(subvalue, 'ConfigurationData')
                     % Skip nested ConfigurationData (INI doesn't support deep nesting)
                     continue;
                 end
-                
+
                 % Format value
                 valueStr = formatValue(subvalue, precision);
-                lines{end+1} = sprintf('%s=%s', subkey, valueStr);
+                lines{end+1} = sprintf('%s=%s', subkey, valueStr); %#ok<AGROW>
             end
-            
+
             % Section spacing
             if strcmpi(sectionSpacing, 'loose')
-                lines{end+1} = '';  % Blank line between sections
+                lines{end+1} = '';  % Blank line between sections %#ok<AGROW>
             end
         end
     end
-    
+
     % Remove trailing empty lines
     while ~isempty(lines) && isempty(lines{end})
         lines(end) = [];
     end
-    
+
     iniText = strjoin(lines, newline);
 end
 
 function valueStr = formatValue(value, precision)
     %FORMATVALUE Format MATLAB value as INI string
-    
+
     if isstring(value) && isscalar(value)
         valueStr = char(value);
     elseif ischar(value)
@@ -155,13 +155,13 @@ end
 function iniData = struct2ini(s)
     %STRUCT2INI Convert struct to INIData
     iniData = INIData();
-    
+
     if isscalar(s)
         fields = fieldnames(s);
         for i = 1:length(fields)
             field = fields{i};
             value = s.(field);
-            
+
             if isstruct(value) && isscalar(value)
                 % Nested struct -> section
                 iniData.(field) = struct2ini(value);
@@ -175,12 +175,12 @@ end
 function iniData = map2ini(m)
     %MAP2INI Convert containers.Map to INIData
     iniData = INIData();
-    
+
     mapKeys = keys(m);
     for i = 1:length(mapKeys)
         key = mapKeys{i};
         value = m(key);
-        
+
         if isa(value, 'containers.Map')
             % Nested map -> section
             iniData.(key) = map2ini(value);

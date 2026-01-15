@@ -4,6 +4,8 @@ classdef TOMLData < ConfigurationData
     %   including preservation of key order and support for special characters
     %   in field names (like hyphens).
     %
+    %   This is a value class. Assignment creates an independent copy.
+    %
     %   Example:
     %       data = readtoml('pyproject.toml');
     %       name = data.project.name;
@@ -11,16 +13,14 @@ classdef TOMLData < ConfigurationData
     %       data.show;  % Display as TOML
     %
     %   See also READTOML, WRITETOML, ConfigurationData
-    
-    %   Copyright 2025 The MathWorks, Inc.
-    
+
     methods
         function obj = TOMLData
             %TOMLDATA Construct TOMLData object
             obj@ConfigurationData;
             obj.SourceFormat = "toml";
         end
-        
+
         function show(obj)
             %SHOW Display the data in TOML format
             %   data.show writes the TOMLData to a temporary file and
