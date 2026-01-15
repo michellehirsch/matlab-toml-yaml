@@ -386,11 +386,15 @@ function yamlText = stringToYAML(data)
     end
 
     % Check if quoting is needed
-    if isempty(strData) || ...
+    needsQuoting = isempty(strData) || ...
        any(strData(1) == '!#&*{[|>@`') || ...
        contains(strData, ': ') || ...
        contains(strData, ' #') || ...
-       ismember(lower(strData), {'true', 'false', 'null', 'yes', 'no', 'on', 'off'})
+       ismember(lower(strData), {'true', 'false', 'null', 'yes', 'no', 'on', 'off', '~'}) || ...
+       looksLikeNumber(strData) || ...
+       looksLikeDate(strData);
+
+    if needsQuoting
         % Use double quotes and escape special characters
         strData = strrep(strData, '\', '\\');
         strData = strrep(strData, '"', '\"');
@@ -399,6 +403,55 @@ function yamlText = stringToYAML(data)
     else
         yamlText = strData;
     end
+end
+
+function tf = looksLikeNumber(str)
+    %LOOKSLIKENUMBER Check if string looks like a number (int, float, hex, octal)
+    %   Returns true for strings like '3.8', '123', '0x1A', '0o17', '.5', '1e10'
+
+    if isempty(str)
+        tf = false;
+        return;
+    end
+
+    % Check for various numeric patterns
+    % Integer (possibly with sign): 123, -456, +789
+    % Float: 3.8, -1.5, .5, 1.
+    % Scientific notation: 1e10, 1.5E-3
+    % Hex: 0x1A, 0X2B
+    % Octal: 0o17, 0O77
+    % Infinity and NaN
+    numericPatterns = {
+        '^[+-]?\d+$', ...                          % Integer
+        '^[+-]?\d*\.\d*$', ...                     % Float (including .5 and 1.)
+        '^[+-]?\d*\.?\d+[eE][+-]?\d+$', ...        % Scientific notation
+        '^0[xX][0-9a-fA-F]+$', ...                 % Hexadecimal
+        '^0[oO][0-7]+$', ...                       % Octal
+        '^[+-]?(\.inf|\.Inf|\.INF)$', ...          % Infinity
+        '^\.nan|\.NaN|\.NAN$'                      % NaN
+    };
+
+    tf = false;
+    for i = 1:length(numericPatterns)
+        if ~isempty(regexp(str, numericPatterns{i}, 'once'))
+            tf = true;
+            return;
+        end
+    end
+end
+
+function tf = looksLikeDate(str)
+    %LOOKSLIKEDATE Check if string looks like an ISO date
+    %   Returns true for strings like '2020-01-01', '2020-01-01T12:00:00'
+
+    if isempty(str) || length(str) < 10
+        tf = false;
+        return;
+    end
+
+    % ISO date pattern: YYYY-MM-DD with optional time
+    datePattern = '^\d{4}-\d{2}-\d{2}';
+    tf = ~isempty(regexp(str, datePattern, 'once'));
 end
 
 function result = iif(condition, trueVal, falseVal)
