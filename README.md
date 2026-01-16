@@ -188,12 +188,14 @@ writeyaml(workflow, 'updated-workflow.yaml');
 
 ## Limitations
 
-- **YAML**: Subset parser, not full YAML 1.2 spec (no anchors, aliases, multi-document)
-- **TOML**: Array of tables bug in reading (writing works)
-- **Chained indexing**: `obj.field(i).subfield` requires extracting array first
-- **Custom tags**: Not supported
+This toolbox implements a simplified YAML parser optimized for configuration files. It is **not** a full YAML 1.2 compliant parser.
 
-For production use cases requiring full spec compliance, consider Java-based libraries.
+- **YAML**: Subset parser. See [LIMITATIONS.md](LIMITATIONS.md) for details on supported/unsupported features (anchors, tags, etc.).
+- **TOML**: Array of tables bug in reading (writing works).
+- **Chained indexing**: `obj.field(i).subfield` requires extracting array first (e.g. `tmp = obj.field; val = tmp(i).subfield`).
+- **Custom tags**: Not supported.
+
+For production use cases requiring full spec compliance (e.g. complex Kubernetes manifests with anchors), consider Java-based libraries.
 
 ## Requirements
 
