@@ -17,8 +17,8 @@ function data = readtoml(filename, options)
 %   Access with special characters
 %       version = config.("project").("version");
 %
-%   Display as TOML
-%       config.show;
+%   Formatted Display 
+%       show(config);
 %
 %   Convert to struct
 %       s = struct(config);
