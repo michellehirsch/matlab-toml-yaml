@@ -52,3 +52,6 @@ codegen/
 # Test artifacts (roundtrip temp files)
 tests/roundtrip_*
 tests/test_*.ini
+
+# Claude Code local settings (personal permissions, not shared)
+.claude/settings.local.json

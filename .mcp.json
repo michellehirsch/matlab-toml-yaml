@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "matlab": {
+      "type": "stdio",
+      "command": "${MATLAB_MCP_SERVER_PATH}",
+      "args": [
+        "--matlab-root",
+        "${MATLAB_ROOT:-/Applications/MATLAB_R2026a.app}"
+      ],
+      "env": {}
+    },
+    "github": {
+      "type": "stdio",
+      "command": "npx",
+      "args": ["-y", "@modelcontextprotocol/server-github"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_TOKEN}"
+      }
+    },
+    "filesystem": {
+      "type": "stdio",
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-filesystem",
+        "${PROJECT_ROOT:-.}"
+      ],
+      "env": {}
+    }
+  }
+}
