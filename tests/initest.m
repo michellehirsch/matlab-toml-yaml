@@ -14,10 +14,12 @@ classdef initest < matlab.unittest.TestCase
     methods (Test)
         function testReadSimpleINI(testCase)
             % Test reading a simple INI file
-            iniContent = sprintf('[server]\nhost=localhost\nport=8080');
-            fid = fopen('test_simple.ini', 'w');
-            fprintf(fid, '%s', iniContent);
-            fclose(fid);
+            iniContent = [
+                "[server]";
+                "host=localhost";
+                "port=8080"
+                ];
+            writelines(iniContent, 'test_simple.ini');
 
             config = readini('test_simple.ini');
 
@@ -50,9 +52,7 @@ classdef initest < matlab.unittest.TestCase
         function testAutoTypeDetection(testCase)
             % Test auto-type detection on read
             iniContent = sprintf('[types]\nstring_val=hello\nint_val=42\nfloat_val=3.14\nbool_true=true\nbool_false=false');
-            fid = fopen('test_types.ini', 'w');
-            fprintf(fid, '%s', iniContent);
-            fclose(fid);
+            writelines(iniContent, 'test_types.ini');
 
             config = readini('test_types.ini');
 
@@ -68,9 +68,7 @@ classdef initest < matlab.unittest.TestCase
         function testSpecialCharacters(testCase)
             % Test handling of special characters in keys
             iniContent = sprintf('[pool-config]\nmax-size=100\nmin-size=10');
-            fid = fopen('test_special.ini', 'w');
-            fprintf(fid, '%s', iniContent);
-            fclose(fid);
+            writelines(iniContent, 'test_special.ini');
 
             config = readini('test_special.ini');
 
@@ -86,9 +84,7 @@ classdef initest < matlab.unittest.TestCase
         function testCommentsSkipped(testCase)
             % Test that comments are properly skipped
             iniContent = sprintf('; This is a comment\n[section]\n# Another comment\nkey=value\n; End comment');
-            fid = fopen('test_comments.ini', 'w');
-            fprintf(fid, '%s', iniContent);
-            fclose(fid);
+            writelines(iniContent, 'test_comments.ini');
 
             config = readini('test_comments.ini');
 
@@ -100,9 +96,7 @@ classdef initest < matlab.unittest.TestCase
         function testCommaSeparatedValues(testCase)
             % Test comma-separated value parsing
             iniContent = sprintf('[arrays]\nports=8080,8443,9000\nhosts=alpha,beta,gamma');
-            fid = fopen('test_csv.ini', 'w');
-            fprintf(fid, '%s', iniContent);
-            fclose(fid);
+            writelines(iniContent, 'test_csv.ini');
 
             config = readini('test_csv.ini');
 
@@ -142,8 +136,7 @@ classdef initest < matlab.unittest.TestCase
 
         function testEmptyINI(testCase)
             % Test reading empty INI file
-            fid = fopen('test_empty.ini', 'w');
-            fclose(fid);
+            writelines("", 'test_empty.ini');
 
             config = readini('test_empty.ini');
 

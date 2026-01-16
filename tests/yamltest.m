@@ -22,9 +22,7 @@ classdef yamltest < matlab.unittest.TestCase
                 'enabled: true']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -41,9 +39,7 @@ classdef yamltest < matlab.unittest.TestCase
                 '  port: 5432']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -59,9 +55,7 @@ classdef yamltest < matlab.unittest.TestCase
                 '    - main']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -75,9 +69,7 @@ classdef yamltest < matlab.unittest.TestCase
             yamlText = 'ports: [8080, 8443, 9000]';
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -91,9 +83,7 @@ classdef yamltest < matlab.unittest.TestCase
                 '  - 8443']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -109,9 +99,7 @@ classdef yamltest < matlab.unittest.TestCase
                 '    run: make build']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -317,9 +305,7 @@ classdef yamltest < matlab.unittest.TestCase
                 '    role: user']);
 
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
 
             data = readyaml(filename);
 
@@ -340,9 +326,7 @@ classdef yamltest < matlab.unittest.TestCase
             yamlText = '';
             
             filename = fullfile(pwd, 'empty.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -358,9 +342,7 @@ classdef yamltest < matlab.unittest.TestCase
                 'value: 123']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -373,9 +355,7 @@ classdef yamltest < matlab.unittest.TestCase
             yamlText = 'message: "Hello, World!"';
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -390,9 +370,7 @@ classdef yamltest < matlab.unittest.TestCase
                 'no_val: no']);
             
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
             
             data = readyaml(filename);
             
@@ -408,9 +386,7 @@ classdef yamltest < matlab.unittest.TestCase
             yamlText = 'nullValue: null';
 
             filename = fullfile(pwd, 'test.yaml');
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
+            writelines(yamlText, filename);
 
             data = readyaml(filename);
 

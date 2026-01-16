@@ -18,9 +18,7 @@ tomlContent = ['[[users]]' newline ...
               'admin = false'];
 
 filename = '/tmp/test_users.toml';
-fid = fopen(filename, 'w');
-fprintf(fid, '%s', tomlContent);
-fclose(fid);
+writelines(tomlContent, filename);
 
 cd('/Users/michellehirsch/Coding/AgentExperiments/MATLAB/Claude/ConfigurationFileIO/toolbox');
 data = readtoml(filename);

@@ -68,24 +68,7 @@ function writeyaml(data, filename, options)
 
     % Write to file
     try
-        fid = fopen(filename, 'w', 'n', 'UTF-8');
-        if fid == -1
-            error('yamlToolbox:yamlwrite:FileOpenError', ...
-                'Unable to open file "%s" for writing', filename);
-        end
-
-        % Write and ensure file is closed even on error
-        try
-            fprintf(fid, '%s', yamlText);
-            fclose(fid);
-        catch innerME
-            % Attempt to close file if still open
-            if exist('fid','var') && fid ~= -1
-                try fclose(fid); catch, end
-            end
-            error('yamlToolbox:yamlwrite:FileWriteError', ...
-                'Unable to write to file "%s": %s', filename, innerME.message);
-        end
+        writelines(yamlText, filename, WriteMode="overwrite");
     catch ME
         error('yamlToolbox:yamlwrite:FileWriteError', ...
             'Unable to write to file "%s": %s', filename, ME.message);
