@@ -1,4 +1,4 @@
-# Type Coersion
+# Type Coercion
 
 I'm writing down some thoughts here about different ways we can handle the data model differences between YAML/TOML/etc. and MATLAB.
 
@@ -44,7 +44,7 @@ x =
 
 Misses the "intuitive" mark.
 
-## Options 2: Infer Intent from RHS
+## Option 2: Infer Intent from RHS
 
 ```lang=MATLAB
 >> x = json();
@@ -58,7 +58,7 @@ x =
     array2: 0
 ```
 
-You really can't infer that the RHS of the 4th line line is meant to be an array, and the field name isn't any help eiether since that's arbitrary.
+You really can't infer that the RHS of the 4th line is meant to be an array, and the field name isn't any help either since that's arbitrary.
 
 ## Option 3: Pick #1 or #2 and use meaningful typing 
 
@@ -74,9 +74,9 @@ x =
     array2: [0]
 ```
 
-This let's the user tell us exactly what they want, but then give the ability to specifiy what they want. However, the isshe is that `x.array2` is NOT a MATLAB type. =/
+This lets the user tell us exactly what they want. However, the issue is that `x.array2` is not a native MATLAB type (like double) - it's a wrapped type that remembers "I'm an array". =/
 
-## Options 4: Define a Schema 
+## Option 4: Define a Schema 
 
 In this case, you provide some strong typing for the fields, and then you get the right answer with MATLAB datatypes
 
