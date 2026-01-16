@@ -42,3 +42,6 @@ codegen/
 # Test artifacts (roundtrip temp files)
 tests/roundtrip_*
 tests/test_*.ini
+
+# Mac folder junk
+.DS_Store
