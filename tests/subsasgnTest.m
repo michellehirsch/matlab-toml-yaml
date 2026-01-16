@@ -86,5 +86,108 @@ classdef subsasgnTest < matlab.unittest.TestCase
             data.items(2).value = 99;
             testCase.verifyEqual(data.items(2).value, 99);
         end
+
+        %% Reserved name collision tests (Issue #14)
+        % With OverridesPublicDotMethodCall, users can have keys that match
+        % method names. The key takes priority over the method when using
+        % dot notation. Methods must be called with function syntax.
+
+        function testKeyNamedKeys(testCase)
+            % Test: user can create a key named "keys"
+            data = ConfigurationData();
+            data.keys = "my keys value";
+
+            % Dot notation returns the data key, not the method
+            testCase.verifyEqual(data.keys, "my keys value");
+
+            % Function syntax still calls the method
+            allKeys = keys(data);
+            testCase.verifyEqual(allKeys, "keys");
+        end
+
+        function testKeyNamedIsfield(testCase)
+            % Test: user can create a key named "isfield"
+            data = ConfigurationData();
+            data.isfield = true;
+
+            % Dot notation returns the data key
+            testCase.verifyEqual(data.isfield, true);
+
+            % Function syntax still works for the method
+            testCase.verifyTrue(isfield(data, "isfield"));
+        end
+
+        function testKeyNamedShow(testCase)
+            % Test: user can create a key named "show"
+            data = ConfigurationData();
+            data.show = "my show value";
+
+            % Dot notation returns the data key
+            testCase.verifyEqual(data.show, "my show value");
+        end
+
+        function testKeyNamedStruct(testCase)
+            % Test: user can create a key named "struct"
+            data = ConfigurationData();
+            data.struct = "struct value";
+
+            % Dot notation returns the data key
+            testCase.verifyEqual(data.struct, "struct value");
+
+            % Function syntax still works for conversion
+            s = struct(data);
+            testCase.verifyTrue(isstruct(s));
+            testCase.verifyEqual(s.struct, "struct value");
+        end
+
+        function testKeyNamedCopy(testCase)
+            % Test: user can create a key named "copy"
+            data = ConfigurationData();
+            data.copy = "copy value";
+
+            % Dot notation returns the data key
+            testCase.verifyEqual(data.copy, "copy value");
+
+            % Function syntax still works for the method
+            dataCopy = copy(data);
+            testCase.verifyEqual(dataCopy.copy, "copy value");
+        end
+
+        function testMultipleReservedNames(testCase)
+            % Test: multiple reserved names can coexist
+            data = ConfigurationData();
+            data.keys = ["key1", "key2"];
+            data.isfield = false;
+            data.struct = "struct value";
+            data.normal = "normal value";
+
+            % All values accessible via dot notation
+            testCase.verifyEqual(data.keys, ["key1", "key2"]);
+            testCase.verifyEqual(data.isfield, false);
+            testCase.verifyEqual(data.struct, "struct value");
+            testCase.verifyEqual(data.normal, "normal value");
+
+            % Method still works via function syntax
+            allKeys = keys(data);
+            testCase.verifyEqual(sort(allKeys), sort(["keys", "isfield", "struct", "normal"]));
+        end
+
+        function testReservedNameInYAMLData(testCase)
+            % Test: reserved names work in YAMLData subclass
+            data = YAMLData();
+            data.keys = "yaml keys";
+
+            testCase.verifyEqual(data.keys, "yaml keys");
+            testCase.verifyEqual(keys(data), "keys");
+        end
+
+        function testReservedNameInTOMLData(testCase)
+            % Test: reserved names work in TOMLData subclass
+            data = TOMLData();
+            data.keys = "toml keys";
+
+            testCase.verifyEqual(data.keys, "toml keys");
+            testCase.verifyEqual(keys(data), "keys");
+        end
     end
 end

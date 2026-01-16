@@ -174,7 +174,7 @@ special.("pull-request").("target-branch") %[output:72ed3579]
 %[text] ## Exploring Unknown YAML Files
 %[text] Use keys, isfield, and show to explore structure
 %[text] Top-level keys in GitHub Actions workflow:
-ghActions.keys %[output:8097bbab]
+keys(ghActions) %[output:8097bbab]
 %%
 %[text] Check for specific fields
 if isfield(ghActions, "jobs") %[output:group:03c2fbcb]

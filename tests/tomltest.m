@@ -65,9 +65,8 @@ classdef tomltest < matlab.unittest.TestCase
             data = readtoml(filename);
             testCase.verifyEqual(data.numbers, [1, 2, 3, 4]);
             testCase.verifyEqual(data.strings, ["red", "green", "blue"]);
-            % Note: "empty" conflicts with MATLAB's empty method
-            % Use getData method as workaround (dictionary requires cell unwrapping)
-            testCase.verifyEqual(data.getData('empty'), []);
+            % With OverridesPublicDotMethodCall, "empty" works as a key name
+            testCase.verifyEqual(data.empty, []);
         end
         function testTables(testCase)
             % Test table parsing
@@ -532,16 +531,16 @@ classdef tomltest < matlab.unittest.TestCase
                 return;
             end
 
-            origKeys = sort(original.keys);
-            restKeys = sort(restored.keys);
+            origKeys = sort(keys(original));
+            restKeys = sort(keys(restored));
 
             testCase.verifyEqual(restKeys, origKeys, ...
                 sprintf('Keys mismatch in %s', context));
 
             for i = 1:length(origKeys)
                 key = origKeys(i);
-                origVal = original.getData(char(key));
-                restVal = restored.getData(char(key));
+                origVal = getData(original, char(key));
+                restVal = getData(restored, char(key));
 
                 keyContext = sprintf('%s.%s', context, key);
 

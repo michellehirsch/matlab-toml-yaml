@@ -54,7 +54,7 @@ config.database.host
 %%
 %[text] ## Exploring Configuration Structure
 %[text] Use keys to list all top-level keys
-allKeys = config.keys;
+allKeys = keys(config);
 %[text] All top-level keys:
 allKeys %[output:16387c3a]
 %%
@@ -178,11 +178,11 @@ removeExample.keep1 = "value1";
 removeExample.remove_me = "value2";
 removeExample.keep2 = "value3";
 %[text] Before removal:
-removeExample.keys %[output:399668a6]
+keys(removeExample) %[output:399668a6]
 %[text] Remove a field
 removeExample = rmfield(removeExample, "remove_me");
 %[text] After removal:
-removeExample.keys %[output:5dc4ce6f]
+keys(removeExample) %[output:5dc4ce6f]
 %%
 %[text] Alternative syntax: remove
 removeExample.temporary = "temp value";

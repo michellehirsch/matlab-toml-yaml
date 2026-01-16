@@ -264,9 +264,9 @@ classdef yamltest < matlab.unittest.TestCase
             % Test show method exists and runs without error
             data = YAMLData;
             data.test = 'value';
-            
-            % Should not error
-            testCase.verifyWarningFree(@ data.show);
+
+            % Should not error (use function syntax for method call)
+            testCase.verifyWarningFree(@() show(data));
         end
         
         function testKeysMethod(testCase)
@@ -275,9 +275,9 @@ classdef yamltest < matlab.unittest.TestCase
             data.first = 1;
             data.second = 2;
             data.third = 3;
-            
-            k = data.keys;
-            
+
+            k = keys(data);
+
             testCase.verifyEqual(k, ["first", "second", "third"]);
         end
         
@@ -338,7 +338,7 @@ classdef yamltest < matlab.unittest.TestCase
             data = readyaml(filename);
             
             testCase.verifyClass(data, 'YAMLData');
-            testCase.verifyEqual(length(data.keys), 0);
+            testCase.verifyEqual(length(keys(data)), 0);
         end
         
         function testCommentsIgnored(testCase)
@@ -465,8 +465,8 @@ classdef yamltest < matlab.unittest.TestCase
                 return;
             end
 
-            origKeys = sort(original.keys);
-            restKeys = sort(restored.keys);
+            origKeys = sort(keys(original));
+            restKeys = sort(keys(restored));
 
             testCase.verifyEqual(restKeys, origKeys, ...
                 sprintf('Keys mismatch in %s', context));

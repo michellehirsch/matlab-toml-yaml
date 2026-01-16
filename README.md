@@ -113,11 +113,11 @@ config.version = '1.0.0';
 config.database.host = 'localhost';
 
 % Access keys
-keys = config.keys;           % Get all keys
+allKeys = keys(config);         % Get all keys
 exists = isfield(config, 'db'); % Check existence
 
 % Display full content
-config.show;                  % Shows formatted YAML/TOML
+show(config);                   % Shows formatted YAML/TOML
 
 % Convert to struct
 s = struct(config);             % Standard MATLAB struct

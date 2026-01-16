@@ -99,7 +99,7 @@ allNames = arrayfun(@(x) x.name, workflow.steps)
 %[text] ## Exploring Unknown TOML Files
 %[text] Use keys and isfield to explore TOML structure
 %[text] Keys in project:
-project.keys
+keys(project)
 %%
 %[text] Check if specific fields exist
 if isfield(project, "project")

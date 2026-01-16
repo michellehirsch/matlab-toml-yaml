@@ -140,7 +140,7 @@ classdef initest < matlab.unittest.TestCase
 
             config = readini('test_empty.ini');
 
-            testCase.verifyEqual(length(config.keys()), 0);
+            testCase.verifyEqual(length(keys(config)), 0);
 
             delete('test_empty.ini');
         end

@@ -128,9 +128,9 @@ function s = configDataToStruct(data)
     s = struct;
     
     if isa(data, 'ConfigurationData')
-        keys = data.keys;
-        for i = 1:length(keys)
-            key = char(keys(i));
+        dataKeys = keys(data);
+        for i = 1:length(dataKeys)
+            key = char(dataKeys(i));
             value = data.(key);
             
             % Recursively convert nested ConfigurationData
@@ -170,7 +170,7 @@ function tomlStr = serializeToml(data, opts)
 
     % Get keys based on type
     if isa(data, 'ConfigurationData')
-        allKeys = data.keys;
+        allKeys = keys(data);
     else
         allKeys = string(fieldnames(data));
     end
@@ -257,7 +257,7 @@ function tomlStr = serializeTable(tableName, tableData, prefix, opts)
     elseif isstruct(tableData) || isa(tableData, 'ConfigurationData')
         % Regular table - get keys
         if isa(tableData, 'ConfigurationData')
-            allKeys = tableData.keys;
+            allKeys = keys(tableData);
         else
             allKeys = string(fieldnames(tableData));
         end
@@ -322,7 +322,7 @@ function tomlStr = serializeStructContent(data, parentPath, opts)
 
     % Get keys
     if isa(data, 'ConfigurationData')
-        allKeys = data.keys;
+        allKeys = keys(data);
     else
         allKeys = string(fieldnames(data));
     end
@@ -519,7 +519,7 @@ function str = serializeInlineTable(tbl, opts)
 
     % Get keys
     if isa(tbl, 'ConfigurationData')
-        tableKeys = tbl.keys;
+        tableKeys = keys(tbl);
     else
         tableKeys = string(fieldnames(tbl));
     end
@@ -573,7 +573,7 @@ function useInline = shouldUseInlineTable(tbl, style)
 
         % Get keys
         if isa(tbl, 'ConfigurationData')
-            tableKeys = tbl.keys;
+            tableKeys = keys(tbl);
         else
             tableKeys = string(fieldnames(tbl));
         end
@@ -639,7 +639,7 @@ function useInline = shouldUseInlineTableArray(tableArray, style)
 
             % Get keys
             if isa(elem, 'ConfigurationData')
-                tableKeys = elem.keys;
+                tableKeys = keys(elem);
             else
                 tableKeys = string(fieldnames(elem));
             end

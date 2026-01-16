@@ -1,4 +1,5 @@
 classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
+                             matlab.mixin.indexing.OverridesPublicDotMethodCall & ...
                              matlab.mixin.CustomDisplay
     %CONFIGURATIONDATA Base class for structured configuration data
     %   Value class with dot notation access to configuration data.
@@ -9,6 +10,10 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
     %
     %   The copy() method is provided for compatibility but is equivalent
     %   to assignment for value classes.
+    %
+    %   NOTE: This class uses OverridesPublicDotMethodCall to avoid reserved
+    %   name collisions. Users can have keys named "keys", "isfield", etc.
+    %   To call methods, use function syntax: keys(obj), isfield(obj, key)
 
     properties (Access = public, Hidden = true)
         Data dictionary = configureDictionary("string", "cell")
@@ -94,7 +99,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
         function names = fieldnames(obj)
             %FIELDNAMES Get field names (alias for keys)
-            names = obj.keys;
+            names = keys(obj);
         end
 
         function tf = iskey(obj, key)
@@ -306,7 +311,12 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         end
 
         function varargout = dotReference(obj, indexOp, ~)
-            % Handle both dot notation (.) and array indexing
+            % Handle dot notation (.) for data key access
+            %
+            % With OverridesPublicDotMethodCall, ALL dot notation from outside
+            % the class comes here first. We prioritize data keys over methods,
+            % so users can have keys named "keys", "isfield", etc.
+            % To call methods, use function syntax: keys(obj), isfield(obj, key)
 
             % Check for unsupported array dot-reference: arr.field where arr is non-scalar
             if ~isscalar(obj)
@@ -322,10 +332,45 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 % Dot notation: obj.key
                 key = indexOp(1).Name;
 
-                % Check if accessing a real class property or method
-                % Properties (OriginalKeys, Data, etc.) need direct access
-                % Methods (setData, getData, etc.) should be callable
-                if isprop(obj, key) || ismethod(obj, key)
+                % PRIORITY 1: Check if key exists in data (allows "keys", "isfield", etc.)
+                resolvedKey = obj.resolveKey(key);
+                if ~isempty(resolvedKey)
+                    value = obj.getData(resolvedKey);
+
+                    % Handle chained indexing
+                    if length(indexOp) > 1
+                        if strcmp(indexOp(2).Type, 'Paren')
+                            % Array indexing: obj.key(indices)
+                            indices = indexOp(2).Indices{:};
+                            value = value(indices);
+
+                            % Handle further chaining: obj.key(1).field
+                            if length(indexOp) > 2
+                                if isa(value, 'ConfigurationData')
+                                    value = dotReference(value, indexOp(3:end));
+                                else
+                                    error('ConfigurationData:InvalidChain', ...
+                                        'Cannot chain into non-ConfigurationData value');
+                                end
+                            end
+                        elseif strcmp(indexOp(2).Type, 'Dot')
+                            % Nested dot: obj.key.field
+                            if isa(value, 'ConfigurationData')
+                                value = dotReference(value, indexOp(2:end));
+                            else
+                                error('ConfigurationData:InvalidChain', ...
+                                    'Cannot chain into non-ConfigurationData value');
+                            end
+                        end
+                    end
+
+                    varargout{1} = value;
+                    return;
+                end
+
+                % PRIORITY 2: Check if accessing a real class property
+                % (OriginalKeys, Data, KeyAliases, SourceFormat)
+                if isprop(obj, key)
                     value = obj.(key);
                     if length(indexOp) > 1
                         value = subsref(value, indexOp(2:end));
@@ -334,41 +379,9 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     return;
                 end
 
-                resolvedKey = obj.resolveKey(key);
-
-                if isempty(resolvedKey)
-                    error('ConfigurationData:InvalidKey', ...
-                        'Key "%s" does not exist.', key);
-                end
-
-                value = obj.getData(resolvedKey);
-
-                % Handle chained indexing: obj.key(1).field or obj.key.field
-                if length(indexOp) > 1
-                    if strcmp(indexOp(2).Type, 'Paren')
-                        % Array indexing: obj.key(indices)
-                        indices = indexOp(2).Indices{:};
-                        value = value(indices);
-
-                        % Handle further chaining: obj.key(1).field
-                        if length(indexOp) > 2
-                            if isa(value, 'ConfigurationData')
-                                value = dotReference(value, indexOp(3:end));
-                            else
-                                error('ConfigurationData:InvalidChain', ...
-                                    'Cannot chain into non-ConfigurationData value');
-                            end
-                        end
-                    elseif strcmp(indexOp(2).Type, 'Dot')
-                        % Nested dot: obj.key.field
-                        if isa(value, 'ConfigurationData')
-                            value = dotReference(value, indexOp(2:end));
-                        else
-                            error('ConfigurationData:InvalidChain', ...
-                                'Cannot chain into non-ConfigurationData value');
-                        end
-                    end
-                end
+                % PRIORITY 3: Key doesn't exist - error
+                error('ConfigurationData:InvalidKey', ...
+                    'Key "%s" does not exist.', key);
 
             elseif strcmp(indexOp(1).Type, 'Paren')
                 % Direct array indexing on obj: should not happen
@@ -378,8 +391,6 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 error('ConfigurationData:UnsupportedIndexing', ...
                     'Unsupported indexing type: %s', indexOp(1).Type);
             end
-
-            varargout{1} = value;
         end
 
         function obj = dotAssign(obj, indexOp, varargin)
