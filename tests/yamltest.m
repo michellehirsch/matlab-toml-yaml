@@ -6,10 +6,17 @@ classdef yamltest < matlab.unittest.TestCase
         ArrayStyle = {'block', 'flow'}
         SectionSpacing = {'loose', 'compact'}
     end
-    
+
+    methods (TestClassSetup)
+        function addToPath(testCase)
+            % Add toolbox folder to path
+            testCase.applyFixture(matlab.unittest.fixtures.PathFixture('../toolbox'));
+        end
+    end
+
     methods (TestMethodSetup)
         function createTempDir(testCase)
-            testCase.applyFixture(matlab.unittest.fixtures.TemporaryFolderFixture);
+            testCase.applyFixture(matlab.unittest.fixtures.WorkingFolderFixture);
         end
     end
     
