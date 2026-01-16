@@ -115,19 +115,12 @@ function writetoml(data, filename, options)
     tomlContent = serializeToml(data, serializeOpts);
 
     % Write to file
-    fid = fopen(filename, 'w', 'n', 'UTF-8');
-    if fid == -1
+    try
+        writelines(tomlContent, filename, WriteMode="overwrite");
+    catch ME
         error('tomlToolbox:writetoml:FileOpenError', ...
             'Cannot open file for writing: %s', filename);
     end
-
-    try
-        fprintf(fid, '%s', tomlContent);
-    catch ME
-        fclose(fid);
-        rethrow(ME);
-    end
-    fclose(fid);
 end
 
 function s = configDataToStruct(data)
