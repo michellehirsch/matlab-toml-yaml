@@ -27,3 +27,15 @@ short.name
 
 * Make a few long form examples for writing (maybe)
 * readtoml errors: tests/SampleFiles/complex_workflow.toml
+
+# Jan 15th - Jeremy's Observations
+
+It would be good to use more modern practices as much as possible, especially if we plan to make this public. The more public "good" code out there, the more LLMs will be able to write better MATLAB code.
+
+[X] Use writelines instead of direct fopen.
+[X] Update tests to avoid generating cruft.
+[] Use native strings instead of cellstr/char.
+[] Allow partial/caseinsisentive matching in interface.
+[] arrayfun/cellfun -> loops and vectorized calls as much as possible
+[] Should we be using packages over projects? (I don't really know what to do with projects)
+[] Use github actions for running tests and building mltbx file?

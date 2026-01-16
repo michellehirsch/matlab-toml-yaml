@@ -54,18 +54,11 @@ function writeini(data, filename, options)
     iniText = configDataToINI(iniData, options.SectionSpacing, options.Precision);
 
     % Write to file
-    fileID = fopen(filename, 'w', 'n', 'UTF-8');
-    if fileID == -1
-        error('writeini:OpenFailed', 'Cannot open file "%s" for writing.', filename);
-    end
-
     try
-        fprintf(fileID, '%s', iniText);
+        writelines(iniText, filename, WriteMode="overwrite");
     catch ME
-        fclose(fileID);
-        rethrow(ME);
+        error('writeini:OpenFailed', 'Cannot open file "%s" for writing: %s', filename, ME.message);
     end
-    fclose(fileID);
 end
 
 function iniText = configDataToINI(data, sectionSpacing, precision)

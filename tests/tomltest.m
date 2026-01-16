@@ -22,9 +22,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'version = 1' newline ...
                           'enabled = true'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.title, "My App");
             testCase.verifyEqual(data.version, 1);
@@ -37,9 +35,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'negative = -17' newline ...
                           'withUnderscore = 1_000_000'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.integer, 42);
             testCase.verifyEqual(data.float, 3.14, 'AbsTol', 1e-10);
@@ -52,9 +48,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'literal = ''C:\Users\path''' newline ...
                           'escaped = "Line 1\nLine 2"'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.basic, "hello world");
             % TOML literal strings (single quotes) don't escape - backslashes are literal
@@ -67,9 +61,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'strings = ["red", "green", "blue"]' newline ...
                           'empty = []'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.numbers, [1, 2, 3, 4]);
             testCase.verifyEqual(data.strings, ["red", "green", "blue"]);
@@ -84,9 +76,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'port = 5432' newline ...
                           'enabled = true'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyTrue(isfield(data, 'database'));
             testCase.verifyEqual(data.database.server, "192.168.1.1");
@@ -99,9 +89,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'host = "localhost"' newline ...
                           'port = 3306'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyTrue(isfield(data, 'server'));
             testCase.verifyEqual(data.server.database.host, "localhost");
@@ -111,9 +99,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test inline table parsing
             tomlContent = 'point = {x = 1, y = 2, z = 3}';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.point.x, 1);
             testCase.verifyEqual(data.point.y, 2);
@@ -126,9 +112,7 @@ classdef tomltest < matlab.unittest.TestCase
                           '# Another comment' newline ...
                           'number = 42'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.key, "value");
             testCase.verifyEqual(data.number, 42);
@@ -137,9 +121,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test hexadecimal number parsing
             tomlContent = 'hex = 0xDEADBEEF';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.hex, hex2dec('DEADBEEF'));
         end
@@ -147,9 +129,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test binary number parsing
             tomlContent = 'binary = 0b11010110';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.binary, bin2dec('11010110'));
         end
@@ -157,9 +137,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test octal number parsing
             tomlContent = 'octal = 0o755';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.octal, base2dec('755', 8));
         end
@@ -167,9 +145,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test datetime parsing
             tomlContent = 'date = 2024-12-29T10:30:00Z';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyClass(data.date, 'datetime');
         end
@@ -177,9 +153,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test dotted keys (a.b = value creates nested structure)
             tomlContent = 'a.b.c = "nested value"';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.a.b.c, "nested value");
         end
@@ -187,9 +161,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Test quoted keys (keys with special characters)
             tomlContent = '"special-key" = "value"';
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             % Access with parentheses for special characters
             testCase.verifyEqual(data.("special-key"), "value");
@@ -199,9 +171,7 @@ classdef tomltest < matlab.unittest.TestCase
             tomlContent = ['t = true' newline ...
                           'f = false'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             testCase.verifyEqual(data.t, true);
             testCase.verifyEqual(data.f, false);
@@ -221,9 +191,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'name = "third"' newline ...
                           'value = 3'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             % Verify array of tables
             testCase.verifyEqual(length(data.items), 3);
@@ -254,9 +222,7 @@ classdef tomltest < matlab.unittest.TestCase
                           'write = false' newline ...
                           'admin = false'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             % Verify array structure
             testCase.verifyEqual(length(data.users), 2);
@@ -281,9 +247,7 @@ classdef tomltest < matlab.unittest.TestCase
                           '[database]' newline ...
                           'port = 5432'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             % Verify it's a TOMLData object
             testCase.verifyClass(data, 'TOMLData');
@@ -322,9 +286,7 @@ classdef tomltest < matlab.unittest.TestCase
                           '[table."sub-table"]' newline ...
                           'value = 3'];
             filename = 'test.toml';
-            fid = fopen(filename, 'w');
-            fprintf(fid, '%s', tomlContent);
-            fclose(fid);
+            writelines(tomlContent, filename);
             data = readtoml(filename);
             % Access with parentheses
             testCase.verifyEqual(data.("my-key"), 1);
