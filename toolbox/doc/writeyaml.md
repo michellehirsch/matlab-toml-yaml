@@ -24,7 +24,7 @@ writeyaml(___,Name=Value)
 
 ### data
 Data to write to file.
-*Type:* [YAMLData](YAMLData.md), [ConfigurationData](ConfigurationData.md), struct, cell array, or other MATLAB data types
+*Type:* [YAMLData](YAMLData.md), [ConfigurationData](ConfigurationData.md), struct, dictionary, containers.Map, cell array, or other MATLAB data types
 
 ### filename
 Output file path.
@@ -121,10 +121,11 @@ For more examples, see [readyamlExample.m](../../examples/readyamlExample.m).
 
 ## Tips
 
+- Pass structs or dictionaries directly: `writeyaml(myStruct, "file.yaml")`.
 - Use `ArrayStyle="flow"` for compact, single-line arrays in configuration files.
 - Use `SectionSpacing="compact"` to reduce file size when readability isn't critical.
 - The `Precision` option controls decimal places; use smaller values for cleaner output when full precision isn't needed.
-- YAMLData and structs produce equivalent YAML output; choose based on your workflow preferences.
+- YAMLData, structs, and dictionaries produce equivalent YAML output; choose based on your workflow preferences.
 
 ## More About
 

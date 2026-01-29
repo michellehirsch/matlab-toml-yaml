@@ -135,6 +135,24 @@ config.("my key").value = 123;
 config.build_system  % Also works! (uses makeValidName)
 ```
 
+### Converting Data
+
+Convert between structs, dictionaries, and ConfigurationData:
+
+```matlab
+% Create from struct
+s = struct('name', 'MyApp', 'database', struct('host', 'localhost', 'port', 5432));
+config = YAMLData(s);           % Also works with TOMLData, INIData
+
+% Convert to dictionary
+d = dictionary(config);
+d{"name"}                       % "MyApp"
+
+% Write struct or dictionary directly
+writeyaml(s, 'config.yaml');    % Structs work directly
+writeyaml(d, 'config.yaml');    % Dictionaries work too
+```
+
 ## Examples
 
 See `GettingStarted.mlx` for an interactive walkthrough, or explore the `examples/` folder:

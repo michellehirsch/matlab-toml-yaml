@@ -2,13 +2,14 @@
 %[text] This example demonstrates the ConfigurationData class and its subclasses (TOMLData and YAMLData), showing how to create, access, modify, and convert configuration data objects.
 %%
 %[text] ## ConfigurationData Overview
-%[text] ConfigurationData is a handle class that provides dot notation access to configuration data with support for keys containing special characters.
+%[text] ConfigurationData is a value class that provides dot notation access to configuration data with support for keys containing special characters.
 %[text] Key features:
 %[text] - Dot notation access: config.key
 %[text] - Special character support: config.("key-with-hyphens")
 %[text] - Automatic aliasing for hyphenated keys
 %[text] - Preserved key order
-%[text] - Handle class behavior (pass by reference)\\ \
+%[text] - Value class behavior (assignment creates copies)
+%[text] - Create from struct, dictionary, or containers.Map\\ \
 %%
 %[text] ## Creating ConfigurationData Objects
 %[text] Create a new ConfigurationData object
@@ -71,20 +72,20 @@ if iskey(config, "name") %[output:group:9f860c58]
     disp("Name field exists") %[output:5a8b9627]
 end %[output:group:9f860c58]
 %%
-%[text] ## Handle Class Behavior
-%[text] ConfigurationData is a handle class - assignments create references
+%[text] ## Value Class Behavior
+%[text] ConfigurationData is a value class - assignments create independent copies
 config1 = ConfigurationData;
 config1.value = 42;
-%[text] This creates a reference, not a copy
+%[text] This creates an independent copy (not a reference)
 config2 = config1;
 config2.value = 100;
-%[text] Original is modified because config2 is a reference
+%[text] Original is NOT modified because config2 is an independent copy
 config1.value
 %%
-%[text] Use copy to create an independent copy
+%[text] The copy() method also works (for compatibility)
 config3 = copy(config1);
 config3.value = 200;
-%[text] Original is NOT modified - config1 still has value 100
+%[text] Original is NOT modified - config1 still has value 42
 config1.value
 %%
 %[text] ## Converting to Struct
@@ -270,9 +271,9 @@ type("app_config.yaml") %[output:9e157205]
 %%
 %[text] ## Best Practices
 %[text] Best practices for ConfigurationData:
-%[text] 1. Handle class behavior: \
-%[text] -   - Remember that assignments create references
-%[text] -   - Use copy to create independent copies \
+%[text] 1. Value class behavior: \
+%[text] -   - Assignments create independent copies
+%[text] -   - No need for explicit copy() calls \
 %[text] 1. Special character keys: \
 %[text] -   - Use config.("key-with-special-chars") syntax
 %[text] -   - Be consistent with key naming conventions \

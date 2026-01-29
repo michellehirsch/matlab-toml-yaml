@@ -24,7 +24,7 @@ writetoml(___,Name=Value)
 
 ### data
 Data to write to file.
-*Type:* [TOMLData](TOMLData.md), [ConfigurationData](ConfigurationData.md), or struct
+*Type:* [TOMLData](TOMLData.md), [ConfigurationData](ConfigurationData.md), struct, dictionary, or containers.Map
 
 ### filename
 Output file path.
@@ -172,6 +172,7 @@ For more examples, see [readtomlExample.m](../../examples/readtomlExample.m).
 
 ## Tips
 
+- Pass structs or dictionaries directly: `writetoml(myStruct, "file.toml")`.
 - Use `TableStyle="inline"` for small, simple tables to reduce file size.
 - Use `ArrayStyle="block"` for long dependency lists to improve readability.
 - Use `StringEscapeStyle="literal"` for Windows paths to avoid escape sequence issues.
