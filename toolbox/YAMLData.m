@@ -14,9 +14,22 @@ classdef YAMLData < ConfigurationData
     %   See also: ConfigurationData, readyaml, writeyaml
 
     methods
-        function obj = YAMLData
+        function obj = YAMLData(inputData)
             %YAMLDATA Construct YAML configuration data object
-            obj@ConfigurationData;
+            %   obj = YAMLData() creates an empty YAMLData object
+            %   obj = YAMLData(s) converts struct s to YAMLData
+            %   obj = YAMLData(d) converts dictionary d to YAMLData
+            %   obj = YAMLData(m) converts containers.Map m to YAMLData
+            %
+            %   Example:
+            %       s = struct('name', 'myapp', 'version', '1.0');
+            %       config = YAMLData(s);
+            %       writeyaml(config, 'config.yaml');
+
+            if nargin < 1
+                inputData = [];
+            end
+            obj@ConfigurationData(inputData);
             obj.SourceFormat = "yaml";
         end
 

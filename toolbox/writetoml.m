@@ -2,7 +2,8 @@ function writetoml(data, filename, options)
 % WRITETOML Write data to TOML file
 %
 %   WRITETOML(DATA) writes DATA to 'untitled.toml' in the current directory.
-%   DATA can be a TOMLData object, ConfigurationData object, or struct.
+%   DATA can be a TOMLData object, ConfigurationData object, struct,
+%   dictionary, or containers.Map.
 %
 %   WRITETOML(DATA, FILENAME) writes DATA to the specified TOML file.
 %
@@ -85,7 +86,7 @@ function writetoml(data, filename, options)
 %   Copyright 2025 The MathWorks, Inc.
 
     arguments
-        data {mustBeA(data, ["TOMLData", "ConfigurationData", "struct"])}
+        data
         filename (1,1) string = "untitled.toml"
         options.ArrayStyle {mustBeMember(options.ArrayStyle, {'auto', 'flow', 'block'})} = 'auto'
         options.NumIndentationSpaces (1,1) {mustBeInteger, mustBePositive} = 2
@@ -95,6 +96,16 @@ function writetoml(data, filename, options)
         options.TableArrayStyle {mustBeMember(options.TableArrayStyle, {'auto', 'inline', 'expanded'})} = 'expanded'
         options.StringEscapeStyle {mustBeMember(options.StringEscapeStyle, {'auto', 'escaped', 'literal'})} = 'auto'
         options.StringLayout {mustBeMember(options.StringLayout, {'auto', 'singleline', 'multiline'})} = 'auto'
+    end
+
+    % Convert input to TOMLData for consistent processing
+    if isa(data, 'dictionary') || isa(data, 'containers.Map')
+        data = TOMLData(data);
+    elseif isstruct(data)
+        data = TOMLData(data);
+    elseif ~isa(data, 'ConfigurationData')
+        error('writetoml:InvalidInput', ...
+            'Input must be TOMLData, ConfigurationData, struct, dictionary, or containers.Map.');
     end
 
     % Convert options for internal use

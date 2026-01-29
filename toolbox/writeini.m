@@ -5,7 +5,7 @@ function writeini(data, filename, options)
     %   The function generates Windows INI format with sections and key=value pairs.
     %
     %   Input:
-    %       data - INIData object, struct, or containers.Map
+    %       data - INIData object, struct, dictionary, or containers.Map
     %       filename - Output file path (char or string)
     %       options - Optional name-value pairs:
     %           'SectionSpacing': 'compact' (default) or 'loose'
@@ -39,15 +39,13 @@ function writeini(data, filename, options)
     end
 
     % Convert to INIData if needed
-    if isstruct(data)
-        iniData = struct2ini(data);
-    elseif isa(data, 'containers.Map')
-        iniData = map2ini(data);
+    if isstruct(data) || isa(data, 'dictionary') || isa(data, 'containers.Map')
+        iniData = INIData(data);
     elseif isa(data, 'INIData') || isa(data, 'ConfigurationData')
         iniData = data;
     else
         error('writeini:UnsupportedType', ...
-            'Input must be INIData, struct, or containers.Map.');
+            'Input must be INIData, struct, dictionary, or containers.Map.');
     end
 
     % Generate INI content
