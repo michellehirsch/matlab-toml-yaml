@@ -15,9 +15,22 @@ classdef TOMLData < ConfigurationData
     %   See also READTOML, WRITETOML, ConfigurationData
 
     methods
-        function obj = TOMLData
+        function obj = TOMLData(inputData)
             %TOMLDATA Construct TOMLData object
-            obj@ConfigurationData;
+            %   obj = TOMLData() creates an empty TOMLData object
+            %   obj = TOMLData(s) converts struct s to TOMLData
+            %   obj = TOMLData(d) converts dictionary d to TOMLData
+            %   obj = TOMLData(m) converts containers.Map m to TOMLData
+            %
+            %   Example:
+            %       s = struct('project', struct('name', 'myapp'));
+            %       config = TOMLData(s);
+            %       writetoml(config, 'pyproject.toml');
+
+            if nargin < 1
+                inputData = [];
+            end
+            obj@ConfigurationData(inputData);
             obj.SourceFormat = "toml";
         end
 

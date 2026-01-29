@@ -26,10 +26,30 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
     end
 
     methods
-        function obj = ConfigurationData
+        function obj = ConfigurationData(inputData)
+            %CONFIGURATIONDATA Create ConfigurationData object
+            %   obj = ConfigurationData() creates an empty object
+            %   obj = ConfigurationData(s) converts struct s
+            %   obj = ConfigurationData(d) converts dictionary d
+            %   obj = ConfigurationData(m) converts containers.Map m
+            %
+            %   Nested structs, dictionaries, and Maps are recursively
+            %   converted to ConfigurationData objects of the same class.
+            %
+            %   Example:
+            %       s = struct('name', 'test', 'nested', struct('value', 42));
+            %       config = YAMLData(s);
+            %       config.name  % returns 'test'
+            %
+            %   See also STRUCT, DICTIONARY, MAP
+
             obj.Data = configureDictionary("string", "cell");
             obj.KeyAliases = configureDictionary("string", "string");
             obj.OriginalKeys = string.empty;
+
+            if nargin > 0 && ~isempty(inputData)
+                obj = obj.importFrom(inputData);
+            end
         end
 
         function newObj = copy(obj)
@@ -89,6 +109,39 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 end
 
                 m(char(key)) = value;
+            end
+        end
+
+        function d = dictionary(obj)
+            %DICTIONARY Convert to MATLAB dictionary
+            %   d = dictionary(obj) converts the ConfigurationData to a
+            %   dictionary with string keys and cell values.
+            %
+            %   Nested ConfigurationData objects are recursively converted
+            %   to nested dictionaries.
+            %
+            %   Example:
+            %       config = readyaml('config.yaml');
+            %       d = dictionary(config);
+            %       value = d{"keyName"};
+            %
+            %   See also STRUCT, MAP
+
+            d = configureDictionary("string", "cell");
+            for i = 1:length(obj.OriginalKeys)
+                key = obj.OriginalKeys(i);
+                value = obj.getData(key);
+
+                if isa(value, 'ConfigurationData')
+                    if isscalar(value)
+                        value = dictionary(value);  % Recursive
+                    else
+                        % Array of ConfigurationData -> cell array of dictionaries
+                        value = arrayfun(@dictionary, value, 'UniformOutput', false);
+                    end
+                end
+
+                d(key) = {value};
             end
         end
 
@@ -555,6 +608,72 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 fieldName = matlab.lang.makeValidName(char(key));
                 s.(fieldName) = value;
             end
+        end
+
+        function obj = importFrom(obj, inputData)
+            %IMPORTFROM Import data from struct, dictionary, or containers.Map
+            %   This protected method handles the conversion logic for the
+            %   constructor. It preserves the class type for nested objects.
+
+            if isstruct(inputData)
+                fields = fieldnames(inputData);
+                for i = 1:numel(fields)
+                    key = fields{i};
+                    value = inputData.(key);
+                    value = obj.convertImportValue(value);
+                    obj.(key) = value;
+                end
+            elseif isa(inputData, 'dictionary')
+                keyList = keys(inputData);
+                for i = 1:numel(keyList)
+                    key = keyList(i);
+                    val = inputData(key);
+                    value = val{1};  % Unwrap from cell
+                    value = obj.convertImportValue(value);
+                    obj.(key) = value;
+                end
+            elseif isa(inputData, 'containers.Map')
+                keyList = keys(inputData);
+                for i = 1:numel(keyList)
+                    key = keyList{i};
+                    value = inputData(key);
+                    value = obj.convertImportValue(value);
+                    obj.(key) = value;
+                end
+            else
+                error('ConfigurationData:InvalidInput', ...
+                    'Input must be struct, dictionary, or containers.Map. Got %s.', class(inputData));
+            end
+        end
+
+        function value = convertImportValue(obj, value)
+            %CONVERTIMPORTVALUE Recursively convert nested structs/dicts to ConfigurationData
+            %   This preserves the class type (YAMLData stays YAMLData, etc.)
+
+            if isstruct(value)
+                if isscalar(value)
+                    % Scalar struct -> ConfigurationData of same class
+                    nested = feval(class(obj));
+                    nested = nested.importFrom(value);
+                    value = nested;
+                else
+                    % Struct array -> array of ConfigurationData
+                    arr = arrayfun(@(v) obj.convertImportValue(v), value);
+                    value = arr;
+                end
+            elseif isa(value, 'dictionary')
+                % Dictionary -> ConfigurationData of same class
+                nested = feval(class(obj));
+                nested = nested.importFrom(value);
+                value = nested;
+            elseif isa(value, 'containers.Map')
+                % Map -> ConfigurationData of same class
+                nested = feval(class(obj));
+                nested = nested.importFrom(value);
+                value = nested;
+            end
+            % Other types (numeric, string, etc.) pass through unchanged
+            % They will be validated by setData when assigned
         end
     end
 

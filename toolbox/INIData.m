@@ -19,9 +19,22 @@ classdef INIData < ConfigurationData
     %       config = readini('config.ini');
 
     methods
-        function obj = INIData()
-            %INIDATA Create an empty INI data object
-            obj = obj@ConfigurationData();
+        function obj = INIData(inputData)
+            %INIDATA Create INI data object
+            %   obj = INIData() creates an empty INIData object
+            %   obj = INIData(s) converts struct s to INIData
+            %   obj = INIData(d) converts dictionary d to INIData
+            %   obj = INIData(m) converts containers.Map m to INIData
+            %
+            %   Example:
+            %       s = struct('database', struct('host', 'localhost'));
+            %       config = INIData(s);
+            %       writeini(config, 'config.ini');
+
+            if nargin < 1
+                inputData = [];
+            end
+            obj = obj@ConfigurationData(inputData);
             obj.SourceFormat = "ini";
         end
 
