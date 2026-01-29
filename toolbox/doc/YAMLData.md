@@ -10,12 +10,21 @@ YAMLData represents structured configuration data from YAML files with dot notat
 
 ```matlab
 data = YAMLData
+data = YAMLData(s)
+data = YAMLData(d)
+data = YAMLData(m)
 data = readyaml(filename)
 ```
 
 ### Description
 
 `data = YAMLData` creates an empty YAMLData object.
+
+`data = YAMLData(s)` converts struct `s` to YAMLData. Nested structs become nested YAMLData objects.
+
+`data = YAMLData(d)` converts dictionary `d` to YAMLData.
+
+`data = YAMLData(m)` converts containers.Map `m` to YAMLData.
 
 `data = readyaml(filename)` creates a YAMLData object by reading from a YAML file. See [readyaml](readyaml.md).
 
@@ -53,6 +62,7 @@ Format of the source data.
 
 ### Data Conversion
 - [`struct`](#struct) — Convert to standard MATLAB struct
+- [`dictionary`](#dictionary) — Convert to MATLAB dictionary
 - [`map`](#map) — Convert to containers.Map
 
 ### Data Modification
@@ -150,21 +160,38 @@ s = struct(data);
 host = s.database.host;
 ```
 
-### Create Independent Copy
+### Value Class Behavior
 
-YAMLData is a handle class:
+YAMLData uses value semantics - assignment creates independent copies:
 
 ```matlab
 % Create original
 original = readyaml("config.yaml");
 
-% Create copy (not independent)
-ref = original;
-ref.database.port = 5433;  % Modifies original!
+% Assignment creates independent copy
+copied = original;
+copied.database.port = 5433;  % Does NOT modify original
 
-% Create independent copy
-independent = copy(original);
-independent.database.port = 5433;  % Does not modify original
+% copy() method also works
+another = copy(original);
+another.database.port = 5434;  % Does NOT modify original
+```
+
+### Create from Struct
+
+Convert existing structs to YAMLData:
+
+```matlab
+% Create struct
+s = struct('name', 'MyApp', 'database', struct('host', 'localhost', 'port', 5432));
+
+% Convert to YAMLData
+config = YAMLData(s);
+config.name           % "MyApp"
+config.database.host  % "localhost"
+
+% Write struct directly (auto-converted)
+writeyaml(s, 'config.yaml');
 ```
 
 ### Modify and Save
@@ -187,25 +214,26 @@ For comprehensive examples, see [readyamlExample.m](../../examples/readyamlExamp
 
 ## Tips
 
-- YAMLData is a handle class. Use `copy` to create independent copies when needed.
+- YAMLData is a value class. Assignment creates independent copies automatically.
+- Create from struct: `config = YAMLData(myStruct)`.
 - Use `show` to view the YAML representation without writing to a file.
 - Access fields with special characters using dynamic field names: `data.("field-name")`.
-- Convert to struct with `struct(data)` for compatibility with functions expecting structs.
+- Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
 - The `OriginalKeys` property preserves field order for consistent file output.
 
 ## More About
 
-### Handle Class Behavior
+### Value Class Semantics
 
-YAMLData extends `handle`, meaning:
-- Assignment creates references, not copies
-- Modifications affect all references
-- Use `copy` for independent copies
+YAMLData is a value class:
+- Assignment creates independent copies
+- Modifications to one copy do not affect others
+- The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
 data1 = YAMLData;
-data2 = data1;          % Reference, not copy
-data3 = copy(data1);    % Independent copy
+data2 = data1;          % Independent copy
+data3 = copy(data1);    % Also independent copy
 ```
 
 ### Dot Notation Implementation

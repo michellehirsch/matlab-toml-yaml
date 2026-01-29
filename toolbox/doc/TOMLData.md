@@ -10,12 +10,21 @@ TOMLData represents structured configuration data from TOML files with dot notat
 
 ```matlab
 data = TOMLData
+data = TOMLData(s)
+data = TOMLData(d)
+data = TOMLData(m)
 data = readtoml(filename)
 ```
 
 ### Description
 
 `data = TOMLData` creates an empty TOMLData object.
+
+`data = TOMLData(s)` converts struct `s` to TOMLData. Nested structs become nested TOMLData objects.
+
+`data = TOMLData(d)` converts dictionary `d` to TOMLData.
+
+`data = TOMLData(m)` converts containers.Map `m` to TOMLData.
 
 `data = readtoml(filename)` creates a TOMLData object by reading from a TOML file. See [readtoml](readtoml.md).
 
@@ -53,6 +62,7 @@ Format of the source data.
 
 ### Data Conversion
 - [`struct`](#struct) — Convert to standard MATLAB struct
+- [`dictionary`](#dictionary) — Convert to MATLAB dictionary
 - [`map`](#map) — Convert to containers.Map
 
 ### Data Modification
@@ -178,46 +188,64 @@ config.show;
 % debug = true
 ```
 
-### Create Independent Copy
+### Value Class Behavior
 
-TOMLData is a handle class:
+TOMLData uses value semantics - assignment creates independent copies:
 
 ```matlab
 % Read original
 original = readtoml("config.toml");
 
-% Create reference (shares data)
-ref = original;
-ref.server.port = 8081;  % Modifies original!
+% Assignment creates independent copy
+copied = original;
+copied.server.port = 8081;  % Does NOT modify original
 
-% Create independent copy
-independent = copy(original);
-independent.server.port = 8081;  % Does not modify original
+% copy() method also works
+another = copy(original);
+another.server.port = 8082;  % Does NOT modify original
+```
+
+### Create from Struct
+
+Convert existing structs to TOMLData:
+
+```matlab
+% Create struct
+s = struct('project', struct('name', 'my-package', 'version', '1.0.0'));
+
+% Convert to TOMLData
+config = TOMLData(s);
+config.project.name     % "my-package"
+config.project.version  % "1.0.0"
+
+% Write struct directly (auto-converted)
+writetoml(s, 'pyproject.toml');
 ```
 
 For comprehensive examples, see [readtomlExample.m](../../examples/readtomlExample.m).
 
 ## Tips
 
-- TOMLData is a handle class. Use `copy` to create independent copies when needed.
+- TOMLData is a value class. Assignment creates independent copies automatically.
+- Create from struct: `config = TOMLData(myStruct)`.
 - Use `show` to preview TOML output without writing to a file.
 - TOML commonly uses hyphens in keys; access them with dynamic field names: `data.("field-name")`.
-- Convert to struct with `struct(data)` for compatibility with functions expecting structs.
+- Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
 - TOMLData preserves field insertion order for consistent file output.
 
 ## More About
 
-### Handle Class Behavior
+### Value Class Semantics
 
-TOMLData extends `handle`, meaning:
-- Assignment creates references, not copies
-- Modifications affect all references
-- Use `copy` for independent copies
+TOMLData is a value class:
+- Assignment creates independent copies
+- Modifications to one copy do not affect others
+- The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
 data1 = TOMLData;
-data2 = data1;          % Reference, not copy
-data3 = copy(data1);    % Independent copy
+data2 = data1;          % Independent copy
+data3 = copy(data1);    % Also independent copy
 ```
 
 ### TOML-Specific Features

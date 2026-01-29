@@ -10,13 +10,22 @@ ConfigurationData provides a foundation for configuration data containers with d
 
 ```matlab
 data = ConfigurationData
+data = ConfigurationData(s)
+data = ConfigurationData(d)
+data = ConfigurationData(m)
 ```
 
 ### Description
 
 `data = ConfigurationData` creates an empty ConfigurationData object.
 
-ConfigurationData serves as the base class for [YAMLData](YAMLData.md) and [TOMLData](TOMLData.md). Users typically work with the subclasses rather than creating ConfigurationData instances directly.
+`data = ConfigurationData(s)` converts struct `s` to ConfigurationData. Nested structs become nested ConfigurationData objects.
+
+`data = ConfigurationData(d)` converts dictionary `d` to ConfigurationData.
+
+`data = ConfigurationData(m)` converts containers.Map `m` to ConfigurationData.
+
+ConfigurationData serves as the base class for [YAMLData](YAMLData.md), [TOMLData](TOMLData.md), and [INIData](INIData.md). Users typically work with the subclasses rather than creating ConfigurationData instances directly.
 
 ## Object Functions
 
@@ -29,6 +38,7 @@ ConfigurationData serves as the base class for [YAMLData](YAMLData.md) and [TOML
 
 ### Data Conversion
 - `struct` — Convert to standard MATLAB struct
+- `dictionary` — Convert to MATLAB dictionary
 - `map` — Convert to containers.Map
 
 ### Data Modification
@@ -107,7 +117,7 @@ poolSize = config.database.pool.size;  % 10
 
 ### Convert Between Types
 
-Work with structs and maps:
+Work with structs, dictionaries, and maps:
 
 ```matlab
 % Create ConfigurationData
@@ -119,29 +129,50 @@ data.server.port = 8080;
 s = struct(data);
 s.server.host  % "localhost"
 
+% Convert to dictionary
+d = dictionary(data);
+d{"server"}  % dictionary with host, port keys
+
 % Convert to containers.Map
 m = map(data);
-m("server")  % [1×1 ConfigurationData]
+m("server")  % ConfigurationData with host, port
 ```
 
-### Handle Class Behavior
+### Value Class Behavior
 
-Understand reference semantics:
+ConfigurationData uses value semantics - assignment creates independent copies:
 
 ```matlab
 % Create original
 original = ConfigurationData;
 original.value = 100;
 
-% Assignment creates reference
-ref = original;
-ref.value = 200;
-original.value  % 200 (modified!)
+% Assignment creates independent copy
+copied = original;
+copied.value = 200;
+original.value  % 100 (not modified!)
 
-% Create independent copy
-independent = copy(original);
-independent.value = 300;
-original.value  % 200 (not modified)
+% copy() method also works (for compatibility)
+another = copy(original);
+another.value = 300;
+original.value  % 100 (not modified)
+```
+
+### Create from Struct
+
+Convert existing structs to ConfigurationData:
+
+```matlab
+% Create struct
+s = struct('name', 'MyApp', 'database', struct('host', 'localhost', 'port', 5432));
+
+% Convert to YAMLData (or TOMLData, INIData)
+config = YAMLData(s);
+config.name           % "MyApp"
+config.database.host  % "localhost"
+
+% Write directly from struct
+writeyaml(s, 'config.yaml');
 ```
 
 ### Key Order Preservation
@@ -177,25 +208,26 @@ struct(tomlData)
 
 ## Tips
 
-- ConfigurationData is a handle class. Use `copy` to create independent copies.
+- ConfigurationData is a value class. Assignment creates independent copies automatically.
 - Use dynamic field names `data.("field-name")` to access keys with special characters.
 - The `OriginalKeys` property preserves insertion order for reproducible output.
-- Convert to struct with `struct(data)` for compatibility with functions expecting structs.
-- YAMLData and TOMLData extend ConfigurationData with format-specific features.
+- Convert to struct with `struct(data)`, dictionary with `dictionary(data)`.
+- Create from struct: `config = YAMLData(myStruct)`.
+- YAMLData, TOMLData, and INIData extend ConfigurationData with format-specific features.
 
 ## More About
 
-### Handle Class Semantics
+### Value Class Semantics
 
-ConfigurationData extends `handle`:
-- Assignment creates references, not copies
-- Modifications through any reference affect all references
-- Use `copy` method for independent copies
+ConfigurationData is a value class:
+- Assignment creates independent copies
+- Modifications to one copy do not affect others
+- The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
 data1 = ConfigurationData;
-data2 = data1;          % Reference (shares data)
-data3 = copy(data1);    % Independent copy
+data2 = data1;          % Independent copy
+data3 = copy(data1);    % Also independent copy (same as assignment)
 ```
 
 ### Dot Notation Implementation
@@ -239,7 +271,7 @@ YAMLData and TOMLData extend ConfigurationData:
 
 ## See Also
 
-[YAMLData](YAMLData.md), [TOMLData](TOMLData.md), [readyaml](readyaml.md), [readtoml](readtoml.md), [containers.Map](https://www.mathworks.com/help/matlab/ref/containers.map.html), [handle](https://www.mathworks.com/help/matlab/ref/handle-class.html)
+[YAMLData](YAMLData.md), [TOMLData](TOMLData.md), [INIData](INIData.md), [readyaml](readyaml.md), [readtoml](readtoml.md), [dictionary](https://www.mathworks.com/help/matlab/ref/dictionary.html), [containers.Map](https://www.mathworks.com/help/matlab/ref/containers.map.html)
 
 ## Version History
 

@@ -9,15 +9,24 @@ IniData represents structured configuration data from INI files with dot notatio
 ### Syntax
 
 ```matlab
-data = IniData()
+data = INIData
+data = INIData(s)
+data = INIData(d)
+data = INIData(m)
 data = readini(filename)
 ```
 
 ### Description
 
-`data = IniData()` creates an empty IniData object.
+`data = INIData` creates an empty INIData object.
 
-`data = readini(filename)` creates an IniData object by reading from an INI file. See [readini](readini.md).
+`data = INIData(s)` converts struct `s` to INIData. Nested structs become sections.
+
+`data = INIData(d)` converts dictionary `d` to INIData.
+
+`data = INIData(m)` converts containers.Map `m` to INIData.
+
+`data = readini(filename)` creates an INIData object by reading from an INI file. See [readini](readini.md).
 
 ## Properties
 
@@ -53,6 +62,7 @@ Format of the source data.
 
 ### Data Conversion
 - [`struct`](#struct) — Convert to standard MATLAB struct
+- [`dictionary`](#dictionary) — Convert to MATLAB dictionary
 - [`map`](#map) — Convert to containers.Map
 
 ### Data Modification
@@ -168,44 +178,62 @@ config.show();
 % port=8080
 ```
 
-### Create Independent Copy
+### Value Class Behavior
 
-IniData is a handle class:
+INIData uses value semantics - assignment creates independent copies:
 
 ```matlab
 % Read original
 original = readini('config.ini');
 
-% Create reference (shares data)
-ref = original;
-ref.server.port = 9000;  % Modifies original!
+% Assignment creates independent copy
+copied = original;
+copied.server.port = 9000;  % Does NOT modify original
 
-% Create independent copy
-independent = copy(original);
-independent.server.port = 9000;  % Does not modify original
+% copy() method also works
+another = copy(original);
+another.server.port = 9001;  % Does NOT modify original
+```
+
+### Create from Struct
+
+Convert existing structs to INIData:
+
+```matlab
+% Create struct
+s = struct('database', struct('host', 'localhost', 'port', 5432));
+
+% Convert to INIData
+config = INIData(s);
+config.database.host  % 'localhost'
+config.database.port  % 5432
+
+% Write struct directly (auto-converted)
+writeini(s, 'config.ini');
 ```
 
 ## Tips
 
-- IniData is a handle class. Use `copy` to create independent copies when needed.
+- INIData is a value class. Assignment creates independent copies automatically.
+- Create from struct: `config = INIData(myStruct)`.
 - Use `show` to preview INI output without writing to a file.
 - INI keys with special characters are accessed via dynamic field names: `data.("field-name")`.
-- Convert to struct with `struct(data)` for compatibility with functions expecting structs.
-- IniData preserves field insertion order for consistent file output.
+- Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
+- INIData preserves field insertion order for consistent file output.
 
 ## More About
 
-### Handle Class Behavior
+### Value Class Semantics
 
-IniData extends `handle`, meaning:
-- Assignment creates references, not copies
-- Modifications affect all references
-- Use `copy()` for independent copies
+INIData is a value class:
+- Assignment creates independent copies
+- Modifications to one copy do not affect others
+- The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
-data1 = IniData();
-data2 = data1;          % Reference, not copy
-data3 = copy(data1);    % Independent copy
+data1 = INIData;
+data2 = data1;          % Independent copy
+data3 = copy(data1);    % Also independent copy
 ```
 
 ### Windows INI Dialect
