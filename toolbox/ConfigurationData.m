@@ -353,6 +353,20 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                                         'Cannot chain into non-ConfigurationData value');
                                 end
                             end
+                        elseif strcmp(indexOp(2).Type, 'Brace')
+                            % Cell array indexing: obj.key{indices}
+                            indices = indexOp(2).Indices{:};
+                            value = value{indices};
+
+                            % Handle further chaining: obj.key{1}.field
+                            if length(indexOp) > 2
+                                if isa(value, 'ConfigurationData')
+                                    value = dotReference(value, indexOp(3:end));
+                                else
+                                    error('ConfigurationData:InvalidChain', ...
+                                        'Cannot chain into non-ConfigurationData value');
+                                end
+                            end
                         elseif strcmp(indexOp(2).Type, 'Dot')
                             % Nested dot: obj.key.field
                             if isa(value, 'ConfigurationData')
