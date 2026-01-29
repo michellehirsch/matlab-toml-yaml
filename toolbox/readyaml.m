@@ -199,10 +199,15 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
     if isempty(fields)
         if ~isempty(values)
             % This is a sequence
-            % If all values are YAMLData or ConfigurationData, return as object array
+            % If all values are YAMLData or ConfigurationData, handle based on arrayFormat
             if all(cellfun(@(x) isa(x, 'ConfigurationData'), values))
-                % Convert cell array to object array
-                data = [values{:}];
+                if arrayFormat == "auto"
+                    % Convert cell array to object array
+                    data = [values{:}];
+                else  % arrayFormat == "cell"
+                    % Keep as cell array for strict round-trip preservation
+                    data = values;
+                end
             else
                 % Apply arrayFormat consolidation (same logic as flow-style arrays)
                 data = consolidateArray(values, arrayFormat);
