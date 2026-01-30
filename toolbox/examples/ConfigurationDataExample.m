@@ -204,11 +204,6 @@ app.server.ssl_cert = "/path/to/cert.pem";
 %[text] Modified server config:
 app.server %[output:700a871f]
 %%
-%[text] ## SourceFormat Property
-%[text] Track the original format of the data
-tomlFromFile = readtoml("sample.toml");
-tomlFromFile.SourceFormat
-%%
 %[text] ## Converting Between Formats
 %[text] Read from one format, write to another
 %[text] Read TOML

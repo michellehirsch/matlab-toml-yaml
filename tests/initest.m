@@ -144,12 +144,5 @@ classdef initest < matlab.unittest.TestCase
 
             delete('test_empty.ini');
         end
-
-        function testSourceFormat(testCase)
-            % Test that SourceFormat is set correctly
-            config = INIData();
-
-            testCase.verifyEqual(config.SourceFormat, "ini");
-        end
     end
 end
