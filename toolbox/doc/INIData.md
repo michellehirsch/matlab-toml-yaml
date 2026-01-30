@@ -28,29 +28,6 @@ data = readini(filename)
 
 `data = readini(filename)` creates an INIData object by reading from an INI file. See [readini](readini.md).
 
-## Properties
-
-### Data
-Internal storage for configuration data.
-*Type:* `containers.Map`
-*Access:* Hidden
-
-### KeyAliases
-Mapping from valid MATLAB names to original keys with special characters.
-*Type:* `containers.Map`
-*Access:* Hidden
-
-### OriginalKeys
-List of keys in original insertion order.
-*Type:* string array
-*Access:* Hidden
-
-### SourceFormat
-Format of the source data.
-*Type:* string scalar
-*Access:* Protected (read-only)
-*Default:* `"ini"`
-
 ## Object Functions
 
 ### Data Access

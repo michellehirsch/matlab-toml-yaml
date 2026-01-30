@@ -28,29 +28,6 @@ data = readyaml(filename)
 
 `data = readyaml(filename)` creates a YAMLData object by reading from a YAML file. See [readyaml](readyaml.md).
 
-## Properties
-
-### Data
-Internal storage for configuration data.
-*Type:* `containers.Map`
-*Access:* Public
-
-### KeyAliases
-Mapping from valid MATLAB names to original keys with special characters.
-*Type:* `containers.Map`
-*Access:* Public
-
-### OriginalKeys
-List of keys in original insertion order.
-*Type:* string array
-*Access:* Public
-
-### SourceFormat
-Format of the source data.
-*Type:* string scalar
-*Access:* Protected (read-only)
-*Default:* `"unknown"`
-
 ## Object Functions
 
 ### Data Access
@@ -219,7 +196,7 @@ For comprehensive examples, see [readyamlExample.m](../../examples/readyamlExamp
 - Use `show` to view the YAML representation without writing to a file.
 - Access fields with special characters using dynamic field names: `data.("field-name")`.
 - Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
-- The `OriginalKeys` property preserves field order for consistent file output.
+- YAMLData preserves field order for consistent file output.
 
 ## More About
 
@@ -238,24 +215,24 @@ data3 = copy(data1);    % Also independent copy
 
 ### Dot Notation Implementation
 
-YAMLData uses `matlab.mixin.indexing.RedefinesDot` to enable dot notation access to dynamic fields stored in the internal `Data` map.
+YAMLData uses `matlab.mixin.indexing.RedefinesDot` to enable dot notation access to dynamic fields.
 
 ### Key Aliasing
 
-Keys with special characters (hyphens, spaces, dots) are stored in `OriginalKeys` with aliases in `KeyAliases` for valid MATLAB name access:
+Keys with special characters (hyphens, spaces, dots) are automatically aliased for valid MATLAB name access:
 
 ```matlab
 data.("app-name") = "MyApp";
 % Creates alias: appname -> app-name
+% Both data.("app-name") and data.appname work
 ```
 
 ### Field Order Preservation
 
-The `OriginalKeys` property maintains insertion order, ensuring consistent YAML output when writing files.
+YAMLData maintains insertion order internally, ensuring consistent YAML output when writing files.
 
 ## Limitations
 
-- Properties `Data`, `KeyAliases`, and `OriginalKeys` are public but should generally not be modified directly.
 - Very deeply nested structures may impact performance due to recursive object creation.
 - Field names are case-sensitive, matching YAML behavior.
 
