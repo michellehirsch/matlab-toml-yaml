@@ -31,7 +31,7 @@ classdef TOMLData < ConfigurationData
                 inputData = [];
             end
             obj@ConfigurationData(inputData);
-            obj.SourceFormat = "toml";
+            obj.xInternal__.SourceFormat = "toml";
         end
 
         function show(obj)

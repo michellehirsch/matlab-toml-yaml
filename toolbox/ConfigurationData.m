@@ -15,14 +15,15 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
     %   name collisions. Users can have keys named "keys", "isfield", etc.
     %   To call methods, use function syntax: keys(obj), isfield(obj, key)
 
-    properties (Access = private)
-        Data dictionary = configureDictionary("string", "cell")
-        KeyAliases dictionary = configureDictionary("string", "string")
-        OriginalKeys string = string.empty
-    end
-
-    properties (GetAccess = private, SetAccess = protected)
-        SourceFormat string = "unknown"
+    properties (Access = public, Hidden = true)
+        % Consolidated internal state in a single property to minimize
+        % reserved key names while preserving tab completion.
+        % See Claude/TAB_COMPLETION_DESIGN.md for rationale.
+        xInternal__ struct = struct(...
+            'Data', configureDictionary("string", "cell"), ...
+            'KeyAliases', configureDictionary("string", "string"), ...
+            'OriginalKeys', string.empty, ...
+            'SourceFormat', "unknown")
     end
 
     methods
@@ -43,9 +44,9 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %
             %   See also STRUCT, DICTIONARY, MAP
 
-            obj.Data = configureDictionary("string", "cell");
-            obj.KeyAliases = configureDictionary("string", "string");
-            obj.OriginalKeys = string.empty;
+            obj.xInternal__.Data = configureDictionary("string", "cell");
+            obj.xInternal__.KeyAliases = configureDictionary("string", "string");
+            obj.xInternal__.OriginalKeys = string.empty;
 
             if nargin > 0 && ~isempty(inputData)
                 obj = obj.importFrom(inputData);
@@ -60,7 +61,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         end
 
         function k = keys(obj)
-            k = obj.OriginalKeys;
+            k = obj.xInternal__.OriginalKeys;
         end
 
         function tf = isfield(obj, key)
@@ -75,8 +76,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
         function s = struct(obj)
             s = struct;
-            for i = 1:length(obj.OriginalKeys)
-                key = obj.OriginalKeys(i);
+            for i = 1:length(obj.xInternal__.OriginalKeys)
+                key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
                 if isa(value, 'ConfigurationData')
@@ -100,8 +101,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         function m = map(obj)
             %MAP Convert to containers.Map (for compatibility)
             m = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            for i = 1:length(obj.OriginalKeys)
-                key = obj.OriginalKeys(i);
+            for i = 1:length(obj.xInternal__.OriginalKeys)
+                key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
                 if isa(value, 'ConfigurationData')
@@ -128,8 +129,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %   See also STRUCT, MAP
 
             d = configureDictionary("string", "cell");
-            for i = 1:length(obj.OriginalKeys)
-                key = obj.OriginalKeys(i);
+            for i = 1:length(obj.xInternal__.OriginalKeys)
+                key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
                 if isa(value, 'ConfigurationData')
@@ -147,7 +148,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
         function p = properties(obj)
             %PROPERTIES Return list of dynamic properties (keys)
-            p = obj.OriginalKeys;
+            %   Returns cell array of char for MATLAB IDE tab completion.
+            p = cellstr(obj.xInternal__.OriginalKeys);
         end
 
         function names = fieldnames(obj)
@@ -169,15 +171,15 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
 
             % Remove from data (dictionary requires capturing return)
-            obj.Data = remove(obj.Data, resolvedKey);
+            obj.xInternal__.Data = remove(obj.xInternal__.Data, resolvedKey);
 
             % Remove from order tracking
-            obj.OriginalKeys(obj.OriginalKeys == resolvedKey) = [];
+            obj.xInternal__.OriginalKeys(obj.xInternal__.OriginalKeys == resolvedKey) = [];
 
             % Remove alias if exists
             validKey = matlab.lang.makeValidName(key);
-            if isKey(obj.KeyAliases, validKey)
-                obj.KeyAliases = remove(obj.KeyAliases, validKey);
+            if isKey(obj.xInternal__.KeyAliases, validKey)
+                obj.xInternal__.KeyAliases = remove(obj.xInternal__.KeyAliases, validKey);
             end
         end
 
@@ -194,7 +196,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %GETHEADER Customize header to use "keys" instead of "properties"
             if isscalar(obj)
                 className = matlab.mixin.CustomDisplay.getClassNameForHeader(obj);
-                nKeys = length(obj.OriginalKeys);
+                nKeys = length(obj.xInternal__.OriginalKeys);
                 if nKeys == 0
                     header = sprintf('  %s with no keys\n', className);
                 elseif nKeys == 1
@@ -212,14 +214,14 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             header = getHeader(obj);
             disp(header);
 
-            if length(obj.OriginalKeys) == 0
+            if length(obj.xInternal__.OriginalKeys) == 0
                 return;
             end
 
             % Check if there's nested hierarchy
             hasHierarchy = false;
-            for i = 1:length(obj.OriginalKeys)
-                value = obj.getData(obj.OriginalKeys(i));
+            for i = 1:length(obj.xInternal__.OriginalKeys)
+                value = obj.getData(obj.xInternal__.OriginalKeys(i));
                 if isa(value, 'ConfigurationData') || isa(value, 'dictionary')
                     hasHierarchy = true;
                     break;
@@ -227,8 +229,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
 
             % Display each field
-            for i = 1:length(obj.OriginalKeys)
-                key = obj.OriginalKeys(i);
+            for i = 1:length(obj.xInternal__.OriginalKeys)
+                key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
                 % Format the value for display
@@ -304,7 +306,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     str = sprintf('[%s %s]', sizeStr, class(value));
                 else
                     % Scalar ConfigurationData - show actual subclass name
-                    nFields = length(value.OriginalKeys);
+                    nFields = length(value.xInternal__.OriginalKeys);
                     className = class(value);
                     str = sprintf('[1×1 %s with %d %s]', className, nFields, ConfigurationData.pluralize("key", nFields));
                 end
@@ -385,6 +387,12 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 % Dot notation: obj.key
                 key = indexOp(1).Name;
 
+                % Block access to reserved internal property name
+                if key == "xInternal__"
+                    error('ConfigurationData:ReservedKey', ...
+                        'Key "xInternal__" is reserved for internal use.');
+                end
+
                 % PRIORITY 1: Check if key exists in data (allows "keys", "isfield", etc.)
                 resolvedKey = obj.resolveKey(key);
                 if ~isempty(resolvedKey)
@@ -452,13 +460,19 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         function obj = dotAssign(obj, indexOp, varargin)
             key = indexOp(1).Name;
 
+            % Block assignment to reserved internal property name
+            if key == "xInternal__"
+                error('ConfigurationData:ReservedKey', ...
+                    'Key "xInternal__" is reserved for internal use.');
+            end
+
             % Handle chained assignment: obj.a.b.c = value or obj.a(idx).b = value
             if length(indexOp) > 1
                 % Check if next operation is Paren (array indexing)
                 if indexOp(2).Type == matlab.indexing.IndexingOperationType.Paren
                     % Pattern: obj.field(idx)... = value
                     % Get the array
-                    if ~isKey(obj.Data, key)
+                    if ~isKey(obj.xInternal__.Data, key)
                         error('ConfigurationData:InvalidIndex', ...
                             'Cannot index into non-existent field ''%s''', key);
                     end
@@ -487,17 +501,17 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 else
                     % Pattern: obj.field.subfield = value (next op is Dot)
                     % Get or create the nested object
-                    if isKey(obj.Data, key)
+                    if isKey(obj.xInternal__.Data, key)
                         nested = obj.getData(key);
                         if ~isa(nested, 'ConfigurationData')
                             % Scalar value exists - replace with same class as parent
                             nested = feval(class(obj));
-                            nested.SourceFormat = obj.SourceFormat;
+                            nested = copySourceFormat(obj, nested);
                         end
                     else
                         % Create new nested object of same class as parent
                         nested = feval(class(obj));
-                        nested.SourceFormat = obj.SourceFormat;
+                        nested = copySourceFormat(obj, nested);
                     end
 
                     % Recursively assign to nested object
@@ -508,14 +522,14 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 end
 
                 % Track order
-                if ~any(obj.OriginalKeys == key)
-                    obj.OriginalKeys(end+1) = key;
+                if ~any(obj.xInternal__.OriginalKeys == key)
+                    obj.xInternal__.OriginalKeys(end+1) = key;
                 end
 
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
                 if ~strcmp(validKey, key)
-                    obj.KeyAliases(validKey) = key;
+                    obj.xInternal__.KeyAliases(validKey) = key;
                 end
             else
                 % Simple assignment: obj.key = value
@@ -524,15 +538,15 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
                 if ~strcmp(validKey, key)
-                    obj.KeyAliases(validKey) = key;
+                    obj.xInternal__.KeyAliases(validKey) = key;
                 end
 
                 % Store
                 obj = obj.setData(key, value);
 
                 % Track order
-                if ~any(obj.OriginalKeys == key)
-                    obj.OriginalKeys(end+1) = key;
+                if ~any(obj.xInternal__.OriginalKeys == key)
+                    obj.xInternal__.OriginalKeys(end+1) = key;
                 end
             end
         end
@@ -545,18 +559,24 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             key = indexOp(1).Name;
             value = varargin{end};
 
+            % Block assignment to reserved internal property name
+            if key == "xInternal__"
+                error('ConfigurationData:ReservedKey', ...
+                    'Key "xInternal__" is reserved for internal use.');
+            end
+
             % Store directly using setData to bypass method resolution
             obj = obj.setData(key, value);
 
             % Track order
-            if ~any(obj.OriginalKeys == key)
-                obj.OriginalKeys(end+1) = key;
+            if ~any(obj.xInternal__.OriginalKeys == key)
+                obj.xInternal__.OriginalKeys(end+1) = key;
             end
 
             % Create alias if needed
             validKey = matlab.lang.makeValidName(key);
             if ~strcmp(validKey, key)
-                obj.KeyAliases(validKey) = key;
+                obj.xInternal__.KeyAliases(validKey) = key;
             end
         end
 
@@ -567,13 +587,13 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         function resolvedKey = resolveKey(obj, key)
             key = string(key);
 
-            if isKey(obj.Data, key)
+            if isKey(obj.xInternal__.Data, key)
                 resolvedKey = key;
                 return;
             end
 
-            if isKey(obj.KeyAliases, key)
-                resolvedKey = obj.KeyAliases(key);
+            if isKey(obj.xInternal__.KeyAliases, key)
+                resolvedKey = obj.xInternal__.KeyAliases(key);
                 return;
             end
 
@@ -672,7 +692,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         function value = getData(obj, key)
             %GETDATA Get value from Data dictionary (unwraps cell)
             key = string(key);
-            val = obj.Data(key);
+            val = obj.xInternal__.Data(key);
             value = val{1};
         end
 
@@ -681,15 +701,15 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %   Validates the value type before storing.
             key = string(key);
             value = obj.validateAndConvertValue(value, key);
-            obj.Data(key) = {value};
+            obj.xInternal__.Data(key) = {value};
         end
 
         function obj = addKey(obj, key)
             %ADDKEY Add a key to the key order tracking if not already present
             %   Used by parsers when directly manipulating data.
             key = string(key);
-            if ~any(obj.OriginalKeys == key)
-                obj.OriginalKeys(end+1) = key;
+            if ~any(obj.xInternal__.OriginalKeys == key)
+                obj.xInternal__.OriginalKeys(end+1) = key;
             end
         end
 
@@ -698,7 +718,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %   Used by parsers when key names need valid MATLAB identifiers.
             alias = string(alias);
             originalKey = string(originalKey);
-            obj.KeyAliases(alias) = originalKey;
+            obj.xInternal__.KeyAliases(alias) = originalKey;
         end
     end
 
@@ -727,8 +747,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 return;
             end
 
-            % Allowed base types
-            if isnumeric(value) || islogical(value) || ischar(value) || isstring(value)
+            % Allowed base types (numeric must be real - complex checked separately below)
+            if (isnumeric(value) && isreal(value)) || islogical(value) || ischar(value) || isstring(value)
                 return;  % OK
             end
 
@@ -774,7 +794,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                      'Convert to string first: string(yourCategorical)'], key);
             end
 
-            if ~isreal(value)
+            if isnumeric(value) && ~isreal(value)
                 error('ConfigurationData:InvalidType', ...
                     ['Cannot assign complex numbers to key "%s".\n' ...
                      'Configuration files do not support imaginary numbers.'], key);
@@ -785,6 +805,18 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 ['Cannot assign %s to key "%s".\n' ...
                  'Supported types: numeric, logical, char, string, cell, struct, ' ...
                  'datetime, duration, and ConfigurationData objects.'], class(value), key);
+        end
+    end
+
+    methods (Access = private)
+        function target = copySourceFormat(obj, target)
+            %COPYSOURCEFORMAT Copy SourceFormat to another ConfigurationData object
+            %   Uses builtin to bypass overloaded dot methods, preventing
+            %   SourceFormat from being added as a user data key.
+            s = substruct('.', 'xInternal__');
+            internal = builtin('subsref', target, s);
+            internal.SourceFormat = obj.xInternal__.SourceFormat;
+            target = builtin('subsasgn', target, s, internal);
         end
     end
 

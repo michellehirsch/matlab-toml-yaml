@@ -10,10 +10,8 @@ tomlContent = [
     "description = ""A sample project"""
     "enabled = true"];
 writelines(tomlContent,"simple.toml");
-%[text] Read the TOML file
-config = readtoml("simple.toml");
-%[text] TOMLData:
-config %[output:8e7c40d5]
+%[text] Read the TOML file. The output is returned as TOMLData, which is a struct-like object specialized for working with TOML Data.
+config = readtoml("simple.toml") %[output:17a8cbcf]
 %%
 %[text] Access values using dot notation
 config.name
@@ -31,7 +29,7 @@ tomlNested = [
 writelines(tomlNested,"nested.toml");
 project = readtoml("nested.toml");
 %[text] Nested structure:
-project
+project %[output:234e1394]
 %%
 %[text] Navigate nested tables with dot notation
 project.project.urls.homepage
@@ -109,9 +107,9 @@ if isfield(project, "project")
     end
 end
 %%
-%[text] Use show for formatted display
+%[text] Use show for formatted display (function syntax required)
 %[text] Project structure:
-project.show
+show(project)
 %%
 %[text] ## Data Types in TOML
 %[text] TOML supports various data types
@@ -219,6 +217,9 @@ delete("simple.toml", "nested.toml", "special.toml", "arrays.toml", ...
 %[metadata:view]
 %   data: {"layout":"inline"}
 %---
-%[output:8e7c40d5]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with properties:\n\n    name: \"my-package\"\n    version: \"1.0.0\"\n    description: \"A sample project\"\n    enabled: true\n"}}
+%[output:17a8cbcf]
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    name: \"my-package\"\n    version: \"1.0.0\"\n    description: \"A sample project\"\n    enabled: true\n"}}
+%---
+%[output:234e1394]
+%   data: {"dataType":"textualVariable","outputData":{"name":"project","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    project: [1×1 TOMLData with 3 keys]\n\n    <a href=\"matlab:show(project)\">Show all values<\/a>\n"}}
 %---

@@ -30,7 +30,7 @@ classdef YAMLData < ConfigurationData
                 inputData = [];
             end
             obj@ConfigurationData(inputData);
-            obj.SourceFormat = "yaml";
+            obj.xInternal__.SourceFormat = "yaml";
         end
 
         function show(obj)

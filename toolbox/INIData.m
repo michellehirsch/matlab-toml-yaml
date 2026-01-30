@@ -35,7 +35,7 @@ classdef INIData < ConfigurationData
                 inputData = [];
             end
             obj = obj@ConfigurationData(inputData);
-            obj.SourceFormat = "ini";
+            obj.xInternal__.SourceFormat = "ini";
         end
 
         function iniText = show(obj)
