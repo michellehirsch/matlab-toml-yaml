@@ -49,9 +49,13 @@ ConfigurationData inherits from:
 - `matlab.mixin.CustomDisplay` - custom disp/display
 
 ### Internal Storage (ConfigurationData)
-- `Data` - dictionary<string, cell> storing values wrapped in cells
-- `KeyAliases` - dictionary<string, string> mapping valid MATLAB names to original keys
-- `OriginalKeys` - string array preserving insertion order
+All internal state is stored in a single `public Hidden` struct property named `xInternal__`:
+- `xInternal__.Data` - dictionary<string, cell> storing values wrapped in cells
+- `xInternal__.KeyAliases` - dictionary<string, string> mapping valid MATLAB names to original keys
+- `xInternal__.OriginalKeys` - string array preserving insertion order
+- `xInternal__.SourceFormat` - string identifying the file format ("yaml", "toml", "ini")
+
+This design uses one reserved key name to enable tab completion. See `Claude/TAB_COMPLETION_DESIGN.md`.
 
 ### I/O Pattern
 Reader functions (`readyaml`, `readtoml`, `readini`) return data objects. Writer functions (`writeyaml`, `writetoml`, `writeini`) accept data objects or structs.
@@ -106,6 +110,7 @@ config.new.section.value = 42;  % creates nested YAMLData objects
 | `toolbox/writetoml.m` | TOML writer with formatting options |
 | `Claude/DESIGN_DECISIONS.md` | Naming rationale and design philosophy |
 | `Claude/ISSUE_14_RESERVED_NAMES.md` | Reserved name handling explanation |
+| `Claude/TAB_COMPLETION_DESIGN.md` | Tab completion fix and xInternal__ rationale |
 
 ## Known Limitations
 
@@ -113,7 +118,8 @@ config.new.section.value = 42;  % creates nested YAMLData objects
 - **TOML**: Array of tables reading has bugs (writing works)
 - **Array indexing**: Cannot do `obj.field(i).subfield = value` directly; extract array first
 - **Comments**: Not preserved during round-trip
-- **Tab completion**: IDE shows methods in `obj.` completion even though they require function syntax (MATLAB limitation with RedefinesDot classes)
+- **Reserved key**: `xInternal__` cannot be used as a configuration key (reserved for internal storage)
+- **Tab completion**: IDE shows data keys and methods together; methods require function syntax to call
 
 ## Test Files Location
 
@@ -121,4 +127,4 @@ Sample configuration files for testing are in `tests/SampleFiles/` (27+ real-wor
 
 ## Development Documentation
 
-The `Claude/` folder contains 13 detailed design documents explaining implementation decisions, known issues, and architecture rationale.
+The `Claude/` folder contains 14 detailed design documents explaining implementation decisions, known issues, and architecture rationale.
