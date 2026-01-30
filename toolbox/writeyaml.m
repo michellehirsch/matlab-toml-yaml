@@ -84,7 +84,7 @@ function yamlText = generateYAML(data, depth, indentSize, flowStyle, precision, 
     %GENERATEYAML Generate YAML text from MATLAB data
 
     if isempty(data)
-        yamlText = 'null';
+        yamlText = "null";
         return;
     end
 
@@ -122,39 +122,39 @@ end
 function yamlText = configDataToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing)
     %CONFIGDATATOYAML Convert ConfigurationData or YAMLData to YAML
     %   Uses the original keys (including special characters like hyphens)
-    
+
     keyList = keys(data);
-    yamlLines = cell(length(keyList), 1);
-    
+    yamlLines = strings(length(keyList), 1);
+
     for i = 1:length(keyList)
         key = keyList(i);
         value = data.(key);
-        
-        indent = repmat(' ', 1, depth * indentSize);
+
+        indent = string(blanks(depth * indentSize));
         valueYAML = generateYAML(value, depth + 1, indentSize, flowStyle, precision, false);
-        
+
         % Check if value should be on new line
         % Nested objects (ConfigurationData, struct, Map) are ALWAYS on new line
         % Multi-line values (arrays in block style) are on new line
         % Simple scalars and flow arrays can be on same line
         isNestedObject = isa(value, 'ConfigurationData') || isstruct(value) || isa(value, 'containers.Map');
-        
+
         if isNestedObject || contains(valueYAML, newline)
-            yamlLines{i} = sprintf('%s%s:\n%s', indent, key, valueYAML);
+            yamlLines(i) = indent + key + ":" + newline + valueYAML;
         else
-            yamlLines{i} = sprintf('%s%s: %s', indent, key, valueYAML);
+            yamlLines(i) = indent + key + ": " + valueYAML;
         end
     end
-    
+
     % Add section spacing for top-level keys (depth == 0)
     if depth == 0 && addSectionSpacing && length(yamlLines) > 1
         % Add blank line between sections
-        separator = [newline newline];
+        separator = newline + newline;
     else
         separator = newline;
     end
-    
-    yamlText = strjoin(yamlLines, separator);
+
+    yamlText = join(yamlLines, separator);
 end
 
 function yamlText = structToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing)
@@ -163,33 +163,33 @@ function yamlText = structToYAML(data, depth, indentSize, flowStyle, precision, 
     if isscalar(data)
         % Single structure
         fields = fieldnames(data);
-        yamlLines = cell(length(fields), 1);
+        yamlLines = strings(length(fields), 1);
 
         for i = 1:length(fields)
-            fieldName = fields{i};
-            fieldValue = data.(fieldName);
+            fieldName = string(fields{i});
+            fieldValue = data.(fields{i});
 
-            indent = repmat(' ', 1, depth * indentSize);
+            indent = string(blanks(depth * indentSize));
             valueYAML = generateYAML(fieldValue, depth + 1, indentSize, flowStyle, precision, false);
 
             % Check if value should be on new line
             isNestedObject = isa(fieldValue, 'ConfigurationData') || isstruct(fieldValue) || isa(fieldValue, 'containers.Map');
-            
+
             if isNestedObject || contains(valueYAML, newline)
-                yamlLines{i} = sprintf('%s%s:\n%s', indent, fieldName, valueYAML);
+                yamlLines(i) = indent + fieldName + ":" + newline + valueYAML;
             else
-                yamlLines{i} = sprintf('%s%s: %s', indent, fieldName, valueYAML);
+                yamlLines(i) = indent + fieldName + ": " + valueYAML;
             end
         end
 
         % Add section spacing for top-level keys (depth == 0)
         if depth == 0 && addSectionSpacing && length(yamlLines) > 1
-            separator = [newline newline];
+            separator = newline + newline;
         else
             separator = newline;
         end
-        
-        yamlText = strjoin(yamlLines, separator);
+
+        yamlText = join(yamlLines, separator);
     else
         % Array of structures
         yamlText = structArrayToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing);
@@ -199,21 +199,21 @@ end
 function yamlText = structArrayToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing)
     %STRUCTARRAYTOYAML Convert structure array to YAML
 
-    yamlLines = cell(length(data), 1);
+    yamlLines = strings(length(data), 1);
 
     for i = 1:length(data)
-        indent = repmat(' ', 1, depth * indentSize);
+        indent = string(blanks(depth * indentSize));
         itemYAML = generateYAML(data(i), depth + 1, indentSize, flowStyle, precision, false);
 
         % Remove first level indent from item
-        itemLines = splitlines(itemYAML);
-        itemLines = cellfun(@(x) x((indentSize+1):end), itemLines, 'UniformOutput', false);
-        itemYAML = strjoin(itemLines, newline);
+        itemLinesArray = splitlines(itemYAML);
+        itemLinesArray = extractAfter(itemLinesArray, indentSize);
+        itemYAML = join(itemLinesArray, newline);
 
-        yamlLines{i} = sprintf('%s- %s', indent, itemYAML);
+        yamlLines(i) = indent + "- " + itemYAML;
     end
 
-    yamlText = strjoin(yamlLines, newline);
+    yamlText = join(yamlLines, newline);
 end
 
 function yamlText = stringArrayToYAML(data, depth, indentSize, flowStyle)
@@ -222,59 +222,59 @@ function yamlText = stringArrayToYAML(data, depth, indentSize, flowStyle)
     %   This preserves the semantic difference between:
     %     branches: main        (scalar string)
     %     branches: [main]      (array with one element)
-    
+
     if flowStyle && (isvector(data) || isscalar(data))
         % Flow style: [item1, item2, item3] or [item]
-        items = cell(1, length(data));
+        items = strings(1, length(data));
         for i = 1:length(data)
-            items{i} = stringToYAML(data(i));
+            items(i) = stringToYAML(data(i));
         end
-        yamlText = sprintf('[%s]', strjoin(items, ', '));
+        yamlText = "[" + join(items, ", ") + "]";
     else
         % Block style
-        yamlLines = cell(length(data), 1);
-        indent = repmat(' ', 1, depth * indentSize);
-        
+        yamlLines = strings(length(data), 1);
+        indent = string(blanks(depth * indentSize));
+
         for i = 1:length(data)
             itemYAML = stringToYAML(data(i));
-            yamlLines{i} = sprintf('%s- %s', indent, itemYAML);
+            yamlLines(i) = indent + "- " + itemYAML;
         end
-        
-        yamlText = strjoin(yamlLines, newline);
+
+        yamlText = join(yamlLines, newline);
     end
 end
 
 function yamlText = mapToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing)
     %MAPTOYAML Convert containers.Map to YAML
 
-    keys = data.keys;
-    yamlLines = cell(length(keys), 1);
+    mapKeys = data.keys;
+    yamlLines = strings(length(mapKeys), 1);
 
-    for i = 1:length(keys)
-        key = keys{i};
-        value = data(key);
+    for i = 1:length(mapKeys)
+        key = string(mapKeys{i});
+        value = data(mapKeys{i});
 
-        indent = repmat(' ', 1, depth * indentSize);
+        indent = string(blanks(depth * indentSize));
         valueYAML = generateYAML(value, depth + 1, indentSize, flowStyle, precision, false);
 
         % Check if value should be on new line
         isNestedObject = isa(value, 'ConfigurationData') || isstruct(value) || isa(value, 'containers.Map');
-        
+
         if isNestedObject || contains(valueYAML, newline)
-            yamlLines{i} = sprintf('%s%s:\n%s', indent, key, valueYAML);
+            yamlLines(i) = indent + key + ":" + newline + valueYAML;
         else
-            yamlLines{i} = sprintf('%s%s: %s', indent, key, valueYAML);
+            yamlLines(i) = indent + key + ": " + valueYAML;
         end
     end
 
     % Add section spacing for top-level keys (depth == 0)
     if depth == 0 && addSectionSpacing && length(yamlLines) > 1
-        separator = [newline newline];
+        separator = newline + newline;
     else
         separator = newline;
     end
-    
-    yamlText = strjoin(yamlLines, separator);
+
+    yamlText = join(yamlLines, separator);
 end
 
 function yamlText = cellToYAML(data, depth, indentSize, flowStyle, precision, addSectionSpacing)
@@ -282,38 +282,38 @@ function yamlText = cellToYAML(data, depth, indentSize, flowStyle, precision, ad
 
     if flowStyle && isvector(data)
         % Flow style: [item1, item2, item3]
-        items = cell(1, length(data));
+        items = strings(1, length(data));
         for i = 1:length(data)
-            items{i} = generateYAML(data{i}, 0, indentSize, flowStyle, precision, false);
+            items(i) = generateYAML(data{i}, 0, indentSize, flowStyle, precision, false);
         end
-        yamlText = sprintf('[%s]', strjoin(items, ', '));
+        yamlText = "[" + join(items, ", ") + "]";
     else
         % Block style
-        yamlLines = cell(length(data), 1);
-        indent = repmat(' ', 1, depth * indentSize);
+        yamlLines = strings(length(data), 1);
+        indent = string(blanks(depth * indentSize));
 
         for i = 1:length(data)
             itemYAML = generateYAML(data{i}, depth + 1, indentSize, flowStyle, precision, false);
 
             if contains(itemYAML, newline)
                 % Multiline item - put first line on same line as dash
-                itemLines = splitlines(itemYAML);
+                itemLinesArray = splitlines(itemYAML);
                 % First line goes after the dash (strip its indentation)
-                firstLine = strtrim(itemLines{1});
-                yamlLines{i} = sprintf('%s- %s', indent, firstLine);
+                firstLine = strtrim(itemLinesArray(1));
+                yamlLines(i) = indent + "- " + firstLine;
                 % Remaining lines keep their indentation
-                if length(itemLines) > 1
-                    for j = 2:length(itemLines)
-                        yamlLines{i} = sprintf('%s\n%s', yamlLines{i}, itemLines{j});
+                if length(itemLinesArray) > 1
+                    for j = 2:length(itemLinesArray)
+                        yamlLines(i) = yamlLines(i) + newline + itemLinesArray(j);
                     end
                 end
             else
                 % Single line item (strip indentation)
-                yamlLines{i} = sprintf('%s- %s', indent, strtrim(itemYAML));
+                yamlLines(i) = indent + "- " + strtrim(itemYAML);
             end
         end
 
-        yamlText = strjoin(yamlLines, newline);
+        yamlText = join(yamlLines, newline);
     end
 end
 
@@ -324,9 +324,9 @@ function yamlText = numericToYAML(data, depth, indentSize, flowStyle, precision)
         % Single value
         if islogical(data)
             if data
-                yamlText = 'true';
+                yamlText = "true";
             else
-                yamlText = 'false';
+                yamlText = "false";
             end
         elseif isinteger(data)
             yamlText = sprintf('%d', data);
@@ -336,58 +336,57 @@ function yamlText = numericToYAML(data, depth, indentSize, flowStyle, precision)
     elseif isvector(data) && flowStyle
         % Flow style vector
         if islogical(data)
-            items = arrayfun(@(x) iif(x, 'true', 'false'), data, 'UniformOutput', false);
+            items = strings(size(data));
+            items(data) = "true";
+            items(~data) = "false";
         elseif isinteger(data)
-            items = arrayfun(@(x) sprintf('%d', x), data, 'UniformOutput', false);
+            items = compose("%d", data);
         else
-            items = arrayfun(@(x) sprintf(['%.', num2str(precision), 'g'], x), data, 'UniformOutput', false);
+            formatStr = "%." + precision + "g";
+            items = compose(formatStr, data);
         end
-        yamlText = sprintf('[%s]', strjoin(items, ', '));
+        yamlText = "[" + join(items, ", ") + "]";
     else
         % Block style array
-        yamlLines = cell(numel(data), 1);
-        indent = repmat(' ', 1, depth * indentSize);
+        yamlLines = strings(numel(data), 1);
+        indent = string(blanks(depth * indentSize));
 
         for i = 1:numel(data)
             if islogical(data(i))
-                value = iif(data(i), 'true', 'false');
+                value = iif(data(i), "true", "false");
             elseif isinteger(data(i))
                 value = sprintf('%d', data(i));
             else
                 value = sprintf(['%.', num2str(precision), 'g'], data(i));
             end
-            yamlLines{i} = sprintf('%s- %s', indent, value);
+            yamlLines(i) = indent + "- " + value;
         end
 
-        yamlText = strjoin(yamlLines, newline);
+        yamlText = join(yamlLines, newline);
     end
 end
 
 function yamlText = stringToYAML(data)
     %STRINGTOYAML Convert string/char to YAML
 
-    % Convert to char for processing (but maintain string type for output)
-    if isstring(data)
-        strData = char(data);
-    else
-        strData = data;
-    end
+    % Ensure we're working with string
+    strData = string(data);
 
     % Check if quoting is needed
-    needsQuoting = isempty(strData) || ...
-       any(strData(1) == '!#&*{[|>@`') || ...
-       contains(strData, ': ') || ...
-       contains(strData, ' #') || ...
-       ismember(lower(strData), {'true', 'false', 'null', 'yes', 'no', 'on', 'off', '~'}) || ...
+    needsQuoting = strlength(strData) == 0 || ...
+       startsWith(strData, ["!", "#", "&", "*", "{", "[", "|", ">", "@", "`"]) || ...
+       contains(strData, ": ") || ...
+       contains(strData, " #") || ...
+       ismember(lower(strData), ["true", "false", "null", "yes", "no", "on", "off", "~"]) || ...
        looksLikeNumber(strData) || ...
        looksLikeDate(strData);
 
     if needsQuoting
         % Use double quotes and escape special characters
-        strData = strrep(strData, '\', '\\');
-        strData = strrep(strData, '"', '\"');
-        strData = strrep(strData, newline, '\n');
-        yamlText = sprintf('"%s"', strData);
+        strData = strrep(strData, "\", "\\");
+        strData = strrep(strData, """", "\""");
+        strData = strrep(strData, newline, "\n");
+        yamlText = """" + strData + """";
     else
         yamlText = strData;
     end
@@ -397,7 +396,9 @@ function tf = looksLikeNumber(str)
     %LOOKSLIKENUMBER Check if string looks like a number (int, float, hex, octal)
     %   Returns true for strings like '3.8', '123', '0x1A', '0o17', '.5', '1e10'
 
-    if isempty(str)
+    str = string(str);
+
+    if strlength(str) == 0
         tf = false;
         return;
     end
@@ -409,19 +410,19 @@ function tf = looksLikeNumber(str)
     % Hex: 0x1A, 0X2B
     % Octal: 0o17, 0O77
     % Infinity and NaN
-    numericPatterns = {
-        '^[+-]?\d+$', ...                          % Integer
-        '^[+-]?\d*\.\d*$', ...                     % Float (including .5 and 1.)
-        '^[+-]?\d*\.?\d+[eE][+-]?\d+$', ...        % Scientific notation
-        '^0[xX][0-9a-fA-F]+$', ...                 % Hexadecimal
-        '^0[oO][0-7]+$', ...                       % Octal
-        '^[+-]?(\.inf|\.Inf|\.INF)$', ...          % Infinity
-        '^\.nan|\.NaN|\.NAN$'                      % NaN
-    };
+    numericPatterns = [
+        "^[+-]?\d+$"                          % Integer
+        "^[+-]?\d*\.\d*$"                     % Float (including .5 and 1.)
+        "^[+-]?\d*\.?\d+[eE][+-]?\d+$"        % Scientific notation
+        "^0[xX][0-9a-fA-F]+$"                 % Hexadecimal
+        "^0[oO][0-7]+$"                       % Octal
+        "^[+-]?(\.inf|\.Inf|\.INF)$"          % Infinity
+        "^\.nan|\.NaN|\.NAN$"                 % NaN
+    ];
 
     tf = false;
     for i = 1:length(numericPatterns)
-        if ~isempty(regexp(str, numericPatterns{i}, 'once'))
+        if ~isempty(regexp(str, numericPatterns(i), 'once'))
             tf = true;
             return;
         end
@@ -432,22 +433,24 @@ function tf = looksLikeDate(str)
     %LOOKSLIKEDATE Check if string looks like an ISO date
     %   Returns true for strings like '2020-01-01', '2020-01-01T12:00:00'
 
-    if isempty(str) || length(str) < 10
+    str = string(str);
+
+    if strlength(str) < 10
         tf = false;
         return;
     end
 
     % ISO date pattern: YYYY-MM-DD with optional time
-    datePattern = '^\d{4}-\d{2}-\d{2}';
+    datePattern = "^\d{4}-\d{2}-\d{2}";
     tf = ~isempty(regexp(str, datePattern, 'once'));
 end
 
 function result = iif(condition, trueVal, falseVal)
-    %IIF Inline if function
+    %IIF Inline if function - returns string type for consistency
     if condition
-        result = trueVal;
+        result = string(trueVal);
     else
-        result = falseVal;
+        result = string(falseVal);
     end
 end
 
