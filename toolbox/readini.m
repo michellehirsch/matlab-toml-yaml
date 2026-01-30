@@ -103,13 +103,13 @@ function value = parseValue(valueStr)
 
     % Convert to string for consistent handling
     valueStr = string(valueStr);
-    valueChar = lower(char(valueStr));
+    valueLower = lower(valueStr);
 
     % Try logical (only explicit true/false/yes/no)
-    if strcmp(valueChar, 'true') || strcmp(valueChar, 'yes')
+    if ismember(valueLower, ["true", "yes"])
         value = true;
         return;
-    elseif strcmp(valueChar, 'false') || strcmp(valueChar, 'no')
+    elseif ismember(valueLower, ["false", "no"])
         value = false;
         return;
     end
@@ -139,6 +139,6 @@ function value = parseValue(valueStr)
         return;
     end
 
-    % Default to char
-    value = char(valueStr);
+    % Default to string
+    value = valueStr;
 end

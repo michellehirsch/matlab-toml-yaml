@@ -109,7 +109,7 @@ function writetoml(data, filename, options)
     end
 
     % Convert options for internal use
-    addSectionSpacing = strcmp(options.SectionSpacing, 'loose');
+    addSectionSpacing = options.SectionSpacing == "loose";
 
     % Create options struct for passing to serialization functions
     serializeOpts = struct;
@@ -141,7 +141,7 @@ function s = configDataToStruct(data)
     if isa(data, 'ConfigurationData')
         dataKeys = keys(data);
         for i = 1:length(dataKeys)
-            key = char(dataKeys(i));
+            key = dataKeys(i);
             value = data.(key);
             
             % Recursively convert nested ConfigurationData
@@ -163,7 +163,7 @@ function s = configDataToStruct(data)
             s.(fieldName) = value;
             
             % Store original key name as metadata (we'll use this for writing)
-            if ~strcmp(fieldName, key)
+            if fieldName ~= key
                 % Key was modified - we need to track this
                 % For now, just use the valid fieldname
                 % TODO: Consider adding metadata field
@@ -379,7 +379,7 @@ function tf = needsQuoting(key)
     % All other characters require quoting
 
     % Check if key contains only valid bare key characters
-    if isempty(regexp(char(key), '^[A-Za-z0-9_-]+$', 'once'))
+    if isempty(regexp(key, '^[A-Za-z0-9_-]+$', 'once'))
         tf = true;
     else
         tf = false;
@@ -495,9 +495,9 @@ end
 function useFlow = shouldUseFlowArray(arr, opts)
     % Determine whether to use flow style for an array
 
-    if strcmp(opts.arrayStyle, 'flow')
+    if opts.arrayStyle == "flow"
         useFlow = true;
-    elseif strcmp(opts.arrayStyle, 'block')
+    elseif opts.arrayStyle == "block"
         useFlow = false;
     else % 'auto'
         % Heuristic: use flow if array is small enough
@@ -574,11 +574,11 @@ end
 function useInline = shouldUseInlineTable(tbl, style)
     % Determine whether to use inline table syntax based on style setting
 
-    if strcmp(style, 'inline')
+    if style == "inline"
         useInline = true;
-    elseif strcmp(style, 'expanded')
+    elseif style == "expanded"
         useInline = false;
-    else % 'auto'
+    else % "auto"
         % Heuristic: use inline if table has ≤3 keys, all simple values,
         % and total serialized length <= 60 characters
 
@@ -633,11 +633,11 @@ end
 function useInline = shouldUseInlineTableArray(tableArray, style)
     % Determine whether to use inline array of tables based on style setting
 
-    if strcmp(style, 'inline')
+    if style == "inline"
         useInline = true;
-    elseif strcmp(style, 'expanded')
+    elseif style == "expanded"
         useInline = false;
-    else % 'auto'
+    else % "auto"
         % Heuristic: use inline if array has ≤2 elements and each has ≤3 simple fields
         if numel(tableArray) > 2
             useInline = false;
@@ -679,21 +679,21 @@ function str = formatTomlString(value, opts)
     % Format string value according to StringEscapeStyle and StringLayout options
 
     % Determine escape style
-    if strcmp(opts.stringEscapeStyle, 'literal')
+    if opts.stringEscapeStyle == "literal"
         useLiteral = true;
-    elseif strcmp(opts.stringEscapeStyle, 'escaped')
+    elseif opts.stringEscapeStyle == "escaped"
         useLiteral = false;
-    else % 'auto'
+    else % "auto"
         % Use literal if string contains backslashes but no actual escape sequences
         useLiteral = shouldUseLiteralString(value);
     end
 
     % Determine layout
-    if strcmp(opts.stringLayout, 'multiline')
+    if opts.stringLayout == "multiline"
         useMultiline = true;
-    elseif strcmp(opts.stringLayout, 'singleline')
+    elseif opts.stringLayout == "singleline"
         useMultiline = false;
-    else % 'auto'
+    else % "auto"
         % Use multiline if string contains newlines
         useMultiline = contains(value, newline);
     end
