@@ -525,7 +525,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
-                if validKey ~= key
+                if ~strcmp(validKey, key)
                     obj.KeyAliases(validKey) = key;
                 end
             else
@@ -534,7 +534,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
-                if validKey ~= key
+                if ~strcmp(validKey, key)
                     obj.KeyAliases(validKey) = key;
                 end
 
@@ -566,7 +566,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
             % Create alias if needed
             validKey = matlab.lang.makeValidName(key);
-            if validKey ~= key
+            if ~strcmp(validKey, key)
                 obj.KeyAliases(validKey) = key;
             end
         end
