@@ -506,12 +506,12 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         if ~isa(nested, 'ConfigurationData')
                             % Scalar value exists - replace with same class as parent
                             nested = feval(class(obj));
-                            nested.SourceFormat = obj.xInternal__.SourceFormat;
+                            nested = copySourceFormat(obj, nested);
                         end
                     else
                         % Create new nested object of same class as parent
                         nested = feval(class(obj));
-                        nested.SourceFormat = obj.xInternal__.SourceFormat;
+                        nested = copySourceFormat(obj, nested);
                     end
 
                     % Recursively assign to nested object
@@ -805,6 +805,18 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 ['Cannot assign %s to key "%s".\n' ...
                  'Supported types: numeric, logical, char, string, cell, struct, ' ...
                  'datetime, duration, and ConfigurationData objects.'], class(value), key);
+        end
+    end
+
+    methods (Access = private)
+        function target = copySourceFormat(obj, target)
+            %COPYSOURCEFORMAT Copy SourceFormat to another ConfigurationData object
+            %   Uses builtin to bypass overloaded dot methods, preventing
+            %   SourceFormat from being added as a user data key.
+            s = substruct('.', 'xInternal__');
+            internal = builtin('subsref', target, s);
+            internal.SourceFormat = obj.xInternal__.SourceFormat;
+            target = builtin('subsasgn', target, s, internal);
         end
     end
 
