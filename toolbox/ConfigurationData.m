@@ -747,8 +747,8 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 return;
             end
 
-            % Allowed base types
-            if isnumeric(value) || islogical(value) || ischar(value) || isstring(value)
+            % Allowed base types (numeric must be real - complex checked separately below)
+            if (isnumeric(value) && isreal(value)) || islogical(value) || ischar(value) || isstring(value)
                 return;  % OK
             end
 
@@ -794,7 +794,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                      'Convert to string first: string(yourCategorical)'], key);
             end
 
-            if ~isreal(value)
+            if isnumeric(value) && ~isreal(value)
                 error('ConfigurationData:InvalidType', ...
                     ['Cannot assign complex numbers to key "%s".\n' ...
                      'Configuration files do not support imaginary numbers.'], key);
