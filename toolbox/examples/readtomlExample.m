@@ -10,10 +10,8 @@ tomlContent = [
     "description = ""A sample project"""
     "enabled = true"];
 writelines(tomlContent,"simple.toml");
-%[text] Read the TOML file
-config = readtoml("simple.toml");
-%[text] TOMLData:
-config %[output:8e7c40d5]
+%[text] Read the TOML file. The output is returned as TOMLData, which is a struct-like object specialized for working with TOML Data.
+config = readtoml("simple.toml") %[output:8e7c40d5]
 %%
 %[text] Access values using dot notation
 config.name
@@ -220,5 +218,5 @@ delete("simple.toml", "nested.toml", "special.toml", "arrays.toml", ...
 %   data: {"layout":"inline"}
 %---
 %[output:8e7c40d5]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with properties:\n\n    name: \"my-package\"\n    version: \"1.0.0\"\n    description: \"A sample project\"\n    enabled: true\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    name: \"my-package\"\n    version: \"1.0.0\"\n    description: \"A sample project\"\n    enabled: true\n"}}
 %---
