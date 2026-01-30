@@ -54,8 +54,9 @@ function iniText = generateINI(obj)
     %GENERATEINI Generate INI text from INIData object
     lines = {};
 
-    for i = 1:length(obj.OriginalKeys)
-        key = obj.OriginalKeys(i);
+    keyList = keys(obj);
+    for i = 1:length(keyList)
+        key = keyList(i);
         value = obj.(key);  % Use dot notation to get value
 
         if isa(value, 'ConfigurationData')
@@ -63,8 +64,9 @@ function iniText = generateINI(obj)
             lines{end+1} = sprintf('[%s]', key); %#ok<AGROW>
 
             % Section contents
-            for j = 1:length(value.OriginalKeys)
-                subkey = value.OriginalKeys(j);
+            subKeyList = keys(value);
+            for j = 1:length(subKeyList)
+                subkey = subKeyList(j);
                 subvalue = value.(subkey);  % Use dot notation
 
                 if isa(subvalue, 'ConfigurationData')

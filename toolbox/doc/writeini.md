@@ -24,7 +24,7 @@ Data to write.
 
 *Type:* IniData | struct | containers.Map
 
-- **IniData**: Directly written with SourceFormat preserved
+- **IniData**: Directly written
 - **struct**: Converted to IniData (nested structs become sections)
 - **containers.Map**: Converted to IniData (nested maps become sections)
 

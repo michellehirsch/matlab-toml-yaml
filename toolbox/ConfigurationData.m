@@ -15,13 +15,13 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
     %   name collisions. Users can have keys named "keys", "isfield", etc.
     %   To call methods, use function syntax: keys(obj), isfield(obj, key)
 
-    properties (Access = public, Hidden = true)
+    properties (Access = private)
         Data dictionary = configureDictionary("string", "cell")
         KeyAliases dictionary = configureDictionary("string", "string")
         OriginalKeys string = string.empty
     end
 
-    properties (SetAccess = protected)
+    properties (GetAccess = private, SetAccess = protected)
         SourceFormat string = "unknown"
     end
 
@@ -435,18 +435,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     return;
                 end
 
-                % PRIORITY 2: Check if accessing a real class property
-                % (OriginalKeys, Data, KeyAliases, SourceFormat)
-                if isprop(obj, key)
-                    value = obj.(key);
-                    if length(indexOp) > 1
-                        value = subsref(value, indexOp(2:end));
-                    end
-                    varargout{1} = value;
-                    return;
-                end
-
-                % PRIORITY 3: Key doesn't exist - error
+                % Key doesn't exist - error
                 error('ConfigurationData:InvalidKey', ...
                     'Key "%s" does not exist.', key);
 
@@ -693,6 +682,23 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             key = string(key);
             value = obj.validateAndConvertValue(value, key);
             obj.Data(key) = {value};
+        end
+
+        function obj = addKey(obj, key)
+            %ADDKEY Add a key to the key order tracking if not already present
+            %   Used by parsers when directly manipulating data.
+            key = string(key);
+            if ~any(obj.OriginalKeys == key)
+                obj.OriginalKeys(end+1) = key;
+            end
+        end
+
+        function obj = setKeyAlias(obj, alias, originalKey)
+            %SETKEYALIAS Set a key alias mapping
+            %   Used by parsers when key names need valid MATLAB identifiers.
+            alias = string(alias);
+            originalKey = string(originalKey);
+            obj.KeyAliases(alias) = originalKey;
         end
     end
 

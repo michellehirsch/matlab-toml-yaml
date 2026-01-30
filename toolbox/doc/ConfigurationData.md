@@ -210,7 +210,7 @@ struct(tomlData)
 
 - ConfigurationData is a value class. Assignment creates independent copies automatically.
 - Use dynamic field names `data.("field-name")` to access keys with special characters.
-- The `OriginalKeys` property preserves insertion order for reproducible output.
+- ConfigurationData preserves insertion order for reproducible output.
 - Convert to struct with `struct(data)`, dictionary with `dictionary(data)`.
 - Create from struct: `config = YAMLData(myStruct)`.
 - YAMLData, TOMLData, and INIData extend ConfigurationData with format-specific features.
@@ -232,11 +232,11 @@ data3 = copy(data1);    % Also independent copy (same as assignment)
 
 ### Dot Notation Implementation
 
-ConfigurationData uses `matlab.mixin.indexing.RedefinesDot` to provide dynamic property access. Field access through dot notation is mapped to the internal `Data` containers.Map.
+ConfigurationData uses `matlab.mixin.indexing.RedefinesDot` to provide dynamic property access. Field access through dot notation is mapped to internal storage.
 
 ### Key Aliasing System
 
-Keys containing special characters are stored with their original names in `OriginalKeys`. The `KeyAliases` map allows access through valid MATLAB identifiers:
+Keys containing special characters are automatically aliased to valid MATLAB identifiers:
 
 **Original key:** `"app-name"`
 **Alias:** `"appname"` → `"app-name"`
@@ -257,14 +257,12 @@ ConfigurationData uses `matlab.mixin.CustomDisplay` to provide struct-like displ
 
 ### Subclass Extension
 
-YAMLData and TOMLData extend ConfigurationData:
+YAMLData, TOMLData, and INIData extend ConfigurationData:
 - Override `show` for format-specific display
-- Override `wrapNested` to create appropriate subclass instances
-- Set `SourceFormat` to identify the configuration type
+- Override `validateAndConvertValue` for format-specific type handling
 
 ## Limitations
 
-- Properties `Data`, `KeyAliases`, and `OriginalKeys` are public but should generally not be modified directly. Use object methods instead.
 - Very deeply nested structures may impact performance.
 - Field names are case-sensitive.
 - Direct array indexing `data(1)` is not supported; use dot notation instead.

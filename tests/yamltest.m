@@ -473,8 +473,8 @@ classdef yamltest < matlab.unittest.TestCase
 
             for i = 1:length(origKeys)
                 key = origKeys(i);
-                origVal = original.Data(char(key));
-                restVal = restored.Data(char(key));
+                origVal = original.(key);
+                restVal = restored.(key);
 
                 keyContext = sprintf('%s.%s', context, key);
 

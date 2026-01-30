@@ -64,8 +64,9 @@ function iniText = configDataToINI(data, sectionSpacing, precision)
 
     lines = {};
 
-    for i = 1:length(data.OriginalKeys)
-        key = data.OriginalKeys(i);
+    keyList = keys(data);
+    for i = 1:length(keyList)
+        key = keyList(i);
         value = data.(key);  % Use dot notation
 
         if isa(value, 'ConfigurationData')
@@ -73,8 +74,9 @@ function iniText = configDataToINI(data, sectionSpacing, precision)
             lines{end+1} = sprintf('[%s]', key); %#ok<AGROW>
 
             % Section key-value pairs
-            for j = 1:length(value.OriginalKeys)
-                subkey = value.OriginalKeys(j);
+            subKeyList = keys(value);
+            for j = 1:length(subKeyList)
+                subkey = subKeyList(j);
                 subvalue = value.(subkey);  % Use dot notation
 
                 if isa(subvalue, 'ConfigurationData')

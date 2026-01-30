@@ -28,29 +28,6 @@ data = readtoml(filename)
 
 `data = readtoml(filename)` creates a TOMLData object by reading from a TOML file. See [readtoml](readtoml.md).
 
-## Properties
-
-### Data
-Internal storage for configuration data.
-*Type:* `containers.Map`
-*Access:* Public
-
-### KeyAliases
-Mapping from valid MATLAB names to original keys with special characters.
-*Type:* `containers.Map`
-*Access:* Public
-
-### OriginalKeys
-List of keys in original insertion order.
-*Type:* string array
-*Access:* Public
-
-### SourceFormat
-Format of the source data.
-*Type:* string scalar
-*Access:* Protected (read-only)
-*Default:* `"toml"`
-
 ## Object Functions
 
 ### Data Access
@@ -282,7 +259,6 @@ config.logging.level = "INFO";
 
 ## Limitations
 
-- Properties `Data`, `KeyAliases`, and `OriginalKeys` are public but should generally not be modified directly.
 - Very deeply nested structures may impact performance due to recursive object creation.
 - Field names are case-sensitive, matching TOML behavior.
 
