@@ -58,10 +58,10 @@ function writeyaml(data, filename, options)
     end
 
     % Convert ArrayStyle to boolean for internal use
-    flowStyle = strcmp(options.ArrayStyle, 'flow');
+    flowStyle = options.ArrayStyle == "flow";
 
     % Convert SectionSpacing to boolean for internal use
-    addSectionSpacing = strcmp(options.SectionSpacing, 'loose');
+    addSectionSpacing = options.SectionSpacing == "loose";
 
     % Generate YAML text
     try

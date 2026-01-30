@@ -23,7 +23,7 @@ classdef initest < matlab.unittest.TestCase
 
             config = readini('test_simple.ini');
 
-            testCase.verifyEqual(config.server.host, 'localhost');
+            testCase.verifyEqual(config.server.host, "localhost");
             testCase.verifyEqual(config.server.port, 8080);
 
             delete('test_simple.ini');
@@ -42,7 +42,7 @@ classdef initest < matlab.unittest.TestCase
             % Read back
             loaded = readini('test_roundtrip.ini');
 
-            testCase.verifyEqual(loaded.section1.key1, 'value1');
+            testCase.verifyEqual(loaded.section1.key1, "value1");
             testCase.verifyEqual(loaded.section1.key2, 123);
             testCase.verifyEqual(loaded.section2.key3, true);
 
@@ -56,7 +56,7 @@ classdef initest < matlab.unittest.TestCase
 
             config = readini('test_types.ini');
 
-            testCase.verifyClass(config.types.string_val, 'char');
+            testCase.verifyClass(config.types.string_val, 'string');
             testCase.verifyEqual(config.types.int_val, 42);
             testCase.verifyEqual(config.types.float_val, 3.14);
             testCase.verifyEqual(config.types.bool_true, true);
@@ -88,7 +88,7 @@ classdef initest < matlab.unittest.TestCase
 
             config = readini('test_comments.ini');
 
-            testCase.verifyEqual(config.section.key, 'value');
+            testCase.verifyEqual(config.section.key, "value");
 
             delete('test_comments.ini');
         end

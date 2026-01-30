@@ -134,7 +134,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleTable(ro
         currentElement = arrayData(arrayIndex);
 
         % Get the nested path
-        if tableName == arrayPath
+        if strcmp(tableName, arrayPath)
             tableRef = currentElement;
         else
             nestedPath = extractAfter(tableName, arrayPath + ".");
@@ -146,7 +146,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleTable(ro
             % Navigate to the final nested table
             tableRef = currentElement;
             for k = 1:numel(nestedKeys)
-                tableRef = tableRef.(char(cleanKey(nestedKeys(k))));
+                tableRef = tableRef.(cleanKey(nestedKeys(k)));
             end
         end
 
@@ -205,7 +205,7 @@ function data = setNestedValue(data, pathKeys, finalKey, value)
     % finalKey: the key to set in the final table
     % value: the value to set
     if isempty(pathKeys)
-        data.(char(finalKey)) = value;
+        data.(finalKey) = value;
         return;
     end
 
@@ -214,7 +214,7 @@ function data = setNestedValue(data, pathKeys, finalKey, value)
 
     if numel(pathKeys) == 1
         % At the final level, set the value
-        nestedData.(char(finalKey)) = value;
+        nestedData.(finalKey) = value;
     else
         % Recursively navigate and set
         nestedData = setNestedValue(nestedData, pathKeys(2:end), finalKey, value);
@@ -250,7 +250,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
     % This includes nested arrays like [[jobs.steps]] where jobs is already an array
 
     keys = splitDottedKey(tableName);
-    tablePath = char(tableName);
+    tablePath = string(tableName);
 
     % Check if this is a nested array within an existing array-of-tables
     % e.g., [[jobs.steps]] where [[jobs]] is already tracked
@@ -414,7 +414,7 @@ function tableRef = getDataPathFromObj(data, tablePath)
     tableRef = data;
 
     for i = 1:numel(keys)
-        tableRef = tableRef.(char(cleanKey(keys(i))));
+        tableRef = tableRef.(cleanKey(keys(i)));
     end
 end
 
@@ -468,7 +468,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
         % Simple assignment using dot notation
         % Some keys conflict with method names (e.g., 'empty'), so use try-catch
         try
-            tableRef.(char(key)) = value;
+            tableRef.(key) = value;
         catch ME
             if contains(ME.message, 'temporary value') || contains(ME.message, 'method')
                 % Method name conflict - store directly using setData
@@ -476,8 +476,8 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
                 if ~any(tableRef.OriginalKeys == key)
                     tableRef.OriginalKeys(end+1) = key;
                 end
-                validKey = matlab.lang.makeValidName(char(key));
-                if ~strcmp(validKey, char(key))
+                validKey = matlab.lang.makeValidName(key);
+                if validKey ~= key
                     tableRef.KeyAliases(validKey) = char(key);
                 end
             else
@@ -496,7 +496,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
 
             if strcmp(tablePath, arrayPath)
                 % Direct array element field
-                element.(char(key)) = value;
+                element.(key) = value;
             else
                 % Nested table within array element - use helper for value semantics
                 relativePath = extractAfter(tablePath, arrayPath + ".");
@@ -520,7 +520,7 @@ end
 function data = setDataPath(data, pathKeys, value)
     % Set a value at a specific path
     if numel(pathKeys) == 1
-        data.(char(cleanKey(pathKeys(1)))) = value;
+        data.(cleanKey(pathKeys(1))) = value;
     else
         key = char(cleanKey(pathKeys(1)));
         if isfield(data, key)
@@ -561,7 +561,7 @@ function tableRef = getDataPath(data, tablePath)
     tableRef = data;
 
     for i = 1:numel(keys)
-        tableRef = tableRef.(char(cleanKey(keys(i))));
+        tableRef = tableRef.(cleanKey(keys(i)));
     end
 end
 
@@ -600,7 +600,7 @@ function data = setArrayAtPath(data, arrayPath, arrayOfTables, arrayData)
 
     if numel(pathKeys) == 1
         % Simple case - direct assignment
-        data.(char(cleanKey(pathKeys(1)))) = arrayData;
+        data.(cleanKey(pathKeys(1))) = arrayData;
     else
         % Find the innermost parent array
         parentArrayPath = "";
@@ -761,7 +761,7 @@ function arr = parseArray(arrayStr, datetimeType)
         firstType = class(parsedElements{1});
         allSame = true;
         for i = 2:numel(parsedElements)
-            if ~strcmp(class(parsedElements{i}), firstType)
+            if class(parsedElements{i}) ~= firstType
                 allSame = false;
                 break;
             end
@@ -856,7 +856,7 @@ function tbl = parseInlineTable(tableStr, datetimeType)
         valuePart = strtrim(extractAfter(pair, eqPos));
         value = parseValue(valuePart, datetimeType);
 
-        tbl.(char(key)) = value;
+        tbl.(key) = value;
     end
 end
 
@@ -962,7 +962,7 @@ end
 function tf = isDateTime(str)
     % Check if string is a datetime value
 
-    str = char(str);
+    str = string(str);
 
     % Check for date (yyyy-MM-dd) with optional time
     datePattern = '^\d{4}-\d{2}-\d{2}';
@@ -1006,7 +1006,7 @@ end
 function num = parseNumber(numStr)
     % Parse TOML number (integer or float)
 
-    numStr = char(strtrim(numStr));
+    numStr = strtrim(numStr);
 
     % Remove underscores (TOML allows _ in numbers)
     numStr = strrep(numStr, '_', '');
@@ -1219,7 +1219,7 @@ function [fullLine, newIndex] = accumulateMultiLineString(lines, startIndex, del
         % Check if this line contains the closing delimiter
         if contains(nextLine, delimiter)
             % Add content before the delimiter
-            beforeDelimiter = extractBefore(nextLine, strfind(char(nextLine), char(delimiter)));
+            beforeDelimiter = extractBefore(nextLine, strfind(nextLine, delimiter));
             if strlength(beforeDelimiter) > 0
                 fullLine = fullLine + newline + beforeDelimiter;
             end

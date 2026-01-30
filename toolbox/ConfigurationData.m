@@ -92,7 +92,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     value = obj.dictToStruct(value);
                 end
 
-                fieldName = matlab.lang.makeValidName(char(key));
+                fieldName = matlab.lang.makeValidName(key);
                 s.(fieldName) = value;
             end
         end
@@ -147,7 +147,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
         function p = properties(obj)
             %PROPERTIES Return list of dynamic properties (keys)
-            p = cellstr(obj.OriginalKeys);
+            p = obj.OriginalKeys;
         end
 
         function names = fieldnames(obj)
@@ -175,7 +175,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             obj.OriginalKeys(obj.OriginalKeys == resolvedKey) = [];
 
             % Remove alias if exists
-            validKey = matlab.lang.makeValidName(char(key));
+            validKey = matlab.lang.makeValidName(key);
             if isKey(obj.KeyAliases, validKey)
                 obj.KeyAliases = remove(obj.KeyAliases, validKey);
             end
@@ -381,7 +381,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     fieldName, mat2str(size(obj)), class(obj), fieldName, fieldName);
             end
 
-            if strcmp(indexOp(1).Type, 'Dot')
+            if indexOp(1).Type == "Dot"
                 % Dot notation: obj.key
                 key = indexOp(1).Name;
 
@@ -392,7 +392,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                     % Handle chained indexing
                     if length(indexOp) > 1
-                        if strcmp(indexOp(2).Type, 'Paren')
+                        if indexOp(2).Type == "Paren"
                             % Array indexing: obj.key(indices)
                             indices = indexOp(2).Indices{:};
                             value = value(indices);
@@ -406,7 +406,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                                         'Cannot chain into non-ConfigurationData value');
                                 end
                             end
-                        elseif strcmp(indexOp(2).Type, 'Brace')
+                        elseif indexOp(2).Type == "Brace"
                             % Cell array indexing: obj.key{indices}
                             indices = indexOp(2).Indices{:};
                             value = value{indices};
@@ -420,7 +420,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                                         'Cannot chain into non-ConfigurationData value');
                                 end
                             end
-                        elseif strcmp(indexOp(2).Type, 'Dot')
+                        elseif indexOp(2).Type == "Dot"
                             % Nested dot: obj.key.field
                             if isa(value, 'ConfigurationData')
                                 value = dotReference(value, indexOp(2:end));
@@ -450,7 +450,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 error('ConfigurationData:InvalidKey', ...
                     'Key "%s" does not exist.', key);
 
-            elseif strcmp(indexOp(1).Type, 'Paren')
+            elseif indexOp(1).Type == "Paren"
                 % Direct array indexing on obj: should not happen
                 error('ConfigurationData:UnsupportedIndexing', ...
                     'Direct parenthesis indexing not supported');
@@ -525,7 +525,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
-                if ~strcmp(validKey, key)
+                if validKey ~= key
                     obj.KeyAliases(validKey) = key;
                 end
             else
@@ -534,7 +534,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                 % Create alias if needed
                 validKey = matlab.lang.makeValidName(key);
-                if ~strcmp(validKey, key)
+                if validKey ~= key
                     obj.KeyAliases(validKey) = key;
                 end
 
@@ -566,7 +566,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
             % Create alias if needed
             validKey = matlab.lang.makeValidName(key);
-            if ~strcmp(validKey, key)
+            if validKey ~= key
                 obj.KeyAliases(validKey) = key;
             end
         end
@@ -605,7 +605,7 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     value = obj.dictToStruct(value);
                 end
 
-                fieldName = matlab.lang.makeValidName(char(key));
+                fieldName = matlab.lang.makeValidName(key);
                 s.(fieldName) = value;
             end
         end

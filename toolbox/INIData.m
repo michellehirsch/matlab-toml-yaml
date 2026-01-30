@@ -86,9 +86,9 @@ end
 function valueStr = valueToString(value)
     %VALUETOSTRING Convert MATLAB value to INI string representation
     if isstring(value) && isscalar(value)
-        valueStr = char(value);
-    elseif ischar(value)
         valueStr = value;
+    elseif ischar(value)
+        valueStr = string(value);
     elseif isscalar(value)
         if islogical(value)
             if value
@@ -102,7 +102,7 @@ function valueStr = valueToString(value)
     elseif isnumeric(value) || isstring(value)
         % Array: convert to comma-separated list
         if isstring(value)
-            items = arrayfun(@char, value, 'UniformOutput', false);
+            items = cellstr(value);
         else
             items = arrayfun(@num2str, value, 'UniformOutput', false);
         end
