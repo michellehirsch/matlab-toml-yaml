@@ -10,21 +10,19 @@ MATLAB toolbox for reading/writing YAML, TOML, and INI configuration files with 
 
 ### Run Tests
 ```matlab
-% In MATLAB
-runtests('tests/yamltest.m')
-runtests('tests/tomltest.m')
-runtests('tests/initest.m')
-runtests('tests/subsasgnTest.m')
-runtests('tests/ConfigurationPerformanceTest.m')
-
-% From terminal
-matlab -batch "runtests('tests/yamltest.m')"
+% via MCP Server
+run_matlab_test_file('tests/*.m')
+run_matlab_test_file('tests/yamltest.m')
+run_matlab_test_file('tests/tomltest.m')
+run_matlab_test_file('tests/initest.m')
+run_matlab_test_file('tests/subsasgnTest.m')
+run_matlab_test_file('tests/ConfigurationPerformanceTest.m')
 ```
 
 ### Setup Path
 ```matlab
 addpath('toolbox')
-% Or open ConfigurationFileIO.prj
+% Or openProject("ConfigurationFileIO.prj")
 ```
 
 ### Static Analysis
