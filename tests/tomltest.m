@@ -521,7 +521,7 @@ classdef tomltest < matlab.unittest.TestCase
             % Allows for key reordering but requires same keys and values
 
             % Handle arrays of ConfigurationData (array of tables)
-            if isa(original, 'ConfigurationData') && numel(original) > 1
+            if isa(original, 'matlab.io.config.ConfigurationData') && numel(original) > 1
                 testCase.verifyEqual(numel(restored), numel(original), ...
                     sprintf('Array length mismatch for %s', context));
                 for j = 1:numel(original)
@@ -544,11 +544,11 @@ classdef tomltest < matlab.unittest.TestCase
 
                 keyContext = sprintf('%s.%s', context, key);
 
-                if isa(origVal, 'ConfigurationData')
+                if isa(origVal, 'matlab.io.config.ConfigurationData')
                     % Recursive comparison for nested objects (includes subclasses like TOMLData)
-                    testCase.verifyTrue(isa(restVal, 'ConfigurationData'), ...
+                    testCase.verifyTrue(isa(restVal, 'matlab.io.config.ConfigurationData'), ...
                         sprintf('Expected ConfigurationData for %s', keyContext));
-                    if isa(restVal, 'ConfigurationData')
+                    if isa(restVal, 'matlab.io.config.ConfigurationData')
                         testCase.verifyDataEqual(origVal, restVal, keyContext);
                     end
                 elseif isnumeric(origVal)
