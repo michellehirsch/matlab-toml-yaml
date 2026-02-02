@@ -1,9 +1,9 @@
-classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
+classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                              matlab.mixin.indexing.OverridesPublicDotMethodCall & ...
                              matlab.mixin.CustomDisplay
-    %CONFIGURATIONDATA Base class for structured configuration data
-    %   Value class with dot notation access to configuration data.
-    %   Supports keys with special characters like hyphens.
+    %CONFIGURATIONDATA Abstract base class for structured configuration data
+    %   Use YAMLData, TOMLData, or INIData instead of this class directly.
+    %   Provides dot notation access and support for special characters in keys.
     %
     %   This is a value class. Assignment creates an independent copy:
     %       newData = data;  % newData is independent of data
@@ -28,21 +28,24 @@ classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
     methods
         function obj = ConfigurationData(inputData)
-            %CONFIGURATIONDATA Create ConfigurationData object
-            %   obj = ConfigurationData() creates an empty object
-            %   obj = ConfigurationData(s) converts struct s
-            %   obj = ConfigurationData(d) converts dictionary d
-            %   obj = ConfigurationData(m) converts containers.Map m
+            %CONFIGURATIONDATA Constructor for subclasses
+            %   This is an abstract class. Use YAMLData, TOMLData, or INIData.
+            %
+            %   Subclass constructors accept:
+            %   - No arguments: creates empty object
+            %   - struct s: converts struct to configuration data
+            %   - dictionary d: converts dictionary to configuration data
+            %   - containers.Map m: converts Map to configuration data
             %
             %   Nested structs, dictionaries, and Maps are recursively
-            %   converted to ConfigurationData objects of the same class.
+            %   converted to objects of the same subclass.
             %
             %   Example:
             %       s = struct('name', 'test', 'nested', struct('value', 42));
             %       config = YAMLData(s);
             %       config.name  % returns 'test'
             %
-            %   See also STRUCT, DICTIONARY, MAP
+            %   See also YAMLDATA, TOMLDATA, INIDATA
 
             obj.xInternal__.Data = configureDictionary("string", "cell");
             obj.xInternal__.KeyAliases = configureDictionary("string", "string");
