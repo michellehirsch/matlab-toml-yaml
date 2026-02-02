@@ -117,7 +117,7 @@ For comprehensive examples including Python project files and nested tables, see
 - Use `DatetimeType="string"` when you need custom datetime parsing or want to preserve the original format.
 - Access keys with special characters (hyphens, dots) using dynamic field names: `data.("field-name")`.
 - Convert TOMLData to standard structs using `struct(data)` for compatibility with code expecting struct inputs.
-- TOMLData is a handle class. Use `copy` to create independent copies when needed.
+- TOMLData is a value class. Assignment creates independent copies automatically.
 
 ## More About
 
