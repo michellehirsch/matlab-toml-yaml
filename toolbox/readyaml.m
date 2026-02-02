@@ -68,7 +68,7 @@ function data = parseYAML(yamlText, arrayFormat)
     lines = splitlines(yamlText);
 
     % Remove empty lines and comments
-    lines = lines(~cellfun(@isempty, strtrim(lines)));
+    lines = lines(strlength(strtrim(lines)) > 0);
     lines = removeComments(lines);
 
     % Parse the YAML structure
@@ -200,7 +200,14 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
         if ~isempty(values)
             % This is a sequence
             % If all values are YAMLData or ConfigurationData, handle based on arrayFormat
-            if all(cellfun(@(x) isa(x, 'matlab.io.config.ConfigurationData'), values))
+            allConfig = true;
+            for iVal = 1:numel(values)
+                if ~isa(values{iVal}, 'matlab.io.config.ConfigurationData')
+                    allConfig = false;
+                    break;
+                end
+            end
+            if allConfig
                 if arrayFormat == "auto"
                     % Convert cell array to object array
                     data = [values{:}];
@@ -340,9 +347,14 @@ function value = consolidateArray(parsedItems, arrayFormat)
 
     if arrayFormat == "auto"
         % Check if all items are same type
-        allText = all(cellfun(@(x) ischar(x) || isstring(x), parsedItems));
-        allNumeric = all(cellfun(@isnumeric, parsedItems));
-        allLogical = all(cellfun(@islogical, parsedItems));
+        allText = true; allNumeric = true; allLogical = true;
+        for iVal = 1:numel(parsedItems)
+            v = parsedItems{iVal};
+            if ~(ischar(v) || isstring(v)); allText = false; end
+            if ~isnumeric(v); allNumeric = false; end
+            if ~islogical(v); allLogical = false; end
+            if ~allText && ~allNumeric && ~allLogical; break; end
+        end
 
         if allText
             % Convert to string array (column)

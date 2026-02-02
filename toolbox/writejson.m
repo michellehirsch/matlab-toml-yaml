@@ -155,7 +155,10 @@ function result = convertToStruct(data, emptyValueOption)
             end
         else
             % Struct array - convert each element
-            result = arrayfun(@(x) convertToStruct(x, emptyValueOption), data);
+            result = repmat(struct(), 1, numel(data));
+            for i = 1:numel(data)
+                result(i) = convertToStruct(data(i), emptyValueOption);
+            end
         end
     elseif iscell(data)
         % Cell array - recursively convert elements
