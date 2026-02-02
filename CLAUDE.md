@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-MATLAB toolbox for reading/writing YAML, TOML, and INI configuration files with dot notation access. No external toolboxes required. Minimum MATLAB version: R2022b (for `dictionary` type with value semantics).
+MATLAB toolbox for reading/writing YAML, TOML, JSON, and INI configuration files with dot notation access. No external toolboxes required. Minimum MATLAB version: R2022b (for `dictionary` type with value semantics).
 
 ## Commands
 
@@ -15,6 +15,7 @@ run_matlab_test_file('tests/*.m')
 run_matlab_test_file('tests/yamltest.m')
 run_matlab_test_file('tests/tomltest.m')
 run_matlab_test_file('tests/initest.m')
+run_matlab_test_file('tests/jsontest.m')
 run_matlab_test_file('tests/subsasgnTest.m')
 run_matlab_test_file('tests/ConfigurationPerformanceTest.m')
 ```
@@ -38,6 +39,7 @@ mcp__matlab__check_matlab_code('toolbox/readyaml.m')
 ConfigurationData (value class, base)
 ├── YAMLData
 ├── TOMLData
+├── JSONData
 └── INIData
 ```
 
@@ -51,12 +53,12 @@ All internal state is stored in a single `public Hidden` struct property named `
 - `xInternal__.Data` - dictionary<string, cell> storing values wrapped in cells
 - `xInternal__.KeyAliases` - dictionary<string, string> mapping valid MATLAB names to original keys
 - `xInternal__.OriginalKeys` - string array preserving insertion order
-- `xInternal__.SourceFormat` - string identifying the file format ("yaml", "toml", "ini")
+- `xInternal__.SourceFormat` - string identifying the file format ("yaml", "toml", "json", "ini")
 
 This design uses one reserved key name to enable tab completion. See `Claude/TAB_COMPLETION_DESIGN.md`.
 
 ### I/O Pattern
-Reader functions (`readyaml`, `readtoml`, `readini`) return data objects. Writer functions (`writeyaml`, `writetoml`, `writeini`) accept data objects or structs.
+Reader functions (`readyaml`, `readtoml`, `readjson`, `readini`) return data objects. Writer functions (`writeyaml`, `writetoml`, `writejson`, `writeini`) accept data objects or structs.
 
 ## Critical Design Decisions
 
@@ -106,6 +108,8 @@ config.new.section.value = 42;  % creates nested YAMLData objects
 | `toolbox/readtoml.m` | TOML parser (~1,250 lines, most complex) |
 | `toolbox/writeyaml.m` | YAML writer with formatting options |
 | `toolbox/writetoml.m` | TOML writer with formatting options |
+| `toolbox/readjson.m` | JSON reader (wraps jsondecode) |
+| `toolbox/writejson.m` | JSON writer (wraps jsonencode) |
 | `Claude/DESIGN_DECISIONS.md` | Naming rationale and design philosophy |
 | `Claude/ISSUE_14_RESERVED_NAMES.md` | Reserved name handling explanation |
 | `Claude/TAB_COMPLETION_DESIGN.md` | Tab completion fix and xInternal__ rationale |
@@ -114,6 +118,7 @@ config.new.section.value = 42;  % creates nested YAMLData objects
 
 - **YAML**: No anchors/aliases, no multi-document, no literal/folded strings
 - **TOML**: Array of tables reading has bugs (writing works)
+- **JSON**: Null values become empty `[]`; designed for config files, not strict round-tripping (use jsondecode/jsonencode for that)
 - **Array indexing**: Cannot do `obj.field(i).subfield = value` directly; extract array first
 - **Comments**: Not preserved during round-trip
 - **Reserved key**: `xInternal__` cannot be used as a configuration key (reserved for internal storage)
