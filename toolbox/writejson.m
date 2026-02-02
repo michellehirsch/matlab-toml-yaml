@@ -22,17 +22,14 @@ function writejson(data, filename, options)
 %       - dictionary
 %       - containers.Map
 %
+%   Original key names are preserved, including keys with special characters
+%   like hyphens or keys starting with numbers.
+%
 %   Example:
 %       % Write JSONData to file
 %       config = jsondata();
-%       config.name = 'my-package';
-%       config.version = '1.0.0';
-%       writejson(config, 'package.json');
-%
-%       % Write struct to file
-%       s.name = 'test';
-%       s.enabled = true;
-%       writejson(s, 'config.json');
+%       config.("my-key") = 'value';  % Key with hyphen preserved
+%       writejson(config, 'config.json');
 %
 %       % Write without pretty printing
 %       writejson(config, 'compact.json', 'PrettyPrint', false);
@@ -47,21 +44,19 @@ function writejson(data, filename, options)
         options.EmptyValue {mustBeMember(options.EmptyValue, ["null", "omit"])} = "null"
     end
 
-    % Convert input to struct
-    structData = convertToStruct(data, options.EmptyValue);
+    % Convert input to containers.Map (preserves arbitrary string keys)
+    mapData = convertToMap(data, options.EmptyValue);
 
     % Encode to JSON using built-in jsonencode
     if options.PrettyPrint
-        jsonText = jsonencode(structData, 'PrettyPrint', true);
+        jsonText = jsonencode(mapData, 'PrettyPrint', true);
     else
-        jsonText = jsonencode(structData);
+        jsonText = jsonencode(mapData);
     end
 
     % Post-process: replace empty array placeholders with null if EmptyValue='null'
     if options.EmptyValue == "null"
         % Replace ": []" with ": null" for empty arrays that represent null values
-        % This handles the common case where [] from reading null should write back as null
-        % Use regex to handle both pretty-printed and compact JSON
         jsonText = regexprep(jsonText, ':\s*\[\s*\]', ': null');
     end
 
@@ -79,89 +74,134 @@ function writejson(data, filename, options)
     end
 end
 
-function result = convertToStruct(data, emptyValueOption)
-%CONVERTTOSTRUCT Convert various data types to struct for JSON encoding
+function result = convertToMap(data, emptyValueOption)
+%CONVERTTOMAP Convert various data types to containers.Map for JSON encoding
+%   Uses containers.Map because jsonencode preserves original key names with it.
 
     if isa(data, 'matlab.io.config.ConfigurationData')
-        % ConfigurationData -> struct using keys() to preserve original names
-        result = struct();
+        % ConfigurationData -> containers.Map using keys() to preserve original names
         allKeys = keys(data);
-        for i = 1:numel(allKeys)
-            key = allKeys(i);
-            value = data.(key);
-            % Make valid field name for struct
-            validKey = matlab.lang.makeValidName(key);
-            % Recursively convert nested values
-            convertedValue = convertToStruct(value, emptyValueOption);
-            % Handle empty values
-            if isempty(convertedValue) && ~isstruct(convertedValue) && ~iscell(convertedValue)
-                if emptyValueOption == "omit"
-                    continue;  % Skip this key
-                end
-                % For "null", empty arrays will become null in JSON
-            end
-            result.(validKey) = convertedValue;
-        end
-    elseif isa(data, 'dictionary')
-        % Dictionary -> struct
-        result = struct();
-        allKeys = keys(data);
-        for i = 1:numel(allKeys)
-            key = allKeys(i);
-            value = data(key);
-            if iscell(value)
-                value = value{1};
-            end
-            validKey = matlab.lang.makeValidName(key);
-            convertedValue = convertToStruct(value, emptyValueOption);
-            if isempty(convertedValue) && ~isstruct(convertedValue) && ~iscell(convertedValue)
-                if emptyValueOption == "omit"
-                    continue;
-                end
-            end
-            result.(validKey) = convertedValue;
-        end
-    elseif isa(data, 'containers.Map')
-        % containers.Map -> struct
-        result = struct();
-        allKeys = keys(data);
-        for i = 1:numel(allKeys)
-            key = allKeys{i};
-            value = data(key);
-            validKey = matlab.lang.makeValidName(key);
-            convertedValue = convertToStruct(value, emptyValueOption);
-            if isempty(convertedValue) && ~isstruct(convertedValue) && ~iscell(convertedValue)
-                if emptyValueOption == "omit"
-                    continue;
-                end
-            end
-            result.(validKey) = convertedValue;
-        end
-    elseif isstruct(data)
-        % Struct - recursively convert fields
-        if isscalar(data)
-            result = struct();
-            fields = fieldnames(data);
-            for i = 1:numel(fields)
-                fieldName = fields{i};
-                value = data.(fieldName);
-                convertedValue = convertToStruct(value, emptyValueOption);
-                if isempty(convertedValue) && ~isstruct(convertedValue) && ~iscell(convertedValue)
+        if isempty(allKeys)
+            result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+        else
+            keyCell = cellstr(allKeys);
+            valueCell = cell(size(keyCell));
+            validIdx = true(size(keyCell));
+            for i = 1:numel(allKeys)
+                key = allKeys(i);
+                value = data.(key);
+                % Recursively convert nested values
+                convertedValue = convertToMap(value, emptyValueOption);
+                % Handle empty values
+                if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
                     if emptyValueOption == "omit"
+                        validIdx(i) = false;
                         continue;
                     end
                 end
-                result.(fieldName) = convertedValue;
+                valueCell{i} = convertedValue;
+            end
+            if any(validIdx)
+                result = containers.Map(keyCell(validIdx), valueCell(validIdx));
+            else
+                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+            end
+        end
+    elseif isa(data, 'dictionary')
+        % Dictionary -> containers.Map
+        allKeys = keys(data);
+        if isempty(allKeys)
+            result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+        else
+            keyCell = cellstr(allKeys);
+            valueCell = cell(size(keyCell));
+            validIdx = true(size(keyCell));
+            for i = 1:numel(allKeys)
+                key = allKeys(i);
+                value = data(key);
+                if iscell(value)
+                    value = value{1};
+                end
+                convertedValue = convertToMap(value, emptyValueOption);
+                if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
+                    if emptyValueOption == "omit"
+                        validIdx(i) = false;
+                        continue;
+                    end
+                end
+                valueCell{i} = convertedValue;
+            end
+            if any(validIdx)
+                result = containers.Map(keyCell(validIdx), valueCell(validIdx));
+            else
+                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+            end
+        end
+    elseif isa(data, 'containers.Map')
+        % containers.Map - recursively convert values
+        allKeys = keys(data);
+        if isempty(allKeys)
+            result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+        else
+            valueCell = cell(size(allKeys));
+            validIdx = true(size(allKeys));
+            for i = 1:numel(allKeys)
+                key = allKeys{i};
+                value = data(key);
+                convertedValue = convertToMap(value, emptyValueOption);
+                if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
+                    if emptyValueOption == "omit"
+                        validIdx(i) = false;
+                        continue;
+                    end
+                end
+                valueCell{i} = convertedValue;
+            end
+            if any(validIdx)
+                result = containers.Map(allKeys(validIdx), valueCell(validIdx));
+            else
+                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+            end
+        end
+    elseif isstruct(data)
+        % Struct - convert to Map (note: struct keys are already valid MATLAB names)
+        if isscalar(data)
+            fields = fieldnames(data);
+            if isempty(fields)
+                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+            else
+                valueCell = cell(size(fields));
+                validIdx = true(size(fields));
+                for i = 1:numel(fields)
+                    fieldName = fields{i};
+                    value = data.(fieldName);
+                    convertedValue = convertToMap(value, emptyValueOption);
+                    if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
+                        if emptyValueOption == "omit"
+                            validIdx(i) = false;
+                            continue;
+                        end
+                    end
+                    valueCell{i} = convertedValue;
+                end
+                if any(validIdx)
+                    result = containers.Map(fields(validIdx), valueCell(validIdx));
+                else
+                    result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+                end
             end
         else
             % Struct array - convert each element
-            result = arrayfun(@(x) convertToStruct(x, emptyValueOption), data);
+            result = cell(size(data));
+            for i = 1:numel(data)
+                result{i} = convertToMap(data(i), emptyValueOption);
+            end
         end
     elseif iscell(data)
         % Cell array - recursively convert elements
         result = cell(size(data));
         for i = 1:numel(data)
-            result{i} = convertToStruct(data{i}, emptyValueOption);
+            result{i} = convertToMap(data{i}, emptyValueOption);
         end
     else
         % Scalars and arrays - pass through

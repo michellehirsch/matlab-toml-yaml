@@ -463,5 +463,51 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifyEqual(readBack.integer, 42);
             testCase.verifyEqual(readBack.float, 3.14159, 'RelTol', 1e-5);
         end
+
+        function testSpecialCharacterKeys(testCase)
+            % Test that keys with special characters are preserved
+            data = jsondata();
+            data.("this-name") = 123;
+            data.("0invalid") = "test";
+            data.("build-system") = "gradle";
+
+            filename = fullfile(pwd, 'special_keys.json');
+            writejson(data, filename);
+
+            % Verify JSON contains original keys
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"this-name"');
+            testCase.verifySubstring(content, '"0invalid"');
+            testCase.verifySubstring(content, '"build-system"');
+
+            % Read back and verify original keys work
+            readBack = readjson(filename);
+            testCase.verifyEqual(readBack.("this-name"), 123);
+            testCase.verifyEqual(readBack.("0invalid"), "test");
+            testCase.verifyEqual(readBack.("build-system"), "gradle");
+
+            % Verify aliases also work
+            testCase.verifyEqual(readBack.this_name, 123);
+            testCase.verifyEqual(readBack.x0invalid, "test");
+            testCase.verifyEqual(readBack.build_system, "gradle");
+        end
+
+        function testNestedSpecialCharacterKeys(testCase)
+            % Test special character keys in nested structures
+            data = jsondata();
+            data.("parent-key").("child-key") = "value";
+            data.("parent-key").normal = 42;
+
+            filename = fullfile(pwd, 'nested_special.json');
+            writejson(data, filename);
+
+            % Read back and verify
+            readBack = readjson(filename);
+            testCase.verifyEqual(readBack.("parent-key").("child-key"), "value");
+            testCase.verifyEqual(readBack.("parent-key").normal, 42);
+
+            % Verify aliases work
+            testCase.verifyEqual(readBack.parent_key.child_key, "value");
+        end
     end
 end
