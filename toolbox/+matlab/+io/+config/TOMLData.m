@@ -1,4 +1,4 @@
-classdef TOMLData < ConfigurationData
+classdef TOMLData < matlab.io.config.ConfigurationData
     %TOMLDATA TOML configuration data with dot notation access
     %   TOMLData extends ConfigurationData to provide TOML-specific functionality
     %   including preservation of key order and support for special characters
@@ -6,37 +6,35 @@ classdef TOMLData < ConfigurationData
     %
     %   This is a value class. Assignment creates an independent copy.
     %
+    %   To create a TOMLData object, use the informal wrapper function:
+    %       data = tomldata();           % empty
+    %       data = tomldata(myStruct);   % from struct
+    %
     %   Example:
     %       data = readtoml('pyproject.toml');
     %       name = data.project.name;
     %       deps = data.("build-system").requires;
-    %       data.show;  % Display as TOML
+    %       show(data);  % Display as TOML
     %
-    %   See also READTOML, WRITETOML, ConfigurationData
+    %   See also TOMLDATA, READTOML, WRITETOML, matlab.io.config.ConfigurationData
 
     methods
-        function obj = TOMLData(inputData)
-            %TOMLDATA Construct TOMLData object
+        function obj = TOMLData()
+            %TOMLDATA Construct empty TOMLData object
             %   obj = TOMLData() creates an empty TOMLData object
-            %   obj = TOMLData(s) converts struct s to TOMLData
-            %   obj = TOMLData(d) converts dictionary d to TOMLData
-            %   obj = TOMLData(m) converts containers.Map m to TOMLData
             %
-            %   Example:
-            %       s = struct('project', struct('name', 'myapp'));
-            %       config = TOMLData(s);
-            %       writetoml(config, 'pyproject.toml');
+            %   To create from existing data, use the tomldata() function:
+            %       config = tomldata(myStruct);
+            %
+            %   See also TOMLDATA
 
-            if nargin < 1
-                inputData = [];
-            end
-            obj@ConfigurationData(inputData);
+            obj@matlab.io.config.ConfigurationData();
             obj.xInternal__.SourceFormat = "toml";
         end
 
         function show(obj)
             %SHOW Display the data in TOML format
-            %   data.show writes the TOMLData to a temporary file and
+            %   show(data) writes the TOMLData to a temporary file and
             %   displays the TOML content in the command window.
             %
             %   For arrays, displays each element as an array of tables
@@ -58,7 +56,7 @@ classdef TOMLData < ConfigurationData
             else
                 % Array case - wrap in container and write as array of tables
                 try
-                    wrapper = TOMLData;
+                    wrapper = matlab.io.config.TOMLData;
                     wrapper.item = obj;
                     tempFile = tempname;
                     writetoml(wrapper, tempFile, TableArrayStyle="expanded");
@@ -83,7 +81,7 @@ classdef TOMLData < ConfigurationData
             end
 
             % For all other types, use base class validation
-            value = validateAndConvertValue@ConfigurationData(obj, value, key);
+            value = validateAndConvertValue@matlab.io.config.ConfigurationData(obj, value, key);
         end
     end
 end

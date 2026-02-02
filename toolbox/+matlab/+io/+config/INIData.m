@@ -1,4 +1,4 @@
-classdef INIData < ConfigurationData
+classdef INIData < matlab.io.config.ConfigurationData
     %INIDATA INI configuration data container
     %   INIData represents structured configuration data from INI files
     %   with dot notation access and support for special characters in field names.
@@ -6,41 +6,39 @@ classdef INIData < ConfigurationData
     %
     %   This is a value class. Assignment creates an independent copy.
     %
+    %   To create an INIData object, use the informal wrapper function:
+    %       data = inidata();           % empty
+    %       data = inidata(myStruct);   % from struct
+    %
     %   Example:
-    %       % Create INI data
-    %       config = INIData();
-    %       config.database.host = 'localhost';
-    %       config.database.port = '5432';
-    %
-    %       % Write to file
-    %       writeini(config, 'config.ini');
-    %
     %       % Read from file
     %       config = readini('config.ini');
+    %
+    %       % Create and write
+    %       config = inidata();
+    %       config.database.host = 'localhost';
+    %       config.database.port = '5432';
+    %       writeini(config, 'config.ini');
+    %
+    %   See also INIDATA, READINI, WRITEINI, matlab.io.config.ConfigurationData
 
     methods
-        function obj = INIData(inputData)
-            %INIDATA Create INI data object
+        function obj = INIData()
+            %INIDATA Create empty INI data object
             %   obj = INIData() creates an empty INIData object
-            %   obj = INIData(s) converts struct s to INIData
-            %   obj = INIData(d) converts dictionary d to INIData
-            %   obj = INIData(m) converts containers.Map m to INIData
             %
-            %   Example:
-            %       s = struct('database', struct('host', 'localhost'));
-            %       config = INIData(s);
-            %       writeini(config, 'config.ini');
+            %   To create from existing data, use the inidata() function:
+            %       config = inidata(myStruct);
+            %
+            %   See also INIDATA
 
-            if nargin < 1
-                inputData = [];
-            end
-            obj = obj@ConfigurationData(inputData);
+            obj@matlab.io.config.ConfigurationData();
             obj.xInternal__.SourceFormat = "ini";
         end
 
         function iniText = show(obj)
             %SHOW Display INI content as formatted text
-            %   Displays the INI structure without writing to file.
+            %   show(obj) displays the INI structure without writing to file.
 
             iniText = generateINI(obj);
             if nargout == 0
@@ -59,7 +57,7 @@ function iniText = generateINI(obj)
         key = keyList(i);
         value = obj.(key);  % Use dot notation to get value
 
-        if isa(value, 'ConfigurationData')
+        if isa(value, 'matlab.io.config.ConfigurationData')
             % Section header
             lines{end+1} = sprintf('[%s]', key); %#ok<AGROW>
 
@@ -69,7 +67,7 @@ function iniText = generateINI(obj)
                 subkey = subKeyList(j);
                 subvalue = value.(subkey);  % Use dot notation
 
-                if isa(subvalue, 'ConfigurationData')
+                if isa(subvalue, 'matlab.io.config.ConfigurationData')
                     % Skip nested ConfigurationData (INI doesn't support deep nesting)
                     continue;
                 end

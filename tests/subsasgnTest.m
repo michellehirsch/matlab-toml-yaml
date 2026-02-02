@@ -11,8 +11,8 @@ classdef subsasgnTest < matlab.unittest.TestCase
         %% Core subsasgn tests
         function testAssignToArrayElementField(testCase)
             % Test: data.items(2).name = "New"
-            data = YAMLData();
-            data.items = [YAMLData(), YAMLData()];
+            data = yamldata();
+            data.items = [yamldata(), yamldata()];
             data.items(1).name = "First";
             data.items(2).name = "Second";
 
@@ -23,28 +23,28 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testAssignNestedFieldInArrayElement(testCase)
             % Test: data.items(1).nested.value = 42
-            data = YAMLData();
-            data.items = [YAMLData(), YAMLData()];
+            data = yamldata();
+            data.items = [yamldata(), yamldata()];
             data.items(1).nested.value = 42;
             testCase.verifyEqual(data.items(1).nested.value, 42);
         end
 
         function testAssignDeepChainThroughArrayElement(testCase)
             % Test: data.items(1).a.b.c = "deep"
-            data = YAMLData();
-            data.items = [YAMLData()];
+            data = yamldata();
+            data.items = [yamldata()];
             data.items(1).a.b.c = "deep";
             testCase.verifyEqual(data.items(1).a.b.c, "deep");
         end
 
         function testDirectElementReplacement(testCase)
             % Test: data.items(2) = newElement (no further chaining)
-            data = YAMLData();
-            data.items = [YAMLData(), YAMLData()];
+            data = yamldata();
+            data.items = [yamldata(), yamldata()];
             data.items(1).x = 1;
             data.items(2).x = 2;
 
-            newElem = YAMLData();
+            newElem = yamldata();
             newElem.x = 99;
             data.items(2) = newElem;
 
@@ -54,21 +54,21 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         %% Regression tests - ensure existing patterns still work
         function testSimpleDotAssign(testCase)
-            data = YAMLData();
+            data = yamldata();
             data.title = "Test";
             testCase.verifyEqual(data.title, "Test");
         end
 
         function testChainedDotAssign(testCase)
-            data = YAMLData();
+            data = yamldata();
             data.a.b.c = "deep";
             testCase.verifyEqual(data.a.b.c, "deep");
         end
 
         %% Subclass validation - TOMLData
         function testTOMLDataInheritsSubsasgn(testCase)
-            data = TOMLData();
-            data.items = [TOMLData(), TOMLData()];
+            data = tomldata();
+            data.items = [tomldata(), tomldata()];
             data.items(1).name = "Alice";
             data.items(2).name = "Bob";
 
@@ -78,8 +78,8 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         %% Subclass validation - YAMLData
         function testYAMLDataInheritsSubsasgn(testCase)
-            data = YAMLData();
-            data.items = [YAMLData(), YAMLData()];
+            data = yamldata();
+            data.items = [yamldata(), yamldata()];
             data.items(1).value = 10;
             data.items(2).value = 20;
 
@@ -94,7 +94,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testKeyNamedKeys(testCase)
             % Test: user can create a key named "keys"
-            data = YAMLData();
+            data = yamldata();
             data.keys = "my keys value";
 
             % Dot notation returns the data key, not the method
@@ -107,7 +107,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testKeyNamedIsfield(testCase)
             % Test: user can create a key named "isfield"
-            data = YAMLData();
+            data = yamldata();
             data.isfield = true;
 
             % Dot notation returns the data key
@@ -119,7 +119,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testKeyNamedShow(testCase)
             % Test: user can create a key named "show"
-            data = YAMLData();
+            data = yamldata();
             data.show = "my show value";
 
             % Dot notation returns the data key
@@ -128,7 +128,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testKeyNamedStruct(testCase)
             % Test: user can create a key named "struct"
-            data = YAMLData();
+            data = yamldata();
             data.struct = "struct value";
 
             % Dot notation returns the data key
@@ -142,7 +142,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testKeyNamedCopy(testCase)
             % Test: user can create a key named "copy"
-            data = YAMLData();
+            data = yamldata();
             data.copy = "copy value";
 
             % Dot notation returns the data key
@@ -155,7 +155,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testMultipleReservedNames(testCase)
             % Test: multiple reserved names can coexist
-            data = YAMLData();
+            data = yamldata();
             data.keys = ["key1", "key2"];
             data.isfield = false;
             data.struct = "struct value";
@@ -174,7 +174,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testReservedNameInYAMLData(testCase)
             % Test: reserved names work in YAMLData subclass
-            data = YAMLData();
+            data = yamldata();
             data.keys = "yaml keys";
 
             testCase.verifyEqual(data.keys, "yaml keys");
@@ -183,7 +183,7 @@ classdef subsasgnTest < matlab.unittest.TestCase
 
         function testReservedNameInTOMLData(testCase)
             % Test: reserved names work in TOMLData subclass
-            data = TOMLData();
+            data = tomldata();
             data.keys = "toml keys";
 
             testCase.verifyEqual(data.keys, "toml keys");

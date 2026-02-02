@@ -111,7 +111,7 @@ type("examples/modified_config.yaml") %[output:6d15ce2b]
 %%
 %[text] ### Controlling YAML Output Format
 %[text] YAML supports two styles of arrays: flow (inline) and block. Use `ArrayStyle` to control how arrays are formatted:
-yml = YAMLData;
+yml = yamldata();
 yml.ports = [8080, 8443, 9000];
 %[text] Flow style (inline):
 writeyaml(yml, "examples/flow_style.yaml", ArrayStyle="flow");
@@ -147,7 +147,7 @@ type("examples/modified_project.toml") %[output:537125a6]
 %[text] `writetoml` offers extensive formatting control. Here are common options:
 %[text] TOML also supports flow and block array styles. The default for `ArrayStyle` is `auto`, which users heuristics to write small arrays with flow style and larger arrays with block. Use `ArrayStyle` `"flow"` or `"block"` to force one style.
 %[text] Control array style:
-project = TOMLData;
+project = tomldata();
 project.dependencies = ["export_fig", "guilayout", "fsda"];
 writetoml(project, "examples/array_flow.toml", ArrayStyle="flow")
 type("examples/array_flow.toml") %[output:2b0c4e57]

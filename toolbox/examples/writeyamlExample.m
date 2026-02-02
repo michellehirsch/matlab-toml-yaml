@@ -2,8 +2,8 @@
 %[text] This example demonstrates all formatting options available in writeyaml, showing how to control the appearance and style of your YAML output files.
 %%
 %[text] ## Setup: Create Sample Data
-%[text] Create a sample YAMLData object for demonstrations
-config = YAMLData;
+%[text] Create a sample yamldata() object for demonstrations
+config = yamldata();
 config.name = "my-application";
 config.version = "1.0.0";
 config.debug = true;
@@ -61,7 +61,7 @@ type("output_indent_4.yaml")
 %%
 %[text] ## Precision Option
 %[text] Control numeric precision for floating-point values
-numericData = YAMLData;
+numericData = yamldata();
 numericData.pi = pi;
 numericData.euler = exp(1);
 numericData.values = [1.23456789, 2.34567890, 3.45678901];
@@ -82,19 +82,19 @@ type("output_precision_3.yaml")
 %%
 %[text] ## Writing Arrays of Mappings (GitHub Actions Style)
 %[text] Create GitHub Actions workflow structure
-workflow = YAMLData;
+workflow = yamldata();
 workflow.name = "CI";
 workflow.on.push.branches = ["main", "develop"];
 workflow.on.("pull_request").branches = ["main"];
 %[text] Create array of step objects
 workflow.jobs.build.("runs-on") = "ubuntu-latest";
-step1 = YAMLData;
+step1 = yamldata();
 step1.name = "Checkout";
 step1.uses = "actions/checkout@v4";
-step2 = YAMLData;
+step2 = yamldata();
 step2.name = "Build";
 step2.run = "make build";
-step3 = YAMLData;
+step3 = yamldata();
 step3.name = "Test";
 step3.run = "make test";
 workflow.jobs.build.steps = [step1; step2; step3];
@@ -108,7 +108,7 @@ type("github_workflow.yaml")
 %%
 %[text] ## Working with Special Characters in Keys
 %[text] Demonstrate handling of keys with hyphens, dots, and spaces
-specialKeys = YAMLData;
+specialKeys = yamldata();
 specialKeys.("app-name") = "MyApp";
 specialKeys.("build-version") = "2.0.0";
 specialKeys.("max-connections") = 100;
@@ -119,7 +119,7 @@ type("special_keys.yaml")
 %%
 %[text] ## Docker Compose Style Configuration
 %[text] Create a Docker Compose-style YAML configuration
-dockerCompose = YAMLData;
+dockerCompose = yamldata();
 dockerCompose.version = "3.8";
 dockerCompose.services.web.image = "nginx:latest";
 dockerCompose.services.web.ports = ["8080:80", "8443:443"];
@@ -161,7 +161,7 @@ type("style_traditional.yaml")
 %%
 %[text] ## Writing Different Data Types
 %[text] Demonstrate how different MATLAB types are converted to YAML
-dataTypes = YAMLData;
+dataTypes = yamldata();
 dataTypes.string = "Hello, World!";
 dataTypes.number = 42;
 dataTypes.float = 3.14159;
@@ -176,7 +176,7 @@ type("data_types.yaml")
 %%
 %[text] ## Nested Structures with Mixed Arrays
 %[text] Create complex nested configuration
-complexConfig = YAMLData;
+complexConfig = yamldata();
 complexConfig.application.name = "ComplexApp";
 complexConfig.application.version = "2.0.0";
 complexConfig.server.host = "localhost";
@@ -197,7 +197,7 @@ type("complex_config.yaml")
 %[text] ## Round-Trip: Read, Modify, Write
 %[text] Demonstrate reading, modifying, and writing back
 %[text] Create initial config
-original = YAMLData;
+original = yamldata();
 original.server.host = "localhost";
 original.server.port = 8080;
 original.features = ["feature1", "feature2"];
@@ -218,7 +218,7 @@ type("modified_config.yaml")
 %%
 %[text] ## Writing Default Filename
 %[text] When no filename is provided, writes to 'untitled.yaml'
-tempData = YAMLData;
+tempData = yamldata();
 tempData.test = "value";
 writeyaml(tempData);
 %[text] Default filename (untitled.yaml):

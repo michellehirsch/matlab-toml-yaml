@@ -54,7 +54,7 @@ function writeyaml(data, filename, options)
 
     % Convert dictionary to YAMLData for consistent processing
     if isa(data, 'dictionary')
-        data = YAMLData(data);
+        data = yamldata(data);
     end
 
     % Convert ArrayStyle to boolean for internal use
@@ -89,7 +89,7 @@ function yamlText = generateYAML(data, depth, indentSize, flowStyle, precision, 
     end
 
     % Handle different data types
-    if isa(data, 'ConfigurationData')
+    if isa(data, 'matlab.io.config.ConfigurationData')
         % Check if it's an array
         if numel(data) > 1
             % Object array - convert to cell array and process
@@ -137,7 +137,7 @@ function yamlText = configDataToYAML(data, depth, indentSize, flowStyle, precisi
         % Nested objects (ConfigurationData, struct, Map) are ALWAYS on new line
         % Multi-line values (arrays in block style) are on new line
         % Simple scalars and flow arrays can be on same line
-        isNestedObject = isa(value, 'ConfigurationData') || isstruct(value) || isa(value, 'containers.Map');
+        isNestedObject = isa(value, 'matlab.io.config.ConfigurationData') || isstruct(value) || isa(value, 'containers.Map');
 
         if isNestedObject || contains(valueYAML, newline)
             yamlLines(i) = indent + key + ":" + newline + valueYAML;
@@ -173,7 +173,7 @@ function yamlText = structToYAML(data, depth, indentSize, flowStyle, precision, 
             valueYAML = generateYAML(fieldValue, depth + 1, indentSize, flowStyle, precision, false);
 
             % Check if value should be on new line
-            isNestedObject = isa(fieldValue, 'ConfigurationData') || isstruct(fieldValue) || isa(fieldValue, 'containers.Map');
+            isNestedObject = isa(fieldValue, 'matlab.io.config.ConfigurationData') || isstruct(fieldValue) || isa(fieldValue, 'containers.Map');
 
             if isNestedObject || contains(valueYAML, newline)
                 yamlLines(i) = indent + fieldName + ":" + newline + valueYAML;
@@ -258,7 +258,7 @@ function yamlText = mapToYAML(data, depth, indentSize, flowStyle, precision, add
         valueYAML = generateYAML(value, depth + 1, indentSize, flowStyle, precision, false);
 
         % Check if value should be on new line
-        isNestedObject = isa(value, 'ConfigurationData') || isstruct(value) || isa(value, 'containers.Map');
+        isNestedObject = isa(value, 'matlab.io.config.ConfigurationData') || isstruct(value) || isa(value, 'containers.Map');
 
         if isNestedObject || contains(valueYAML, newline)
             yamlLines(i) = indent + key + ":" + newline + valueYAML;

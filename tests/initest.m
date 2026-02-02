@@ -31,7 +31,7 @@ classdef initest < matlab.unittest.TestCase
 
         function testWriteAndReadRoundTrip(testCase)
             % Test write and read round-trip
-            original = INIData();
+            original = inidata();
             original.section1.key1 = 'value1';
             original.section1.key2 = 123;
             original.section2.key3 = true;
@@ -111,7 +111,7 @@ classdef initest < matlab.unittest.TestCase
 
         function testCopyIndependence(testCase)
             % Test that copy creates independent objects
-            original = INIData();
+            original = inidata();
             original.section.value = 100;
 
             copied = copy(original);
@@ -123,7 +123,7 @@ classdef initest < matlab.unittest.TestCase
 
         function testStructConversion(testCase)
             % Test conversion to struct
-            config = INIData();
+            config = inidata();
             config.section1.key1 = 'value1';
             config.section1.key2 = 42;
             config.section2.key3 = true;

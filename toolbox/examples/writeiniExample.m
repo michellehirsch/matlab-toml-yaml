@@ -6,7 +6,7 @@
 %% Creating and Writing Simple INI
 
 % Create IniData object
-config = IniData();
+config = inidata();
 
 % Add server configuration
 config.server.host = 'localhost';
@@ -29,7 +29,7 @@ disp(readlines('app.ini'));
 
 %% Writing Different Data Types
 
-config = IniData();
+config = inidata();
 
 % Logical values
 config.flags.debug = true;
@@ -74,7 +74,7 @@ disp("Updated app_updated.ini");
 %% Using Different Output Options
 
 % Compact spacing (default)
-config = IniData();
+config = inidata();
 config.section1.key1 = 'value1';
 config.section2.key2 = 'value2';
 config.section3.key3 = 'value3';
@@ -90,7 +90,7 @@ disp(readlines('loose.ini'));
 
 %% Controlling Numeric Precision
 
-config = IniData();
+config = inidata();
 config.math.pi = pi;
 config.math.e = exp(1);
 config.math.golden = (1 + sqrt(5)) / 2;
@@ -149,7 +149,7 @@ config.database.host = 'localhost';
 config.database.port = 5432;
 
 % Convert to IniData
-iniData = IniData();
+iniData = inidata();
 iniData.database.host = config.database.host;
 iniData.database.port = config.database.port;
 
@@ -162,7 +162,7 @@ disp("Created hybrid.ini from combined struct and manual config");
 
 %% Create Independent Copy and Verify
 
-original = IniData();
+original = inidata();
 original.app.name = 'Original';
 original.app.value = 100;
 

@@ -1,4 +1,4 @@
-classdef YAMLData < ConfigurationData
+classdef YAMLData < matlab.io.config.ConfigurationData
     %YAMLDATA YAML-specific configuration data
     %   Subclass of ConfigurationData with YAML-specific features.
     %
@@ -11,38 +11,36 @@ classdef YAMLData < ConfigurationData
     %
     %   This is a value class. Assignment creates an independent copy.
     %
-    %   See also: ConfigurationData, readyaml, writeyaml
+    %   To create a YAMLData object, use the informal wrapper function:
+    %       data = yamldata();           % empty
+    %       data = yamldata(myStruct);   % from struct
+    %
+    %   See also: YAMLDATA, matlab.io.config.ConfigurationData, READYAML, WRITEYAML
 
     methods
-        function obj = YAMLData(inputData)
-            %YAMLDATA Construct YAML configuration data object
+        function obj = YAMLData()
+            %YAMLDATA Construct empty YAML configuration data object
             %   obj = YAMLData() creates an empty YAMLData object
-            %   obj = YAMLData(s) converts struct s to YAMLData
-            %   obj = YAMLData(d) converts dictionary d to YAMLData
-            %   obj = YAMLData(m) converts containers.Map m to YAMLData
             %
-            %   Example:
-            %       s = struct('name', 'myapp', 'version', '1.0');
-            %       config = YAMLData(s);
-            %       writeyaml(config, 'config.yaml');
+            %   To create from existing data, use the yamldata() function:
+            %       config = yamldata(myStruct);
+            %
+            %   See also YAMLDATA
 
-            if nargin < 1
-                inputData = [];
-            end
-            obj@ConfigurationData(inputData);
+            obj@matlab.io.config.ConfigurationData();
             obj.xInternal__.SourceFormat = "yaml";
         end
 
         function show(obj)
             %SHOW Display contents as YAML
-            %   SHOW(OBJ) displays the YAMLData object as YAML text.
+            %   show(obj) displays the YAMLData object as YAML text.
             %   This is useful for viewing deeply nested structures at the
             %   command line.
             %
             %   For arrays, displays each element as a YAML list item.
             %
             %   Example:
-            %       data.show
+            %       show(data)
             %
             %   See also writeyaml
 
@@ -53,7 +51,7 @@ classdef YAMLData < ConfigurationData
                     writeyaml(obj, tempFile);
                 else
                     % Array case - wrap in container and write as list
-                    wrapper = YAMLData;
+                    wrapper = matlab.io.config.YAMLData;
                     wrapper.item = obj;
                     writeyaml(wrapper, tempFile);
                 end

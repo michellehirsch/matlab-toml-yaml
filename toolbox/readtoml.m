@@ -58,7 +58,7 @@ function data = parseToml(content, datetimeType)
     % Parse TOML content string and return TOMLData object
     
     % Initialize root TOMLData
-    data = TOMLData;
+    data = matlab.io.config.TOMLData;
     currentTable = data;
     currentTablePath = "";
     currentArrayIndex = 0;  % Track if we're in an array of tables
@@ -169,7 +169,7 @@ function data = ensureDataPath(data, pathKeys, currentPath)
     key = char(cleanKey(strtrim(pathKeys(1))));
 
     if ~isfield(data, key)
-        data.(key) = TOMLData;
+        data.(key) = matlab.io.config.TOMLData;
     end
 
     % Recursively ensure rest of path
@@ -189,7 +189,7 @@ function data = ensureNestedPath(data, pathKeys)
     key = char(cleanKey(strtrim(pathKeys(1))));
 
     if ~isfield(data, key)
-        data.(key) = TOMLData;
+        data.(key) = matlab.io.config.TOMLData;
     end
 
     % Recursively ensure rest of path and write back
@@ -283,7 +283,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
         end
 
         % Create new element
-        newElement = TOMLData;
+        newElement = matlab.io.config.TOMLData;
 
         if numel(remainingKeys) > 1
             % Get the direct parent and modify it
@@ -299,7 +299,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
             elseif isKey(arrayOfTables, tablePath)
                 % Append to existing array
                 currentArray = parent.(lastKey);
-                if isa(currentArray, 'TOMLData')
+                if isa(currentArray, 'matlab.io.config.TOMLData')
                     parent.(lastKey) = [currentArray, newElement];
                 else
                     error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
@@ -326,7 +326,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
             elseif isKey(arrayOfTables, tablePath)
                 % Append to existing array
                 currentArray = parentElement.(lastKey);
-                if isa(currentArray, 'TOMLData')
+                if isa(currentArray, 'matlab.io.config.TOMLData')
                     parentElement.(lastKey) = [currentArray, newElement];
                 else
                     error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
@@ -366,7 +366,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
         end
 
         % Create new element
-        newElement = TOMLData;
+        newElement = matlab.io.config.TOMLData;
 
         if ~isfield(parent, lastKey)
             % First element - just assign
@@ -377,7 +377,7 @@ function [rootData, tableRef, tablePath, arrayIndex, arrayPath] = handleArrayOfT
         elseif isKey(arrayOfTables, tablePath)
             % Append to existing array
             currentArray = parent.(lastKey);
-            if isa(currentArray, 'TOMLData')
+            if isa(currentArray, 'matlab.io.config.TOMLData')
                 parent.(lastKey) = [currentArray, newElement];
             else
                 error('tomlToolbox:readtoml:InvalidArrayOfTables', ...
@@ -447,7 +447,7 @@ function [rootData, tableRef] = parseKeyValue(rootData, tableRef, tablePath, arr
             k = char(cleanKey(strtrim(keys(i))));
 
             if ~isfield(currentData, k)
-                currentData.(k) = TOMLData;
+                currentData.(k) = matlab.io.config.TOMLData;
             end
             currentData = currentData.(k);
         end
@@ -524,7 +524,7 @@ function data = setDataPath(data, pathKeys, value)
         if isfield(data, key)
             data.(key) = setDataPath(data.(key), pathKeys(2:end), value);
         else
-            data.(key) = setDataPath(TOMLData, pathKeys(2:end), value);
+            data.(key) = setDataPath(matlab.io.config.TOMLData, pathKeys(2:end), value);
         end
     end
 end
@@ -543,7 +543,7 @@ function data = updateDataPath(data, pathKeys, value, levelsFromEnd)
         if isfield(data, key)
             data.(key) = updateDataPath(data.(key), pathKeys(2:end), value, levelsFromEnd - 1);
         else
-            data.(key) = updateDataPath(TOMLData, pathKeys(2:end), value, levelsFromEnd - 1);
+            data.(key) = updateDataPath(matlab.io.config.TOMLData, pathKeys(2:end), value, levelsFromEnd - 1);
         end
     end
 end
@@ -771,7 +771,7 @@ function arr = parseArray(arrayStr, datetimeType)
         elseif allSame && (ischar(parsedElements{1}) || isstring(parsedElements{1}))
             % Convert to string array
             arr = string(parsedElements);
-        elseif allSame && isa(parsedElements{1}, 'TOMLData')
+        elseif allSame && isa(parsedElements{1}, 'matlab.io.config.TOMLData')
             % Object array
             arr = [parsedElements{:}];
         else
@@ -833,7 +833,7 @@ function tbl = parseInlineTable(tableStr, datetimeType)
     content = extractBetween(tableStr, 2, strlength(tableStr) - 1);
     content = strtrim(content);
 
-    tbl = TOMLData;  % Return TOMLData instead of struct
+    tbl = matlab.io.config.TOMLData;  % Return TOMLData instead of struct
 
     if strlength(content) == 0
         return;

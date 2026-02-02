@@ -38,7 +38,7 @@ function data = readini(filename, options)
     end
 
     % Parse INI format
-    data = INIData();
+    data = matlab.io.config.INIData();
     currentSectionName = "";
 
     for i = 1:length(lines)
@@ -57,7 +57,7 @@ function data = readini(filename, options)
 
             % Create section if it doesn't exist (using dot notation)
             if ~isfield(data, sectionName)
-                data.(sectionName) = INIData();
+                data.(sectionName) = matlab.io.config.INIData();
             end
             currentSectionName = sectionName;
             continue;
