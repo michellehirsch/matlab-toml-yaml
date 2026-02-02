@@ -40,8 +40,8 @@ function writeini(data, filename, options)
 
     % Convert to INIData if needed
     if isstruct(data) || isa(data, 'dictionary') || isa(data, 'containers.Map')
-        iniData = INIData(data);
-    elseif isa(data, 'INIData') || isa(data, 'ConfigurationData')
+        iniData = inidata(data);
+    elseif isa(data, 'matlab.io.config.INIData') || isa(data, 'matlab.io.config.ConfigurationData')
         iniData = data;
     else
         error('writeini:UnsupportedType', ...
@@ -69,7 +69,7 @@ function iniText = configDataToINI(data, sectionSpacing, precision)
         key = keyList(i);
         value = data.(key);  % Use dot notation
 
-        if isa(value, 'ConfigurationData')
+        if isa(value, 'matlab.io.config.ConfigurationData')
             % Section header
             lines{end+1} = sprintf('[%s]', key); %#ok<AGROW>
 
@@ -79,7 +79,7 @@ function iniText = configDataToINI(data, sectionSpacing, precision)
                 subkey = subKeyList(j);
                 subvalue = value.(subkey);  % Use dot notation
 
-                if isa(subvalue, 'ConfigurationData')
+                if isa(subvalue, 'matlab.io.config.ConfigurationData')
                     % Skip nested ConfigurationData (INI doesn't support deep nesting)
                     continue;
                 end
@@ -147,7 +147,7 @@ end
 
 function iniData = struct2ini(s)
     %STRUCT2INI Convert struct to INIData
-    iniData = INIData();
+    iniData = matlab.io.config.INIData();
 
     if isscalar(s)
         fields = fieldnames(s);
@@ -167,7 +167,7 @@ end
 
 function iniData = map2ini(m)
     %MAP2INI Convert containers.Map to INIData
-    iniData = INIData();
+    iniData = matlab.io.config.INIData();
 
     mapKeys = keys(m);
     for i = 1:length(mapKeys)

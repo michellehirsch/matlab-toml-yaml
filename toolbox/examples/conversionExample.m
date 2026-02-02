@@ -15,12 +15,12 @@ s.database.credentials.username = 'admin';
 s.database.credentials.password = 'secret';
 
 % Convert to YAMLData
-yamlConfig = YAMLData(s);
+yamlConfig = yamldata(s);
 disp('YAMLData created from struct:')
 disp(yamlConfig)
 
 % Convert to TOMLData
-tomlConfig = TOMLData(s);
+tomlConfig = tomldata(s);
 disp('TOMLData created from struct:')
 disp(tomlConfig)
 
@@ -39,7 +39,7 @@ d("version") = {"2.0.0"};
 d("ports") = {[8080, 8443, 9000]};
 
 % Convert to TOMLData
-config = TOMLData(d);
+config = tomldata(d);
 disp('TOMLData created from dictionary:')
 disp(config)
 
@@ -52,7 +52,7 @@ m('server') = containers.Map({'host', 'port'}, {'localhost', 8080});
 m('debug') = true;
 
 % Convert to INIData
-iniConfig = INIData(m);
+iniConfig = inidata(m);
 disp('INIData created from containers.Map:')
 disp(iniConfig)
 
@@ -60,7 +60,7 @@ disp(iniConfig)
 % Use the dictionary() method to convert back to a MATLAB dictionary
 
 % Read a configuration file
-config = YAMLData();
+config = yamldata();
 config.project.name = 'demo';
 config.project.version = '1.0';
 config.settings.debug = true;
@@ -127,7 +127,7 @@ original.values = [1, 2, 3, 4, 5];
 original.nested.key = 'value';
 
 % Convert to YAMLData
-config = YAMLData(original);
+config = yamldata(original);
 
 % Convert back to struct
 roundTripped = struct(config);
@@ -150,7 +150,7 @@ steps(3).name = 'Test';
 steps(3).run = 'make test';
 
 % Convert each element
-yamlSteps = arrayfun(@(s) YAMLData(s), steps);
+yamlSteps = arrayfun(@(s) yamldata(s), steps);
 
 disp('Array of YAMLData objects:')
 for i = 1:numel(yamlSteps)
@@ -159,9 +159,9 @@ end
 
 %% Best Practices Summary
 %
-% 1. Use constructors for conversion:
-%    config = YAMLData(myStruct)
-%    config = TOMLData(myDict)
+% 1. Use wrapper functions for conversion:
+%    config = yamldata(myStruct)
+%    config = tomldata(myDict)
 %
 % 2. Use methods for export:
 %    s = struct(config)

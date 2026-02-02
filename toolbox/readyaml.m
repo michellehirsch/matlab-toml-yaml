@@ -200,7 +200,7 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
         if ~isempty(values)
             % This is a sequence
             % If all values are YAMLData or ConfigurationData, handle based on arrayFormat
-            if all(cellfun(@(x) isa(x, 'ConfigurationData'), values))
+            if all(cellfun(@(x) isa(x, 'matlab.io.config.ConfigurationData'), values))
                 if arrayFormat == "auto"
                     % Convert cell array to object array
                     data = [values{:}];
@@ -213,11 +213,11 @@ function [data, nextLine] = parseBlock(lines, startLine, baseIndent, arrayFormat
                 data = consolidateArray(values, arrayFormat);
             end
         else
-            data = YAMLData;
+            data = matlab.io.config.YAMLData;
         end
     else
         % This is a mapping - return as YAMLData
-        data = YAMLData;
+        data = matlab.io.config.YAMLData;
         for i = 1:length(fields)
             data.(fields{i}) = values{i};
         end
@@ -309,7 +309,7 @@ function [itemData, nextLine] = parseListItemMapping(lines, startLine, dashInden
     end
     
     % Build the mapping for this list item
-    itemData = YAMLData;
+    itemData = matlab.io.config.YAMLData;
     for i = 1:length(itemFields)
         itemData.(itemFields{i}) = itemValues{i};
     end

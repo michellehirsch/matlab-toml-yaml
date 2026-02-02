@@ -1,6 +1,6 @@
 classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
-                             matlab.mixin.indexing.OverridesPublicDotMethodCall & ...
-                             matlab.mixin.CustomDisplay
+                            matlab.mixin.indexing.OverridesPublicDotMethodCall & ...
+                            matlab.mixin.CustomDisplay
     %CONFIGURATIONDATA Abstract base class for structured configuration data
     %   Use YAMLData, TOMLData, or INIData instead of this class directly.
     %   Provides dot notation access and support for special characters in keys.
@@ -27,33 +27,20 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
     end
 
     methods
-        function obj = ConfigurationData(inputData)
+        function obj = ConfigurationData()
             %CONFIGURATIONDATA Constructor for subclasses
             %   This is an abstract class. Use YAMLData, TOMLData, or INIData.
             %
-            %   Subclass constructors accept:
-            %   - No arguments: creates empty object
-            %   - struct s: converts struct to configuration data
-            %   - dictionary d: converts dictionary to configuration data
-            %   - containers.Map m: converts Map to configuration data
+            %   Subclass constructors create empty objects. To create from
+            %   existing data, use the informal wrapper functions:
+            %       config = tomldata(myStruct);   % from struct
+            %       config = yamldata(myDict);     % from dictionary
             %
-            %   Nested structs, dictionaries, and Maps are recursively
-            %   converted to objects of the same subclass.
-            %
-            %   Example:
-            %       s = struct('name', 'test', 'nested', struct('value', 42));
-            %       config = YAMLData(s);
-            %       config.name  % returns 'test'
-            %
-            %   See also YAMLDATA, TOMLDATA, INIDATA
+            %   See also TOMLDATA, YAMLDATA, INIDATA
 
             obj.xInternal__.Data = configureDictionary("string", "cell");
             obj.xInternal__.KeyAliases = configureDictionary("string", "string");
             obj.xInternal__.OriginalKeys = string.empty;
-
-            if nargin > 0 && ~isempty(inputData)
-                obj = obj.importFrom(inputData);
-            end
         end
 
         function newObj = copy(obj)
@@ -83,7 +70,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
-                if isa(value, 'ConfigurationData')
+                if isa(value, 'matlab.io.config.ConfigurationData')
                     if isscalar(value)
                         value = struct(value);
                     else
@@ -108,7 +95,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
-                if isa(value, 'ConfigurationData')
+                if isa(value, 'matlab.io.config.ConfigurationData')
                     value = map(value);
                 end
 
@@ -136,7 +123,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 key = obj.xInternal__.OriginalKeys(i);
                 value = obj.getData(key);
 
-                if isa(value, 'ConfigurationData')
+                if isa(value, 'matlab.io.config.ConfigurationData')
                     if isscalar(value)
                         value = dictionary(value);  % Recursive
                     else
@@ -225,7 +212,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             hasHierarchy = false;
             for i = 1:length(obj.xInternal__.OriginalKeys)
                 value = obj.getData(obj.xInternal__.OriginalKeys(i));
-                if isa(value, 'ConfigurationData') || isa(value, 'dictionary')
+                if isa(value, 'matlab.io.config.ConfigurationData') || isa(value, 'dictionary')
                     hasHierarchy = true;
                     break;
                 end
@@ -261,7 +248,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             keySets = cell(numel(obj), 1);
 
             for i = 1:numel(obj)
-                keySets{i} = obj(i).OriginalKeys; % Already a string array
+                keySets{i} = keys(obj(i)); % Use keys() method
                 % Ensure column vector for concatenation
                 allKeys = [allKeys; reshape(keySets{i}, [], 1)];
             end
@@ -301,7 +288,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
         function str = formatValue(~, value)
             % Format a value for display (similar to struct)
-            if isa(value, 'ConfigurationData')
+            if isa(value, 'matlab.io.config.ConfigurationData')
                 if numel(value) > 1
                     % Array of ConfigurationData
                     sizeStr = sprintf('%dx', size(value));
@@ -311,14 +298,14 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     % Scalar ConfigurationData - show actual subclass name
                     nFields = length(value.xInternal__.OriginalKeys);
                     className = class(value);
-                    str = sprintf('[1×1 %s with %d %s]', className, nFields, ConfigurationData.pluralize("key", nFields));
+                    str = sprintf('[1x1 %s with %d %s]', className, nFields, matlab.io.config.ConfigurationData.pluralize("key", nFields));
                 end
             elseif isa(value, 'dictionary')
                 nKeys = numEntries(value);
-                str = sprintf('[1×1 dictionary with %d %s]', nKeys, ConfigurationData.pluralize("entry", nKeys));
+                str = sprintf('[1x1 dictionary with %d %s]', nKeys, matlab.io.config.ConfigurationData.pluralize("entry", nKeys));
             elseif ischar(value)
                 if length(value) > 50
-                    str = sprintf('''%s...'' [1×%d char]', value(1:50), length(value));
+                    str = sprintf('''%s...'' [1x%d char]', value(1:50), length(value));
                 else
                     str = sprintf('''%s''', value);
                 end
@@ -410,7 +397,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                             % Handle further chaining: obj.key(1).field
                             if length(indexOp) > 2
-                                if isa(value, 'ConfigurationData')
+                                if isa(value, 'matlab.io.config.ConfigurationData')
                                     value = dotReference(value, indexOp(3:end));
                                 else
                                     error('ConfigurationData:InvalidChain', ...
@@ -424,7 +411,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
                             % Handle further chaining: obj.key{1}.field
                             if length(indexOp) > 2
-                                if isa(value, 'ConfigurationData')
+                                if isa(value, 'matlab.io.config.ConfigurationData')
                                     value = dotReference(value, indexOp(3:end));
                                 else
                                     error('ConfigurationData:InvalidChain', ...
@@ -433,7 +420,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                             end
                         elseif indexOp(2).Type == "Dot"
                             % Nested dot: obj.key.field
-                            if isa(value, 'ConfigurationData')
+                            if isa(value, 'matlab.io.config.ConfigurationData')
                                 value = dotReference(value, indexOp(2:end));
                             else
                                 error('ConfigurationData:InvalidChain', ...
@@ -506,7 +493,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     % Get or create the nested object
                     if isKey(obj.xInternal__.Data, key)
                         nested = obj.getData(key);
-                        if ~isa(nested, 'ConfigurationData')
+                        if ~isa(nested, 'matlab.io.config.ConfigurationData')
                             % Scalar value exists - replace with same class as parent
                             nested = feval(class(obj));
                             nested = copySourceFormat(obj, nested);
@@ -622,42 +609,6 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
         end
 
-        function obj = importFrom(obj, inputData)
-            %IMPORTFROM Import data from struct, dictionary, or containers.Map
-            %   This protected method handles the conversion logic for the
-            %   constructor. It preserves the class type for nested objects.
-
-            if isstruct(inputData)
-                fields = fieldnames(inputData);
-                for i = 1:numel(fields)
-                    key = fields{i};
-                    value = inputData.(key);
-                    value = obj.convertImportValue(value);
-                    obj.(key) = value;
-                end
-            elseif isa(inputData, 'dictionary')
-                keyList = keys(inputData);
-                for i = 1:numel(keyList)
-                    key = keyList(i);
-                    val = inputData(key);
-                    value = val{1};  % Unwrap from cell
-                    value = obj.convertImportValue(value);
-                    obj.(key) = value;
-                end
-            elseif isa(inputData, 'containers.Map')
-                keyList = keys(inputData);
-                for i = 1:numel(keyList)
-                    key = keyList{i};
-                    value = inputData(key);
-                    value = obj.convertImportValue(value);
-                    obj.(key) = value;
-                end
-            else
-                error('ConfigurationData:InvalidInput', ...
-                    'Input must be struct, dictionary, or containers.Map. Got %s.', class(inputData));
-            end
-        end
-
         function value = convertImportValue(obj, value)
             %CONVERTIMPORTVALUE Recursively convert nested structs/dicts to ConfigurationData
             %   This preserves the class type (YAMLData stays YAMLData, etc.)
@@ -666,7 +617,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 if isscalar(value)
                     % Scalar struct -> ConfigurationData of same class
                     nested = feval(class(obj));
-                    nested = nested.importFrom(value);
+                    nested = importFrom(nested, value);
                     value = nested;
                 else
                     % Struct array -> array of ConfigurationData
@@ -676,12 +627,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             elseif isa(value, 'dictionary')
                 % Dictionary -> ConfigurationData of same class
                 nested = feval(class(obj));
-                nested = nested.importFrom(value);
-                value = nested;
-            elseif isa(value, 'containers.Map')
-                % Map -> ConfigurationData of same class
-                nested = feval(class(obj));
-                nested = nested.importFrom(value);
+                nested = importFrom(nested, value);
                 value = nested;
             end
             % Other types (numeric, string, etc.) pass through unchanged
@@ -723,6 +669,38 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             originalKey = string(originalKey);
             obj.xInternal__.KeyAliases(alias) = originalKey;
         end
+
+        function obj = importFrom(obj, inputData)
+            %IMPORTFROM Import data from struct or dictionary
+            %   This method handles conversion from external data types.
+            %   It preserves the class type for nested objects.
+            %
+            %   Example:
+            %       obj = tomldata();
+            %       obj = importFrom(obj, myStruct);
+
+            if isstruct(inputData)
+                fields = fieldnames(inputData);
+                for i = 1:numel(fields)
+                    key = fields{i};
+                    value = inputData.(key);
+                    value = obj.convertImportValue(value);
+                    obj.(key) = value;
+                end
+            elseif isa(inputData, 'dictionary')
+                keyList = keys(inputData);
+                for i = 1:numel(keyList)
+                    key = keyList(i);
+                    val = inputData(key);
+                    value = val{1};  % Unwrap from cell
+                    value = obj.convertImportValue(value);
+                    obj.(key) = value;
+                end
+            else
+                error('ConfigurationData:InvalidInput', ...
+                    'Input must be struct or dictionary. Got %s.', class(inputData));
+            end
+        end
     end
 
     methods (Access = protected)
@@ -756,7 +734,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
 
             % ConfigurationData is always allowed
-            if isa(value, 'ConfigurationData')
+            if isa(value, 'matlab.io.config.ConfigurationData')
                 return;  % OK
             end
 

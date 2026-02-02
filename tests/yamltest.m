@@ -33,7 +33,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyClass(data, 'YAMLData');
+            testCase.verifyClass(data, 'matlab.io.config.YAMLData');
             testCase.verifyEqual(data.name, "Test");
             testCase.verifyEqual(data.version, 1.0);
             testCase.verifyEqual(data.enabled, true);
@@ -50,7 +50,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyClass(data.database, 'YAMLData');
+            testCase.verifyClass(data.database, 'matlab.io.config.YAMLData');
             testCase.verifyEqual(data.database.host, "localhost");
             testCase.verifyEqual(data.database.port, 5432);
         end
@@ -110,7 +110,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyClass(data.steps, 'YAMLData');
+            testCase.verifyClass(data.steps, 'matlab.io.config.YAMLData');
             testCase.verifyEqual(numel(data.steps), 2);
             testCase.verifyEqual(data.steps(1).name, "Checkout");
             testCase.verifyEqual(data.steps(2).name, "Build");
@@ -119,7 +119,7 @@ classdef yamltest < matlab.unittest.TestCase
         %% Basic Writing Tests
         function testWriteSimpleYAML(testCase)
             % Test writing a simple YAML file
-            data = YAMLData;
+            data = yamldata();
             data.name = 'Test';
             data.version = 1.0;
             data.enabled = true;
@@ -138,7 +138,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteNestedYAML(testCase)
             % Test writing nested structures
-            data = YAMLData;
+            data = yamldata();
             data.database.host = 'localhost';
             data.database.port = 5432;
             
@@ -153,7 +153,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteWithArrayStyle(testCase, ArrayStyle)
             % Test writing with different array styles
-            data = YAMLData;
+            data = yamldata();
             data.ports = [8080, 8443];
             
             filename = fullfile(pwd, 'output.yaml');
@@ -171,7 +171,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteWithSectionSpacing(testCase, SectionSpacing)
             % Test writing with different section spacing
-            data = YAMLData;
+            data = yamldata();
             data.section1 = 'value1';
             data.section2 = 'value2';
             
@@ -189,7 +189,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testWriteDefaultFilename(testCase)
             % Test writing with default filename
-            data = YAMLData;
+            data = yamldata();
             data.test = 'value';
             
             writeyaml(data);
@@ -200,7 +200,7 @@ classdef yamltest < matlab.unittest.TestCase
         %% Round-trip Tests
         function testRoundTripSimple(testCase)
             % Test simple round-trip
-            original = YAMLData;
+            original = yamldata();
             original.name = 'Test';
             original.value = 123;
             
@@ -214,7 +214,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testRoundTripNested(testCase)
             % Test nested structure round-trip
-            original = YAMLData;
+            original = yamldata();
             original.server.host = 'localhost';
             original.server.port = 8080;
             original.database.url = 'jdbc:postgresql://db:5432';
@@ -232,7 +232,7 @@ classdef yamltest < matlab.unittest.TestCase
             % Test array round-trip
             % Note: YAML sequences don't preserve row vs column orientation
             % They are normalized to column vectors on read
-            original = YAMLData;
+            original = yamldata();
             original.numbers = [1, 2, 3];
             original.strings = ["a", "b", "c"];
 
@@ -247,7 +247,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testRoundTripSpecialCharacters(testCase)
             % Test special character keys round-trip
-            original = YAMLData;
+            original = yamldata();
             original.("pull-request").branches = "main";
             original.("some-key") = "value";
             
@@ -262,7 +262,7 @@ classdef yamltest < matlab.unittest.TestCase
         %% YAMLData Methods Tests
         function testShowMethod(testCase)
             % Test show method exists and runs without error
-            data = YAMLData;
+            data = yamldata();
             data.test = 'value';
 
             % Should not error (use function syntax for method call)
@@ -271,7 +271,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testKeysMethod(testCase)
             % Test keys method
-            data = YAMLData;
+            data = yamldata();
             data.first = 1;
             data.second = 2;
             data.third = 3;
@@ -283,7 +283,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testIsFieldMethod(testCase)
             % Test isfield method
-            data = YAMLData;
+            data = yamldata();
             data.exists = 'yes';
             
             testCase.verifyTrue(isfield(data, 'exists'));
@@ -292,7 +292,7 @@ classdef yamltest < matlab.unittest.TestCase
         
         function testStructConversion(testCase)
             % Test conversion to struct
-            data = YAMLData;
+            data = yamldata();
             data.name = "Test";  % Use string literal
             data.value = 123;
 
@@ -337,7 +337,7 @@ classdef yamltest < matlab.unittest.TestCase
             
             data = readyaml(filename);
             
-            testCase.verifyClass(data, 'YAMLData');
+            testCase.verifyClass(data, 'matlab.io.config.YAMLData');
             testCase.verifyEqual(length(keys(data)), 0);
         end
         

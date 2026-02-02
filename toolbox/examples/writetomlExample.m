@@ -2,8 +2,8 @@
 %[text] This example demonstrates all formatting options available in writetoml, showing how to control the appearance and style of your TOML output files.
 %%
 %[text] ## Setup: Create Sample Data
-%[text] Create a sample TOMLData object for our demonstrations.
-project = TOMLData;
+%[text] Create a sample tomldata() object for our demonstrations.
+project = tomldata();
 project.name = "my-package";
 project.version = "1.0.0";
 project.description = "A demonstration project";
@@ -49,7 +49,7 @@ type("output_string_literal.toml") %[output:9db390dc]
 %%
 %[text] ## StringEscapeStyle Option - Escaped
 %[text] Escaped mode uses double quotes with escape sequences. Best for strings that need escape processing.
-project2 = TOMLData;
+project2 = tomldata();
 project2.message = sprintf("Line 1\nLine 2\tTabbed");
 project2.path = "C:\Users\Data";
 writetoml(project2, "output_string_escaped.toml", StringEscapeStyle="escaped");
@@ -57,7 +57,7 @@ type("output_string_escaped.toml") %[output:682492e5]
 %%
 %[text] ## StringLayout Option - Auto
 %[text] Control single-line vs multi-line string formatting. Auto mode uses multiline for strings with newlines (default).
-project3 = TOMLData;
+project3 = tomldata();
 project3.shortText = "Single line text";
 project3.longText = sprintf("This is a long text\nwith multiple lines\nfor demonstration");
 writetoml(project3, "output_layout_auto.toml", StringLayout="auto");
@@ -85,14 +85,14 @@ type("output_precision_15.toml") %[output:66ea8e84]
 %%
 %[text] ## TableArrayStyle Option - Expanded
 %[text] Control formatting of arrays of tables. Expanded mode uses `[[table]]` syntax (default, most readable). Best for GitHub Actions and complex configurations.
-config = TOMLData;
-step1 = TOMLData;
+config = tomldata();
+step1 = tomldata();
 step1.name = "Checkout";
 step1.uses = "actions/checkout@v4";
-step2 = TOMLData;
+step2 = tomldata();
 step2.name = "Build";
 step2.run = "make build";
-step3 = TOMLData;
+step3 = tomldata();
 step3.name = "Test";
 step3.run = "make test";
 config.steps = [step1; step2; step3];
@@ -101,11 +101,11 @@ type("output_tablearray_expanded.toml") %[output:356837c8]
 %%
 %[text] ## TableArrayStyle Option - Inline
 %[text] Inline mode uses array of inline tables `[{x=1}, {x=2}]`. Best for simple, short tables.
-config2 = TOMLData;
-point1 = TOMLData;
+config2 = tomldata();
+point1 = tomldata();
 point1.x = 1;
 point1.y = 2;
-point2 = TOMLData;
+point2 = tomldata();
 point2.x = 3;
 point2.y = 4;
 config2.points = [point1; point2];
@@ -145,7 +145,7 @@ type("workflow.toml") %[output:9640993a]
 %%
 %[text] ## Working with Special Characters
 %[text] Demonstrate handling of keys with special characters including hyphens, dots, and spaces.
-special = TOMLData;
+special = tomldata();
 special.("simple-key") = "value1";
 special.("another.key") = "value2";
 special.("with spaces") = "value3";
