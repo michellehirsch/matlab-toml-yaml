@@ -192,9 +192,9 @@ function result = convertToMap(data, emptyValueOption)
             end
         else
             % Struct array - convert each element
-            result = cell(size(data));
+            result = repmat(struct(), 1, numel(data));
             for i = 1:numel(data)
-                result{i} = convertToMap(data(i), emptyValueOption);
+                result(i) = convertToStruct(data(i), emptyValueOption);
             end
         end
     elseif iscell(data)

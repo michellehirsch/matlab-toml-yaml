@@ -104,7 +104,10 @@ function valueStr = valueToString(value)
         if isstring(value)
             items = cellstr(value);
         else
-            items = arrayfun(@num2str, value, 'UniformOutput', false);
+            items = cell(1, numel(value));
+            for i = 1:numel(value)
+                items{i} = num2str(value(i));
+            end
         end
         valueStr = strjoin(items, ',');
     else

@@ -75,8 +75,11 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         value = struct(value);
                     else
                         % Handle array of ConfigurationData objects
-                        structArray = arrayfun(@struct, value);
-                        value = structArray;
+                        structCell = cell(1, numel(value));
+                        for iVal = 1:numel(value)
+                            structCell{iVal} = struct(value(iVal));
+                        end
+                        value = [structCell{:}];
                     end
                 elseif isa(value, 'dictionary')
                     % Recursively convert dictionary to struct
@@ -128,7 +131,11 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         value = dictionary(value);  % Recursive
                     else
                         % Array of ConfigurationData -> cell array of dictionaries
-                        value = arrayfun(@dictionary, value, 'UniformOutput', false);
+                        tmpCell = cell(1, numel(value));
+                        for iVal = 1:numel(value)
+                            tmpCell{iVal} = dictionary(value(iVal));
+                        end
+                        value = tmpCell;
                     end
                 end
 
@@ -623,7 +630,10 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     value = nested;
                 else
                     % Struct array -> array of ConfigurationData
-                    arr = arrayfun(@(v) obj.convertImportValue(v), value);
+                    arr(numel(value)) = feval(class(obj));
+                    for iVal = 1:numel(value)
+                        arr(iVal) = obj.convertImportValue(value(iVal));
+                    end
                     value = arr;
                 end
             elseif isa(value, 'dictionary')
