@@ -9,22 +9,22 @@ TOMLData represents structured configuration data from TOML files with dot notat
 ### Syntax
 
 ```matlab
-data = TOMLData
-data = TOMLData(s)
-data = TOMLData(d)
-data = TOMLData(m)
+data = tomldata()
+data = tomldata(s)
+data = tomldata(d)
+data = tomldata(m)
 data = readtoml(filename)
 ```
 
 ### Description
 
-`data = TOMLData` creates an empty TOMLData object.
+`data = tomldata()` creates an empty TOMLData object.
 
-`data = TOMLData(s)` converts struct `s` to TOMLData. Nested structs become nested TOMLData objects.
+`data = tomldata(s)` converts struct `s` to TOMLData. Nested structs become nested TOMLData objects.
 
-`data = TOMLData(d)` converts dictionary `d` to TOMLData.
+`data = tomldata(d)` converts dictionary `d` to TOMLData.
 
-`data = TOMLData(m)` converts containers.Map `m` to TOMLData.
+`data = tomldata(m)` converts containers.Map `m` to TOMLData.
 
 `data = readtoml(filename)` creates a TOMLData object by reading from a TOML file. See [readtoml](readtoml.md).
 
@@ -57,7 +57,7 @@ data = readtoml(filename)
 Access fields using dot notation:
 
 ```matlab
-data = TOMLData;
+data = tomldata();
 data.project.name = "my-package";
 data.project.version = "1.0.0";
 name = data.project.name;  % "my-package"
@@ -68,7 +68,7 @@ name = data.project.name;  % "my-package"
 Use dynamic field names for keys with special characters:
 
 ```matlab
-data = TOMLData;
+data = tomldata();
 data.("build-system").requires = ["setuptools"; "wheel"];
 data.("build-system").("build-backend") = "setuptools.build_meta";
 backend = data.("build-system").("build-backend");
@@ -79,7 +79,7 @@ backend = data.("build-system").("build-backend");
 TOMLData handles TOML datetime types:
 
 ```matlab
-data = TOMLData;
+data = tomldata();
 data.created = datetime("now");
 data.updated = datetime("2025-01-08");
 ```
@@ -92,7 +92,7 @@ Build a pyproject.toml programmatically:
 
 ```matlab
 % Create TOMLData
-project = TOMLData;
+project = tomldata();
 
 % Build system configuration
 project.("build-system").requires = ["setuptools>=61.0"; "wheel"];
@@ -151,13 +151,13 @@ Preview TOML output:
 
 ```matlab
 % Create configuration
-config = TOMLData;
+config = tomldata();
 config.server.host = "localhost";
 config.server.port = 8080;
 config.debug = true;
 
 % Display as TOML
-config.show;
+show(config);
 % [server]
 % host = "localhost"
 % port = 8080
@@ -191,7 +191,7 @@ Convert existing structs to TOMLData:
 s = struct('project', struct('name', 'my-package', 'version', '1.0.0'));
 
 % Convert to TOMLData
-config = TOMLData(s);
+config = tomldata(s);
 config.project.name     % "my-package"
 config.project.version  % "1.0.0"
 
@@ -204,7 +204,7 @@ For comprehensive examples, see [readtomlExample.m](../../examples/readtomlExamp
 ## Tips
 
 - TOMLData is a value class. Assignment creates independent copies automatically.
-- Create from struct: `config = TOMLData(myStruct)`.
+- Create from struct: `config = tomldata(myStruct)`.
 - Use `show` to preview TOML output without writing to a file.
 - TOML commonly uses hyphens in keys; access them with dynamic field names: `data.("field-name")`.
 - Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
@@ -220,7 +220,7 @@ TOMLData is a value class:
 - The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
-data1 = TOMLData;
+data1 = tomldata();
 data2 = data1;          % Independent copy
 data3 = copy(data1);    % Also independent copy
 ```

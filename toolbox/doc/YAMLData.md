@@ -9,22 +9,22 @@ YAMLData represents structured configuration data from YAML files with dot notat
 ### Syntax
 
 ```matlab
-data = YAMLData
-data = YAMLData(s)
-data = YAMLData(d)
-data = YAMLData(m)
+data = yamldata()
+data = yamldata(s)
+data = yamldata(d)
+data = yamldata(m)
 data = readyaml(filename)
 ```
 
 ### Description
 
-`data = YAMLData` creates an empty YAMLData object.
+`data = yamldata()` creates an empty YAMLData object.
 
-`data = YAMLData(s)` converts struct `s` to YAMLData. Nested structs become nested YAMLData objects.
+`data = yamldata(s)` converts struct `s` to YAMLData. Nested structs become nested YAMLData objects.
 
-`data = YAMLData(d)` converts dictionary `d` to YAMLData.
+`data = yamldata(d)` converts dictionary `d` to YAMLData.
 
-`data = YAMLData(m)` converts containers.Map `m` to YAMLData.
+`data = yamldata(m)` converts containers.Map `m` to YAMLData.
 
 `data = readyaml(filename)` creates a YAMLData object by reading from a YAML file. See [readyaml](readyaml.md).
 
@@ -57,7 +57,7 @@ data = readyaml(filename)
 Access fields using dot notation:
 
 ```matlab
-data = YAMLData;
+data = yamldata();
 data.app.name = "MyApp";
 data.app.version = "1.0.0";
 value = data.app.name;  % "MyApp"
@@ -68,7 +68,7 @@ value = data.app.name;  % "MyApp"
 Use dynamic field names for keys with special characters:
 
 ```matlab
-data = YAMLData;
+data = yamldata();
 data.("app-name") = "MyApp";
 data.("build-system").requires = ["setuptools"; "wheel"];
 appName = data.("app-name");  % "MyApp"
@@ -79,7 +79,7 @@ appName = data.("app-name");  % "MyApp"
 YAMLData objects can contain arrays:
 
 ```matlab
-data = YAMLData;
+data = yamldata();
 data.ports = [8080; 8443; 9000];
 firstPort = data.ports(1);  % 8080
 ```
@@ -92,7 +92,7 @@ Build configuration data programmatically:
 
 ```matlab
 % Create empty YAMLData
-config = YAMLData;
+config = yamldata();
 
 % Add fields using dot notation
 config.database.host = "localhost";
@@ -163,7 +163,7 @@ Convert existing structs to YAMLData:
 s = struct('name', 'MyApp', 'database', struct('host', 'localhost', 'port', 5432));
 
 % Convert to YAMLData
-config = YAMLData(s);
+config = yamldata(s);
 config.name           % "MyApp"
 config.database.host  % "localhost"
 
@@ -192,7 +192,7 @@ For comprehensive examples, see [readyamlExample.m](../../examples/readyamlExamp
 ## Tips
 
 - YAMLData is a value class. Assignment creates independent copies automatically.
-- Create from struct: `config = YAMLData(myStruct)`.
+- Create from struct: `config = yamldata(myStruct)`.
 - Use `show` to view the YAML representation without writing to a file.
 - Access fields with special characters using dynamic field names: `data.("field-name")`.
 - Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
@@ -208,7 +208,7 @@ YAMLData is a value class:
 - The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
-data1 = YAMLData;
+data1 = yamldata();
 data2 = data1;          % Independent copy
 data3 = copy(data1);    % Also independent copy
 ```

@@ -119,7 +119,7 @@ For comprehensive examples including GitHub Actions workflows and advanced array
 - Use `"SequenceRule","cell"` when you need consistent array types regardless of content, making downstream processing more predictable.
 - Access fields with special characters (hyphens, spaces, etc.) using dynamic field names: `data.("field-name")`.
 - Convert YAMLData to standard structs using `struct(data)` for compatibility with code expecting struct inputs.
-- YAMLData is a handle class. Use `copy` to create independent copies when needed.
+- YAMLData is a value class. Assignment creates independent copies automatically.
 
 ## More About
 

@@ -9,22 +9,22 @@ IniData represents structured configuration data from INI files with dot notatio
 ### Syntax
 
 ```matlab
-data = INIData
-data = INIData(s)
-data = INIData(d)
-data = INIData(m)
+data = inidata()
+data = inidata(s)
+data = inidata(d)
+data = inidata(m)
 data = readini(filename)
 ```
 
 ### Description
 
-`data = INIData` creates an empty INIData object.
+`data = inidata()` creates an empty INIData object.
 
-`data = INIData(s)` converts struct `s` to INIData. Nested structs become sections.
+`data = inidata(s)` converts struct `s` to INIData. Nested structs become sections.
 
-`data = INIData(d)` converts dictionary `d` to INIData.
+`data = inidata(d)` converts dictionary `d` to INIData.
 
-`data = INIData(m)` converts containers.Map `m` to INIData.
+`data = inidata(m)` converts containers.Map `m` to INIData.
 
 `data = readini(filename)` creates an INIData object by reading from an INI file. See [readini](readini.md).
 
@@ -57,7 +57,7 @@ data = readini(filename)
 Access fields using dot notation:
 
 ```matlab
-data = IniData();
+data = inidata();
 data.server.host = 'localhost';
 data.server.port = 8080;
 host = data.server.host;  % 'localhost'
@@ -68,7 +68,7 @@ host = data.server.host;  % 'localhost'
 Use dynamic field names for keys with special characters:
 
 ```matlab
-data = IniData();
+data = inidata();
 data.("database-pool").("max-size") = 20;
 data.("database-pool").("min-size") = 5;
 maxSize = data.("database-pool").("max-size");
@@ -81,8 +81,8 @@ maxSize = data.("database-pool").("max-size");
 Build an application config programmatically:
 
 ```matlab
-% Create IniData
-config = IniData();
+% Create INIData
+config = inidata();
 
 % Server section
 config.server.host = 'localhost';
@@ -138,14 +138,14 @@ Preview INI output:
 
 ```matlab
 % Create configuration
-config = IniData();
+config = inidata();
 config.app.name = 'MyApp';
 config.app.version = '1.0.0';
 config.server.host = 'localhost';
 config.server.port = 8080;
 
 % Display as INI
-config.show();
+show(config);
 % [app]
 % name=MyApp
 % version=1.0.0
@@ -181,7 +181,7 @@ Convert existing structs to INIData:
 s = struct('database', struct('host', 'localhost', 'port', 5432));
 
 % Convert to INIData
-config = INIData(s);
+config = inidata(s);
 config.database.host  % 'localhost'
 config.database.port  % 5432
 
@@ -192,7 +192,7 @@ writeini(s, 'config.ini');
 ## Tips
 
 - INIData is a value class. Assignment creates independent copies automatically.
-- Create from struct: `config = INIData(myStruct)`.
+- Create from struct: `config = inidata(myStruct)`.
 - Use `show` to preview INI output without writing to a file.
 - INI keys with special characters are accessed via dynamic field names: `data.("field-name")`.
 - Convert to struct with `struct(data)`, to dictionary with `dictionary(data)`.
@@ -208,7 +208,7 @@ INIData is a value class:
 - The `copy()` method is provided for compatibility but is equivalent to assignment
 
 ```matlab
-data1 = INIData;
+data1 = inidata();
 data2 = data1;          % Independent copy
 data3 = copy(data1);    % Also independent copy
 ```

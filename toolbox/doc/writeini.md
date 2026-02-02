@@ -62,8 +62,8 @@ Number of decimal places for floating-point numbers.
 Create INI data programmatically:
 
 ```matlab
-% Create IniData
-config = IniData();
+% Create INIData
+config = inidata();
 
 % Add server section
 config.server.host = 'localhost';
@@ -111,7 +111,7 @@ writeini(settings, 'settings.ini');
 Control section spacing:
 
 ```matlab
-config = IniData();
+config = inidata();
 config.section1.key1 = 'value1';
 config.section2.key2 = 'value2';
 
@@ -131,7 +131,7 @@ writeini(config, 'output.ini', 'SectionSpacing', 'loose');
 Arrays are converted to comma-separated lists:
 
 ```matlab
-config = IniData();
+config = inidata();
 config.ports.active = [8080 8443 9000];          % Numeric array
 config.servers.names = ["alpha" "beta" "gamma"]; % String array
 config.flags.enabled = [true false true];        % Logical array
@@ -169,7 +169,7 @@ writeini(config, 'app.ini');
 ### Control Floating-Point Precision
 
 ```matlab
-config = IniData();
+config = inidata();
 config.math.pi = pi;
 config.math.e = exp(1);
 
