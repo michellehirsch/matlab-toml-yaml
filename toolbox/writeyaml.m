@@ -93,7 +93,10 @@ function yamlText = generateYAML(data, depth, indentSize, flowStyle, precision, 
         % Check if it's an array
         if numel(data) > 1
             % Object array - convert to cell array and process
-            dataCell = arrayfun(@(x) x, data, 'UniformOutput', false);
+            dataCell = cell(1, numel(data));
+            for i = 1:numel(data)
+                dataCell{i} = data(i);
+            end
             yamlText = cellToYAML(dataCell, depth, indentSize, flowStyle, precision, addSectionSpacing);
         else
             % Single ConfigurationData object
@@ -396,53 +399,27 @@ function tf = looksLikeNumber(str)
     %LOOKSLIKENUMBER Check if string looks like a number (int, float, hex, octal)
     %   Returns true for strings like '3.8', '123', '0x1A', '0o17', '.5', '1e10'
 
-    str = string(str);
-
-    if strlength(str) == 0
-        tf = false;
-        return;
+    persistent pat
+    if isempty(pat)
+        % Single combined pattern for all numeric forms
+        pat = '^([+-]?(\d+\.?\d*|\d*\.\d+)([eE][+-]?\d+)?|0[xX][0-9a-fA-F]+|0[oO][0-7]+|[+-]?(\.inf|\.Inf|\.INF)|\.nan|\.NaN|\.NAN)$';
     end
 
-    % Check for various numeric patterns
-    % Integer (possibly with sign): 123, -456, +789
-    % Float: 3.8, -1.5, .5, 1.
-    % Scientific notation: 1e10, 1.5E-3
-    % Hex: 0x1A, 0X2B
-    % Octal: 0o17, 0O77
-    % Infinity and NaN
-    numericPatterns = [
-        "^[+-]?\d+$"                          % Integer
-        "^[+-]?\d*\.\d*$"                     % Float (including .5 and 1.)
-        "^[+-]?\d*\.?\d+[eE][+-]?\d+$"        % Scientific notation
-        "^0[xX][0-9a-fA-F]+$"                 % Hexadecimal
-        "^0[oO][0-7]+$"                       % Octal
-        "^[+-]?(\.inf|\.Inf|\.INF)$"          % Infinity
-        "^\.nan|\.NaN|\.NAN$"                 % NaN
-    ];
-
-    tf = false;
-    for i = 1:length(numericPatterns)
-        if ~isempty(regexp(str, numericPatterns(i), 'once'))
-            tf = true;
-            return;
-        end
-    end
+    tf = strlength(str) > 0 && ~isempty(regexp(str, pat, 'once'));
 end
 
 function tf = looksLikeDate(str)
     %LOOKSLIKEDATE Check if string looks like an ISO date
     %   Returns true for strings like '2020-01-01', '2020-01-01T12:00:00'
 
-    str = string(str);
-
+    % Quick length and character check to avoid regexp
     if strlength(str) < 10
         tf = false;
         return;
     end
-
-    % ISO date pattern: YYYY-MM-DD with optional time
-    datePattern = "^\d{4}-\d{2}-\d{2}";
-    tf = ~isempty(regexp(str, datePattern, 'once'));
+    ch = char(str);
+    tf = ch(5) == '-' && ch(8) == '-' && ...
+         all(ch([1 2 3 4 6 7 9 10]) >= '0' & ch([1 2 3 4 6 7 9 10]) <= '9');
 end
 
 function result = iif(condition, trueVal, falseVal)

@@ -71,7 +71,14 @@ function result = convertToJSONData(value, sequenceRule)
                 result{i} = convertToJSONData(value(i), sequenceRule);
             end
             % Convert to JSONData array if all elements are JSONData
-            if all(cellfun(@(x) isa(x, 'matlab.io.config.JSONData'), result))
+            allJSON = true;
+            for iVal = 1:numel(result)
+                if ~isa(result{iVal}, 'matlab.io.config.JSONData')
+                    allJSON = false;
+                    break;
+                end
+            end
+            if allJSON
                 result = [result{:}];
                 result = reshape(result, size(value));
             end
@@ -121,28 +128,38 @@ function result = consolidateArray(cellArray)
         return;
     end
 
+    % Single pass type check
+    allScalarString = true; allCharRow = true; allNumericScalar = true; allLogicalScalar = true;
+    for iVal = 1:numel(cellArray)
+        v = cellArray{iVal};
+        if ~(isstring(v) && isscalar(v)); allScalarString = false; end
+        if ~(ischar(v) && (isrow(v) || isempty(v))); allCharRow = false; end
+        if ~(isnumeric(v) && isscalar(v)); allNumericScalar = false; end
+        if ~(islogical(v) && isscalar(v)); allLogicalScalar = false; end
+        if ~allScalarString && ~allCharRow && ~allNumericScalar && ~allLogicalScalar; break; end
+    end
+
     % Check if all elements are strings (scalar string)
-    if all(cellfun(@(x) isstring(x) && isscalar(x), cellArray))
+    if allScalarString
         result = vertcat(cellArray{:});
         return;
     end
 
     % Check if all elements are char vectors (from jsondecode string arrays)
-    if all(cellfun(@(x) ischar(x) && (isrow(x) || isempty(x)), cellArray))
-        % Convert char vectors to string array
+    if allCharRow
         result = string(cellArray);
         result = result(:);  % Make column vector
         return;
     end
 
     % Check if all elements are numeric scalars
-    if all(cellfun(@(x) isnumeric(x) && isscalar(x), cellArray))
+    if allNumericScalar
         result = vertcat(cellArray{:});
         return;
     end
 
     % Check if all elements are logical scalars
-    if all(cellfun(@(x) islogical(x) && isscalar(x), cellArray))
+    if allLogicalScalar
         result = vertcat(cellArray{:});
         return;
     end
