@@ -269,8 +269,9 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
 
             % Display header
+            shortName = matlab.io.config.ConfigurationData.shortClassName(class(obj));
             fprintf('  %s <a href="matlab:helpPopup %s">%s</a> array with keys:\n\n', ...
-                dimStr, class(obj), class(obj));
+                dimStr, class(obj), shortName);
 
             % Display keys
             for i = 1:length(uniqueKeys)
@@ -293,12 +294,13 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     % Array of ConfigurationData
                     sizeStr = sprintf('%dx', size(value));
                     sizeStr = sizeStr(1:end-1);
-                    str = sprintf('[%s %s]', sizeStr, class(value));
+                    shortName = matlab.io.config.ConfigurationData.shortClassName(class(value));
+                    str = sprintf('[%s %s]', sizeStr, shortName);
                 else
                     % Scalar ConfigurationData - show actual subclass name
                     nFields = length(value.xInternal__.OriginalKeys);
-                    className = class(value);
-                    str = sprintf('[1x1 %s with %d %s]', className, nFields, matlab.io.config.ConfigurationData.pluralize("key", nFields));
+                    shortName = matlab.io.config.ConfigurationData.shortClassName(class(value));
+                    str = sprintf('[1x1 %s with %d %s]', shortName, nFields, matlab.io.config.ConfigurationData.pluralize("key", nFields));
                 end
             elseif isa(value, 'dictionary')
                 nKeys = numEntries(value);
@@ -809,6 +811,12 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             else
                 word = singular + "s";
             end
+        end
+
+        function shortName = shortClassName(fullName)
+            %SHORTCLASSNAME Strip namespace prefix from class name for cleaner display
+            %   'matlab.io.config.TOMLData' -> 'TOMLData'
+            shortName = regexprep(fullName, '^matlab\.io\.config\.', '');
         end
     end
 end
