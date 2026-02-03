@@ -86,6 +86,8 @@ function str = encodeValue(data, depth, prettyPrint, emptyValueOption)
         str = encodeMapObject(data, depth, prettyPrint, emptyValueOption);
     elseif isa(data, 'dictionary')
         str = encodeDictObject(data, depth, prettyPrint, emptyValueOption);
+    elseif isa(data, 'matlab.io.config.Null')
+        str = 'null';
     elseif isempty(data) && (isnumeric(data) || islogical(data))
         str = 'null';
     else
