@@ -1,0 +1,29 @@
+{
+  "id": "evt_00000000000001",
+  "type": "payment_intent.succeeded",
+  "created": 1738596000,
+  "data": {
+    "object": {
+      "id": "pi_00000000001",
+      "amount": 2599,
+      "currency": "usd",
+      "status": "succeeded",
+      "metadata": {
+        "order_id": "o-12345"
+      },
+      "charges": {
+        "data": [
+          {
+            "id": "ch_00001",
+            "paid": true,
+            "receipt_email": "customer@example.com"
+          }
+        ]
+      }
+    }
+  },
+  "request": {
+    "id": "req_0001",
+    "idempotency_key": "0f9086a8-7e59-4a27-9b3f-111111111111"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "manifest_version": 3,
+  "name": "Acme Helper",
+  "version": "0.1.0",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/16.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "permissions": [
+    "storage",
+    "tabs"
+  ],
+  "host_permissions": [
+    "https://*.example.com/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": [
+        "https://*.example.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "run_at": "document_idle"
+    }
+  ]
+}
