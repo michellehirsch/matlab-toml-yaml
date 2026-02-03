@@ -13,8 +13,11 @@ function writejson(data, filename, options)
 %           6       - (default)
 %
 %       'EmptyValue'  - How to handle empty arrays ([])
-%           'null'  - (default) Write as JSON null
+%           'array' - (default) Write as empty JSON array []
+%           'null'  - Write as JSON null
 %           'omit'  - Omit the key entirely from output
+%
+%   To write explicit JSON null, use matlab.io.config.Null:
 %
 %   Supported input types:
 %       - JSONData, YAMLData, TOMLData, INIData (ConfigurationData)
@@ -42,7 +45,7 @@ function writejson(data, filename, options)
         filename {mustBeTextScalar, mustBeNonzeroLengthText} = "untitled.json"
         options.PrettyPrint (1,1) logical = true
         options.Precision (1,1) {mustBePositive, mustBeInteger} = 6
-        options.EmptyValue {mustBeMember(options.EmptyValue, ["null", "omit"])} = "null"
+        options.EmptyValue {mustBeMember(options.EmptyValue, ["array", "null", "omit"])} = "array"
     end
 
     % Serialize to JSON string with preserved key order
@@ -89,7 +92,11 @@ function str = encodeValue(data, depth, prettyPrint, emptyValueOption)
     elseif isa(data, 'matlab.io.config.Null')
         str = 'null';
     elseif isempty(data) && (isnumeric(data) || islogical(data))
-        str = 'null';
+        if emptyValueOption == "null"
+            str = 'null';
+        else
+            str = '[]';
+        end
     else
         % Leaf values: scalars, primitive arrays (numeric, string, logical)
         str = indentedEncode(data, depth, prettyPrint);

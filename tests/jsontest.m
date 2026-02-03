@@ -744,7 +744,7 @@ classdef jsontest < matlab.unittest.TestCase
         end
 
         function testEmptyArrayRoundtrip(testCase)
-            % Issue #44: empty array should round-trip correctly (not become null)
+            % Issue #44: empty array should round-trip correctly
             jsonText = '{"items": []}';
 
             inFile = fullfile(pwd, 'empty_in.json');
@@ -756,9 +756,8 @@ classdef jsontest < matlab.unittest.TestCase
             writejson(data, outFile);
 
             content = fileread(outFile);
-            % Empty arrays still become null in writejson (existing behavior)
-            % This test documents current behavior
-            testCase.verifySubstring(content, '"items": null');
+            % Empty arrays now round-trip as []
+            testCase.verifySubstring(content, '"items": []');
         end
 
         function testNestedNullValue(testCase)
