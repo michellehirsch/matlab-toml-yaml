@@ -509,5 +509,95 @@ classdef jsontest < matlab.unittest.TestCase
             % Verify aliases work
             testCase.verifyEqual(readBack.parent_key.child_key, "value");
         end
+
+        %% Issue #49 — writejson array-of-objects crash
+        function testWriteArrayOfObjectsRoundtrip(testCase)
+            % Issue #49: writejson must not crash on arrays of ConfigurationData
+            jsonText = '{"items": [{"name": "first", "value": 1}, {"name": "second", "value": 2}]}';
+
+            inFile = fullfile(pwd, 'array_objects_in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile);
+
+            outFile = fullfile(pwd, 'array_objects_out.json');
+            writejson(data, outFile);
+
+            % Must produce valid JSON that can be re-read
+            readBack = readjson(outFile);
+            testCase.verifyTrue(isfield(readBack, 'items'));
+        end
+
+        function testWriteNestedArrayOfObjectsRoundtrip(testCase)
+            % Issue #49: deeply nested object arrays (nested_sample.json pattern)
+            sampleFile = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles', 'nested_sample.json');
+            if ~isfile(sampleFile)
+                testCase.assumeFail('Sample file not found');
+            end
+
+            data = readjson(sampleFile);
+
+            outFile = fullfile(pwd, 'nested_roundtrip.json');
+            writejson(data, outFile);
+
+            % Must produce valid, re-readable JSON
+            readBack = readjson(outFile);
+            testCase.verifyTrue(isfield(readBack, 'images'));
+            testCase.verifyTrue(isfield(readBack, 'geometries'));
+        end
+
+        %% Issue #50 — key order preservation
+        function testWritePreservesKeyOrder(testCase)
+            % Issue #50: key order from source file must survive a roundtrip
+            jsonText = '{"zebra": 1, "apple": 2, "mango": 3, "banana": 4}';
+
+            inFile = fullfile(pwd, 'order_in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile);
+
+            outFile = fullfile(pwd, 'order_out.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            testCase.verifyTrue(strfind(content, '"zebra"') < strfind(content, '"apple"'));
+            testCase.verifyTrue(strfind(content, '"apple"') < strfind(content, '"mango"'));
+            testCase.verifyTrue(strfind(content, '"mango"') < strfind(content, '"banana"'));
+        end
+
+        function testWriteNewKeyAppendsAtEnd(testCase)
+            % Issue #50: new keys added after reading append at end, not alphabetized
+            jsonText = '{"second": 2, "first": 1}';
+
+            inFile = fullfile(pwd, 'append_in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile);
+            data.third = 3;
+
+            outFile = fullfile(pwd, 'append_out.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            testCase.verifyTrue(strfind(content, '"second"') < strfind(content, '"first"'));
+            testCase.verifyTrue(strfind(content, '"first"') < strfind(content, '"third"'));
+        end
+
+        function testWritePreservesNestedKeyOrder(testCase)
+            % Issue #50: key order must be preserved at every nesting level
+            jsonText = '{"outer": {"zz": 1, "aa": 2, "mm": 3}}';
+
+            inFile = fullfile(pwd, 'nested_order_in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile);
+
+            outFile = fullfile(pwd, 'nested_order_out.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            testCase.verifyTrue(strfind(content, '"zz"') < strfind(content, '"aa"'));
+            testCase.verifyTrue(strfind(content, '"aa"') < strfind(content, '"mm"'));
+        end
     end
 end

@@ -23,7 +23,8 @@ function writejson(data, filename, options)
 %       - containers.Map
 %
 %   Original key names are preserved, including keys with special characters
-%   like hyphens or keys starting with numbers.
+%   like hyphens or keys starting with numbers. Key order from the source
+%   file is preserved for ConfigurationData objects.
 %
 %   Example:
 %       % Write JSONData to file
@@ -44,21 +45,8 @@ function writejson(data, filename, options)
         options.EmptyValue {mustBeMember(options.EmptyValue, ["null", "omit"])} = "null"
     end
 
-    % Convert input to containers.Map (preserves arbitrary string keys)
-    mapData = convertToMap(data, options.EmptyValue);
-
-    % Encode to JSON using built-in jsonencode
-    if options.PrettyPrint
-        jsonText = jsonencode(mapData, 'PrettyPrint', true);
-    else
-        jsonText = jsonencode(mapData);
-    end
-
-    % Post-process: replace empty array placeholders with null if EmptyValue='null'
-    if options.EmptyValue == "null"
-        % Replace ": []" with ": null" for empty arrays that represent null values
-        jsonText = regexprep(jsonText, ':\s*\[\s*\]', ': null');
-    end
+    % Serialize to JSON string with preserved key order
+    jsonText = encodeValue(data, 0, options.PrettyPrint, options.EmptyValue);
 
     % Write to file
     fid = fopen(filename, 'w', 'n', 'UTF-8');
@@ -74,137 +62,188 @@ function writejson(data, filename, options)
     end
 end
 
-function result = convertToMap(data, emptyValueOption)
-%CONVERTTOMAP Convert various data types to containers.Map for JSON encoding
-%   Uses containers.Map because jsonencode preserves original key names with it.
+function str = encodeValue(data, depth, prettyPrint, emptyValueOption)
+% Recursively encode a value to a JSON string.
+% Dispatches to type-specific encoders; leaf values use jsonencode.
 
     if isa(data, 'matlab.io.config.ConfigurationData')
-        % ConfigurationData -> containers.Map using keys() to preserve original names
-        allKeys = keys(data);
-        if isempty(allKeys)
-            result = containers.Map('KeyType', 'char', 'ValueType', 'any');
+        if numel(data) > 1
+            % Array of ConfigurationData objects -> JSON array
+            str = encodeArray(num2cell(data), depth, prettyPrint, emptyValueOption);
         else
-            keyCell = cellstr(allKeys);
-            valueCell = cell(size(keyCell));
-            validIdx = true(size(keyCell));
-            for i = 1:numel(allKeys)
-                key = allKeys(i);
-                value = data.(key);
-                % Recursively convert nested values
-                convertedValue = convertToMap(value, emptyValueOption);
-                % Handle empty values
-                if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
-                    if emptyValueOption == "omit"
-                        validIdx(i) = false;
-                        continue;
-                    end
-                end
-                valueCell{i} = convertedValue;
-            end
-            if any(validIdx)
-                result = containers.Map(keyCell(validIdx), valueCell(validIdx));
-            else
-                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            end
-        end
-    elseif isa(data, 'dictionary')
-        % Dictionary -> containers.Map
-        allKeys = keys(data);
-        if isempty(allKeys)
-            result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-        else
-            keyCell = cellstr(allKeys);
-            valueCell = cell(size(keyCell));
-            validIdx = true(size(keyCell));
-            for i = 1:numel(allKeys)
-                key = allKeys(i);
-                value = data(key);
-                if iscell(value)
-                    value = value{1};
-                end
-                convertedValue = convertToMap(value, emptyValueOption);
-                if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
-                    if emptyValueOption == "omit"
-                        validIdx(i) = false;
-                        continue;
-                    end
-                end
-                valueCell{i} = convertedValue;
-            end
-            if any(validIdx)
-                result = containers.Map(keyCell(validIdx), valueCell(validIdx));
-            else
-                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            end
-        end
-    elseif isa(data, 'containers.Map')
-        % containers.Map - recursively convert values
-        allKeys = keys(data);
-        if isempty(allKeys)
-            result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-        else
-            valueCell = cell(size(allKeys));
-            validIdx = true(size(allKeys));
-            for i = 1:numel(allKeys)
-                key = allKeys{i};
-                value = data(key);
-                convertedValue = convertToMap(value, emptyValueOption);
-                if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
-                    if emptyValueOption == "omit"
-                        validIdx(i) = false;
-                        continue;
-                    end
-                end
-                valueCell{i} = convertedValue;
-            end
-            if any(validIdx)
-                result = containers.Map(allKeys(validIdx), valueCell(validIdx));
-            else
-                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            end
-        end
-    elseif isstruct(data)
-        % Struct - convert to Map (note: struct keys are already valid MATLAB names)
-        if isscalar(data)
-            fields = fieldnames(data);
-            if isempty(fields)
-                result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-            else
-                valueCell = cell(size(fields));
-                validIdx = true(size(fields));
-                for i = 1:numel(fields)
-                    fieldName = fields{i};
-                    value = data.(fieldName);
-                    convertedValue = convertToMap(value, emptyValueOption);
-                    if isempty(convertedValue) && ~isa(convertedValue, 'containers.Map') && ~iscell(convertedValue)
-                        if emptyValueOption == "omit"
-                            validIdx(i) = false;
-                            continue;
-                        end
-                    end
-                    valueCell{i} = convertedValue;
-                end
-                if any(validIdx)
-                    result = containers.Map(fields(validIdx), valueCell(validIdx));
-                else
-                    result = containers.Map('KeyType', 'char', 'ValueType', 'any');
-                end
-            end
-        else
-            % Struct array - convert each element
-            result = repmat(struct(), 1, numel(data));
-            for i = 1:numel(data)
-                result(i) = convertToStruct(data(i), emptyValueOption);
-            end
+            str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption);
         end
     elseif iscell(data)
-        % Cell array - recursively convert elements
-        result = cell(size(data));
-        for i = 1:numel(data)
-            result{i} = convertToMap(data{i}, emptyValueOption);
+        str = encodeArray(data, depth, prettyPrint, emptyValueOption);
+    elseif isstruct(data)
+        if isscalar(data)
+            str = encodeStructObject(data, depth, prettyPrint, emptyValueOption);
+        else
+            % Struct array -> JSON array
+            str = encodeArray(num2cell(data), depth, prettyPrint, emptyValueOption);
         end
+    elseif isa(data, 'containers.Map')
+        str = encodeMapObject(data, depth, prettyPrint, emptyValueOption);
+    elseif isa(data, 'dictionary')
+        str = encodeDictObject(data, depth, prettyPrint, emptyValueOption);
+    elseif isempty(data) && (isnumeric(data) || islogical(data))
+        str = 'null';
     else
-        % Scalars and arrays - pass through
-        result = data;
+        % Leaf values: scalars, primitive arrays (numeric, string, logical)
+        str = indentedEncode(data, depth, prettyPrint);
+    end
+end
+
+function str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption)
+% Encode a scalar ConfigurationData as a JSON object.
+% Uses keys() which returns OriginalKeys, preserving insertion order.
+
+    allKeys = keys(data);
+    pairs = {};
+    for i = 1:numel(allKeys)
+        key = allKeys(i);
+        value = data.(key);
+        if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
+            continue;
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
+        pairs{end+1} = [jsonencode(char(key)), ': ', valueStr];
+    end
+    str = formatObject(pairs, depth, prettyPrint);
+end
+
+function str = encodeStructObject(data, depth, prettyPrint, emptyValueOption)
+% Encode a scalar struct as a JSON object.
+% fieldnames() preserves struct field order.
+
+    fields = fieldnames(data);
+    pairs = {};
+    for i = 1:numel(fields)
+        value = data.(fields{i});
+        if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
+            continue;
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
+        pairs{end+1} = [jsonencode(fields{i}), ': ', valueStr];
+    end
+    str = formatObject(pairs, depth, prettyPrint);
+end
+
+function str = encodeMapObject(data, depth, prettyPrint, emptyValueOption)
+% Encode a containers.Map as a JSON object.
+% Note: Map keys are always alphabetically sorted.
+
+    allKeys = keys(data);
+    pairs = {};
+    for i = 1:numel(allKeys)
+        value = data(allKeys{i});
+        if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
+            continue;
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
+        pairs{end+1} = [jsonencode(allKeys{i}), ': ', valueStr];
+    end
+    str = formatObject(pairs, depth, prettyPrint);
+end
+
+function str = encodeDictObject(data, depth, prettyPrint, emptyValueOption)
+% Encode a dictionary as a JSON object.
+
+    allKeys = keys(data);
+    pairs = {};
+    for i = 1:numel(allKeys)
+        key = allKeys(i);
+        value = data(key);
+        if iscell(value)
+            value = value{1};
+        end
+        if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
+            continue;
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
+        pairs{end+1} = [jsonencode(char(key)), ': ', valueStr];
+    end
+    str = formatObject(pairs, depth, prettyPrint);
+end
+
+function str = encodeArray(data, depth, prettyPrint, emptyValueOption)
+% Encode a cell array as a JSON array.
+
+    if isempty(data)
+        str = '[]';
+        return;
+    end
+    elements = cell(1, numel(data));
+    for i = 1:numel(data)
+        elements{i} = encodeValue(data{i}, depth + 1, prettyPrint, emptyValueOption);
+    end
+    str = formatArray(elements, depth, prettyPrint);
+end
+
+function str = formatObject(pairs, depth, prettyPrint)
+% Assemble key-value pair strings into a JSON object with optional indentation.
+
+    if isempty(pairs)
+        str = '{}';
+        return;
+    end
+    if prettyPrint
+        childIndent = repmat('  ', 1, depth + 1);
+        closeIndent = repmat('  ', 1, depth);
+        str = ['{', char(10)];
+        for i = 1:numel(pairs)
+            str = [str, childIndent, pairs{i}];
+            if i < numel(pairs)
+                str = [str, ','];
+            end
+            str = [str, char(10)];
+        end
+        str = [str, closeIndent, '}'];
+    else
+        str = ['{', strjoin(pairs, ', '), '}'];
+    end
+end
+
+function str = formatArray(elements, depth, prettyPrint)
+% Assemble element strings into a JSON array with optional indentation.
+
+    if isempty(elements)
+        str = '[]';
+        return;
+    end
+    if prettyPrint
+        childIndent = repmat('  ', 1, depth + 1);
+        closeIndent = repmat('  ', 1, depth);
+        str = ['[', char(10)];
+        for i = 1:numel(elements)
+            str = [str, childIndent, elements{i}];
+            if i < numel(elements)
+                str = [str, ','];
+            end
+            str = [str, char(10)];
+        end
+        str = [str, closeIndent, ']'];
+    else
+        str = ['[', strjoin(elements, ', '), ']'];
+    end
+end
+
+function str = indentedEncode(data, depth, prettyPrint)
+% Encode leaf values via jsonencode, re-indenting any multiline output.
+% jsonencode uses 2-space relative indentation; we prepend depth*2 spaces
+% to lines 2+ so the absolute indentation is correct when nested.
+
+    if prettyPrint
+        str = jsonencode(data, 'PrettyPrint', true);
+    else
+        str = jsonencode(data);
+    end
+    if ~isempty(strfind(str, char(10)))
+        lines = strsplit(str, char(10));
+        baseIndent = repmat('  ', 1, depth);
+        str = lines{1};
+        for i = 2:numel(lines)
+            str = [str, char(10), baseIndent, lines{i}];
+        end
     end
 end
