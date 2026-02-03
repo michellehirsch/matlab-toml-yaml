@@ -164,6 +164,111 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifyClass(data.ports, 'double');
         end
 
+        %% Single-Element Array Preservation Tests (Issue #48)
+        function testSingleElementObjectArrayCell(testCase)
+            % Single-element array of objects should stay as cell with SequenceRule='cell'
+            jsonText = '{"images": [{"url": "test.jpg"}]}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename, 'SequenceRule', 'cell');
+
+            % images should be a cell array with one element
+            testCase.verifyClass(data.images, 'cell');
+            testCase.verifyEqual(numel(data.images), 1);
+            testCase.verifyEqual(data.images{1}.url, "test.jpg");
+        end
+
+        function testSingleElementObjectArrayRoundtrip(testCase)
+            % Round-trip should preserve single-element arrays with SequenceRule='cell'
+            jsonText = '{"images": [{"url": "test.jpg"}]}';
+
+            inFile = fullfile(pwd, 'in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile, 'SequenceRule', 'cell');
+
+            outFile = fullfile(pwd, 'out.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            % Should have array brackets around images value
+            testCase.verifySubstring(content, '"images": [');
+        end
+
+        function testSingleElementNumericArrayCell(testCase)
+            % Single-element numeric array with SequenceRule='cell'
+            jsonText = '{"values": [42]}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename, 'SequenceRule', 'cell');
+
+            testCase.verifyClass(data.values, 'cell');
+            testCase.verifyEqual(data.values{1}, 42);
+        end
+
+        function testSingleElementStringArrayCell(testCase)
+            % Single-element string array with SequenceRule='cell'
+            jsonText = '{"tags": ["alpha"]}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename, 'SequenceRule', 'cell');
+
+            testCase.verifyClass(data.tags, 'cell');
+            testCase.verifyEqual(data.tags{1}, "alpha");
+        end
+
+        function testNestedSingleElementArraysCell(testCase)
+            % Nested structure with multiple single-element arrays
+            jsonText = '{"data": {"items": [{"name": "one"}], "refs": [{"id": 1}]}}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename, 'SequenceRule', 'cell');
+
+            testCase.verifyClass(data.data.items, 'cell');
+            testCase.verifyClass(data.data.refs, 'cell');
+        end
+
+        function testAutoSequenceRuleUnchangedForSingleElement(testCase)
+            % Verify SequenceRule='auto' (default) behavior is unchanged
+            jsonText = '{"images": [{"url": "test.jpg"}]}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename);  % Default is 'auto'
+
+            % With 'auto', single-element array becomes scalar (existing behavior)
+            testCase.verifyClass(data.images, 'matlab.io.config.JSONData');
+            testCase.verifyEqual(data.images.url, "test.jpg");
+        end
+
+        function testNestedSampleRoundtripWithCell(testCase)
+            % Full test with nested_sample.json using SequenceRule='cell'
+            sampleFile = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles', 'nested_sample.json');
+            if ~isfile(sampleFile)
+                testCase.assumeFail('Sample file not found');
+            end
+
+            data = readjson(sampleFile, 'SequenceRule', 'cell');
+
+            outFile = fullfile(pwd, 'nested_roundtrip_cell.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            % images should be an array, not an object
+            testCase.verifySubstring(content, '"images": [');
+            % geometries should be an array, not an object
+            testCase.verifySubstring(content, '"geometries": [');
+        end
+
         %% Basic Writing Tests
         function testWriteSimpleJSON(testCase)
             % Test writing simple JSONData
