@@ -291,6 +291,19 @@ function result = consolidateArray(cellArray)
         return;
     end
 
+    % Check if all elements are JSONData objects
+    allJSONData = true;
+    for iVal = 1:numel(cellArray)
+        if ~isa(cellArray{iVal}, 'matlab.io.config.JSONData')
+            allJSONData = false;
+            break;
+        end
+    end
+    if allJSONData
+        result = vertcat(cellArray{:});
+        return;
+    end
+
     % Keep as cell array for mixed types
     result = cellArray;
 end
