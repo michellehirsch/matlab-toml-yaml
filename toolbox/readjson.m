@@ -12,14 +12,20 @@ function data = readjson(filename, options)
 %
 %   JSON null values are converted to empty double arrays ([]).
 %
+%   Original key names are preserved, including keys with special characters
+%   like hyphens or keys starting with numbers. Access via:
+%       data.("my-key")   % Original key
+%       data.my_key       % Aliased access (if key contains special chars)
+%
 %   Example:
 %       % Read a package.json file
 %       pkg = readjson('package.json');
 %       disp(pkg.name)
 %       disp(pkg.version)
 %
-%       % Access nested values
-%       disp(pkg.scripts.test)
+%       % Access keys with special characters
+%       data = readjson('config.json');
+%       value = data.("build-system");  % Access original key
 %
 %       % Force all arrays to cells
 %       pkg = readjson('package.json', 'SequenceRule', 'cell');
@@ -34,6 +40,9 @@ function data = readjson(filename, options)
     % Read file content
     fileContent = fileread(filename);
 
+    % Extract original keys from JSON text (before jsondecode mangles them)
+    keyMap = extractJSONKeys(fileContent);
+
     % Parse JSON using built-in jsondecode
     try
         rawData = jsondecode(fileContent);
@@ -41,14 +50,36 @@ function data = readjson(filename, options)
         error('readjson:ParseError', 'Failed to parse JSON file: %s\n%s', filename, ME.message);
     end
 
-    % Convert to JSONData hierarchy
-    data = convertToJSONData(rawData, options.SequenceRule);
+    % Convert to JSONData hierarchy, using original keys
+    data = convertToJSONData(rawData, keyMap, options.SequenceRule);
 end
 
-function result = convertToJSONData(value, sequenceRule)
+function keyMap = extractJSONKeys(jsonText)
+%EXTRACTJSONKEYS Extract original key names from JSON text
+%   Returns a containers.Map mapping mangled keys to original keys.
+%   jsondecode mangles keys (e.g., "this-name" -> "this_name"), so we
+%   need to extract the original keys before parsing.
+
+    keyMap = containers.Map('KeyType', 'char', 'ValueType', 'char');
+
+    % Find all quoted keys in JSON objects using regex
+    % Pattern: "key"\s*: matching key names in JSON
+    pattern = '"([^"\\]*(?:\\.[^"\\]*)*)"\s*:';
+    matches = regexp(jsonText, pattern, 'tokens');
+
+    % For each original key, compute what jsondecode will mangle it to
+    for i = 1:numel(matches)
+        originalKey = matches{i}{1};
+        % jsondecode uses makeValidName to convert keys
+        mangledKey = matlab.lang.makeValidName(originalKey);
+        keyMap(mangledKey) = originalKey;
+    end
+end
+
+function result = convertToJSONData(value, keyMap, sequenceRule)
 %CONVERTTOJSONDATA Recursively convert parsed JSON to JSONData objects
 %   Converts struct hierarchies from jsondecode to JSONData objects.
-%   Handles arrays according to SequenceRule option.
+%   Uses keyMap to restore original key names that jsondecode mangled.
 
     if isstruct(value)
         if isscalar(value)
@@ -56,19 +87,28 @@ function result = convertToJSONData(value, sequenceRule)
             result = matlab.io.config.JSONData();
             fields = fieldnames(value);
             for i = 1:numel(fields)
-                fieldName = fields{i};
-                fieldValue = value.(fieldName);
+                mangledKey = fields{i};
+                fieldValue = value.(mangledKey);
+
+                % Look up original key name
+                if isKey(keyMap, mangledKey)
+                    originalKey = keyMap(mangledKey);
+                else
+                    originalKey = mangledKey;  % Key wasn't mangled
+                end
+
                 % Recursively convert nested values
-                convertedValue = convertToJSONData(fieldValue, sequenceRule);
-                % Use dot assignment which handles key aliasing
-                result.(fieldName) = convertedValue;
+                convertedValue = convertToJSONData(fieldValue, keyMap, sequenceRule);
+
+                % Use parenthesized indexing to assign with original key
+                result.(originalKey) = convertedValue;
             end
         else
             % Struct array (from JSON array of objects)
             % Convert each element to JSONData
             result = cell(size(value));
             for i = 1:numel(value)
-                result{i} = convertToJSONData(value(i), sequenceRule);
+                result{i} = convertToJSONData(value(i), keyMap, sequenceRule);
             end
             % Convert to JSONData array if all elements are JSONData
             allJSON = true;
@@ -91,7 +131,7 @@ function result = convertToJSONData(value, sequenceRule)
         % Cell array (from JSON mixed-type array or string array)
         result = cell(size(value));
         for i = 1:numel(value)
-            result{i} = convertToJSONData(value{i}, sequenceRule);
+            result{i} = convertToJSONData(value{i}, keyMap, sequenceRule);
         end
         % For SequenceRule='auto', try to consolidate homogeneous cell arrays
         if sequenceRule == "auto" && ~isempty(result)
