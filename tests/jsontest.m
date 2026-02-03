@@ -100,7 +100,7 @@ classdef jsontest < matlab.unittest.TestCase
         end
 
         function testReadNullValue(testCase)
-            % Test that null is converted to matlab.io.config.Null (Issue #44)
+            % Test that null is converted to matlab.io.config.JSONNull (Issue #44)
             jsonText = '{"value": null}';
 
             filename = fullfile(pwd, 'test.json');
@@ -108,8 +108,8 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyClass(data.value, 'matlab.io.config.Null');
-            testCase.verifyTrue(isa(data.value, 'matlab.io.config.Null'));
+            testCase.verifyClass(data.value, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(isa(data.value, 'matlab.io.config.JSONNull'));
             % isempty returns true for backward compatibility
             testCase.verifyTrue(isempty(data.value));
         end
@@ -480,7 +480,7 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifyEqual(data.enabled, true);
             testCase.verifyEqual(data.maxRetries, 3);
             testCase.verifyEqual(data.database.host, "localhost");
-            testCase.verifyClass(data.nullValue, 'matlab.io.config.Null');
+            testCase.verifyClass(data.nullValue, 'matlab.io.config.JSONNull');
         end
 
         function testReadPackageJsonFile(testCase)
@@ -717,14 +717,14 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            % null -> matlab.io.config.Null
-            testCase.verifyClass(data.nullValue, 'matlab.io.config.Null');
-            testCase.verifyTrue(isa(data.nullValue, 'matlab.io.config.Null'));
+            % null -> matlab.io.config.JSONNull
+            testCase.verifyClass(data.nullValue, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(isa(data.nullValue, 'matlab.io.config.JSONNull'));
 
             % empty array -> double []
             testCase.verifyClass(data.emptyArray, 'double');
             testCase.verifyEmpty(data.emptyArray);
-            testCase.verifyFalse(isa(data.emptyArray, 'matlab.io.config.Null'));
+            testCase.verifyFalse(isa(data.emptyArray, 'matlab.io.config.JSONNull'));
         end
 
         function testNullRoundtrip(testCase)
@@ -769,14 +769,14 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyClass(data.outer.inner, 'matlab.io.config.Null');
+            testCase.verifyClass(data.outer.inner, 'matlab.io.config.JSONNull');
             testCase.verifyEqual(data.outer.value, 42);
         end
 
         function testWriteNullDirectly(testCase)
-            % Issue #44: writing matlab.io.config.Null produces JSON null
+            % Issue #44: writing matlab.io.config.JSONNull produces JSON null
             data = jsondata();
-            data.nullable = matlab.io.config.Null();
+            data.nullable = matlab.io.config.JSONNull();
             data.name = "test";
 
             filename = fullfile(pwd, 'output.json');
@@ -789,8 +789,8 @@ classdef jsontest < matlab.unittest.TestCase
 
         function testNullEquality(testCase)
             % Test Null equality methods
-            null1 = matlab.io.config.Null();
-            null2 = matlab.io.config.Null();
+            null1 = matlab.io.config.JSONNull();
+            null2 = matlab.io.config.JSONNull();
 
             testCase.verifyTrue(null1 == null2);
             testCase.verifyTrue(isequal(null1, null2));
@@ -800,7 +800,7 @@ classdef jsontest < matlab.unittest.TestCase
 
         function testNullIsEmpty(testCase)
             % Test that isempty returns true for Null (backward compatibility)
-            null = matlab.io.config.Null();
+            null = matlab.io.config.JSONNull();
             testCase.verifyTrue(isempty(null));
         end
 
@@ -813,16 +813,16 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyClass(data.a, 'matlab.io.config.Null');
+            testCase.verifyClass(data.a, 'matlab.io.config.JSONNull');
             testCase.verifyEqual(data.b, 1);
-            testCase.verifyClass(data.c, 'matlab.io.config.Null');
+            testCase.verifyClass(data.c, 'matlab.io.config.JSONNull');
             testCase.verifyEqual(data.d, "text");
         end
 
         function testNullAndEmptyValueOmit(testCase)
             % Test EmptyValue='omit' behavior with Null
             data = jsondata();
-            data.nullValue = matlab.io.config.Null();
+            data.nullValue = matlab.io.config.JSONNull();
             data.emptyArray = [];
             data.name = "test";
 

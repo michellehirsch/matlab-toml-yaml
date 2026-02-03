@@ -10,7 +10,7 @@ function data = readjson(filename, options)
 %                     stay string, mixed arrays become cell arrays
 %           'cell'  - All arrays are returned as cell arrays
 %
-%   JSON null values are returned as matlab.io.config.Null objects.
+%   JSON null values are returned as matlab.io.config.JSONNull objects.
 %   This distinguishes null from empty arrays ([]).
 %
 %   Original key names are preserved, including keys with special characters
@@ -107,7 +107,7 @@ function nullKeyMap = extractNullKeys(jsonText)
 %EXTRACTNULLKEYS Identify keys with null values in raw JSON
 %   Returns a containers.Map where keys are the JSON key names and values
 %   are true if that key has a null value somewhere in the JSON.
-%   This enables explicit null representation with matlab.io.config.Null.
+%   This enables explicit null representation with matlab.io.config.JSONNull.
 
     nullKeyMap = containers.Map('KeyType', 'char', 'ValueType', 'logical');
 
@@ -209,7 +209,7 @@ function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, nu
         % Numeric or logical array (including empty [] from null)
         % Check if this empty value was originally a JSON null
         if isempty(value) && ~isempty(currentKey) && isKey(nullKeyMap, currentKey)
-            result = matlab.io.config.Null();
+            result = matlab.io.config.JSONNull();
         elseif sequenceRule == "cell" && ~isempty(value)
             if isscalar(value)
                 % Check if this scalar came from a single-element array
