@@ -10,7 +10,8 @@ function data = readjson(filename, options)
 %                     stay string, mixed arrays become cell arrays
 %           'cell'  - All arrays are returned as cell arrays
 %
-%   JSON null values are converted to empty double arrays ([]).
+%   JSON null values are returned as matlab.io.config.JSONNull objects.
+%   This distinguishes null from empty arrays ([]).
 %
 %   Original key names are preserved, including keys with special characters
 %   like hyphens or keys starting with numbers. Access via:
@@ -46,6 +47,9 @@ function data = readjson(filename, options)
     % Extract array context for single-element array preservation
     arrayKeyMap = extractArrayKeys(fileContent);
 
+    % Extract null keys for explicit null representation
+    nullKeyMap = extractNullKeys(fileContent);
+
     % Parse JSON using built-in jsondecode
     try
         rawData = jsondecode(fileContent);
@@ -54,7 +58,7 @@ function data = readjson(filename, options)
     end
 
     % Convert to JSONData hierarchy, using original keys
-    data = convertToJSONData(rawData, keyMap, options.SequenceRule, arrayKeyMap, '');
+    data = convertToJSONData(rawData, keyMap, options.SequenceRule, arrayKeyMap, nullKeyMap, '');
 end
 
 function keyMap = extractJSONKeys(jsonText)
@@ -99,19 +103,40 @@ function arrayKeyMap = extractArrayKeys(jsonText)
     end
 end
 
-function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, currentKey)
+function nullKeyMap = extractNullKeys(jsonText)
+%EXTRACTNULLKEYS Identify keys with null values in raw JSON
+%   Returns a containers.Map where keys are the JSON key names and values
+%   are true if that key has a null value somewhere in the JSON.
+%   This enables explicit null representation with matlab.io.config.JSONNull.
+
+    nullKeyMap = containers.Map('KeyType', 'char', 'ValueType', 'logical');
+
+    % Pattern: "key" : null (with optional whitespace)
+    % Lookahead ensures we match null followed by comma, brace, or whitespace
+    pattern = '"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*null(?=[,}\s\]])';
+    matches = regexp(jsonText, pattern, 'tokens');
+
+    for i = 1:numel(matches)
+        key = matches{i}{1};
+        nullKeyMap(key) = true;
+    end
+end
+
+function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, nullKeyMap, currentKey)
 %CONVERTTOJSONDATA Recursively convert parsed JSON to JSONData objects
 %   Converts struct hierarchies from jsondecode to JSONData objects.
 %   Uses keyMap to restore original key names that jsondecode mangled.
 %   Uses arrayKeyMap to detect single-element arrays (which jsondecode
 %   converts to scalar structs) when SequenceRule='cell'.
+%   Uses nullKeyMap to convert empty arrays from null to matlab.io.config.Null.
 %
 %   Arguments:
 %     value        - Value from jsondecode
 %     keyMap       - Map of mangled keys to original keys
 %     sequenceRule - 'auto' or 'cell'
 %     arrayKeyMap  - Map of keys known to have array values in original JSON
-%     currentKey   - Current key being processed (for array detection)
+%     nullKeyMap   - Map of keys known to have null values in original JSON
+%     currentKey   - Current key being processed (for array/null detection)
 
     if isstruct(value)
         if isscalar(value)
@@ -136,7 +161,7 @@ function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, cu
                 end
 
                 % Recursively convert nested values
-                convertedValue = convertToJSONData(fieldValue, keyMap, sequenceRule, arrayKeyMap, originalKey);
+                convertedValue = convertToJSONData(fieldValue, keyMap, sequenceRule, arrayKeyMap, nullKeyMap, originalKey);
 
                 % Use parenthesized indexing to assign with original key
                 result.(originalKey) = convertedValue;
@@ -151,7 +176,7 @@ function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, cu
             % Convert each element to JSONData
             result = cell(size(value));
             for i = 1:numel(value)
-                result{i} = convertToJSONData(value(i), keyMap, sequenceRule, arrayKeyMap, '');
+                result{i} = convertToJSONData(value(i), keyMap, sequenceRule, arrayKeyMap, nullKeyMap, '');
             end
             % Convert to JSONData array if all elements are JSONData
             allJSON = true;
@@ -174,7 +199,7 @@ function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, cu
         % Cell array (from JSON mixed-type array or string array)
         result = cell(size(value));
         for i = 1:numel(value)
-            result{i} = convertToJSONData(value{i}, keyMap, sequenceRule, arrayKeyMap, '');
+            result{i} = convertToJSONData(value{i}, keyMap, sequenceRule, arrayKeyMap, nullKeyMap, '');
         end
         % For SequenceRule='auto', try to consolidate homogeneous cell arrays
         if sequenceRule == "auto" && ~isempty(result)
@@ -182,7 +207,10 @@ function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, cu
         end
     elseif isnumeric(value) || islogical(value)
         % Numeric or logical array (including empty [] from null)
-        if sequenceRule == "cell" && ~isempty(value)
+        % Check if this empty value was originally a JSON null
+        if isempty(value) && ~isempty(currentKey) && isKey(nullKeyMap, currentKey)
+            result = matlab.io.config.JSONNull();
+        elseif sequenceRule == "cell" && ~isempty(value)
             if isscalar(value)
                 % Check if this scalar came from a single-element array
                 if ~isempty(currentKey) && isKey(arrayKeyMap, currentKey)

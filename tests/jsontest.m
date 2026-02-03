@@ -100,7 +100,7 @@ classdef jsontest < matlab.unittest.TestCase
         end
 
         function testReadNullValue(testCase)
-            % Test that null is converted to empty array
+            % Test that null is converted to matlab.io.config.JSONNull (Issue #44)
             jsonText = '{"value": null}';
 
             filename = fullfile(pwd, 'test.json');
@@ -108,8 +108,10 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyEmpty(data.value);
-            testCase.verifyClass(data.value, 'double');
+            testCase.verifyClass(data.value, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(isa(data.value, 'matlab.io.config.JSONNull'));
+            % isempty returns true for backward compatibility
+            testCase.verifyTrue(isempty(data.value));
         end
 
         function testReadEmptyObject(testCase)
@@ -478,7 +480,7 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifyEqual(data.enabled, true);
             testCase.verifyEqual(data.maxRetries, 3);
             testCase.verifyEqual(data.database.host, "localhost");
-            testCase.verifyEmpty(data.nullValue);
+            testCase.verifyClass(data.nullValue, 'matlab.io.config.JSONNull');
         end
 
         function testReadPackageJsonFile(testCase)
@@ -703,6 +705,136 @@ classdef jsontest < matlab.unittest.TestCase
             content = fileread(outFile);
             testCase.verifyTrue(strfind(content, '"zz"') < strfind(content, '"aa"'));
             testCase.verifyTrue(strfind(content, '"aa"') < strfind(content, '"mm"'));
+        end
+
+        %% Issue #44 — Null Handling Tests
+        function testNullDistinguishedFromEmptyArray(testCase)
+            % Issue #44: null and empty array should be distinguishable
+            jsonText = '{"nullValue": null, "emptyArray": []}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename);
+
+            % null -> matlab.io.config.JSONNull
+            testCase.verifyClass(data.nullValue, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(isa(data.nullValue, 'matlab.io.config.JSONNull'));
+
+            % empty array -> double []
+            testCase.verifyClass(data.emptyArray, 'double');
+            testCase.verifyEmpty(data.emptyArray);
+            testCase.verifyFalse(isa(data.emptyArray, 'matlab.io.config.JSONNull'));
+        end
+
+        function testNullRoundtrip(testCase)
+            % Issue #44: null should round-trip correctly
+            jsonText = '{"value": null}';
+
+            inFile = fullfile(pwd, 'null_in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile);
+
+            outFile = fullfile(pwd, 'null_out.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            testCase.verifySubstring(content, '"value": null');
+        end
+
+        function testEmptyArrayRoundtrip(testCase)
+            % Issue #44: empty array should round-trip correctly
+            jsonText = '{"items": []}';
+
+            inFile = fullfile(pwd, 'empty_in.json');
+            writelines(jsonText, inFile);
+
+            data = readjson(inFile);
+
+            outFile = fullfile(pwd, 'empty_out.json');
+            writejson(data, outFile);
+
+            content = fileread(outFile);
+            % Empty arrays now round-trip as []
+            testCase.verifySubstring(content, '"items": []');
+        end
+
+        function testNestedNullValue(testCase)
+            % Issue #44: null values in nested objects
+            jsonText = '{"outer": {"inner": null, "value": 42}}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename);
+
+            testCase.verifyClass(data.outer.inner, 'matlab.io.config.JSONNull');
+            testCase.verifyEqual(data.outer.value, 42);
+        end
+
+        function testWriteNullDirectly(testCase)
+            % Issue #44: writing matlab.io.config.JSONNull produces JSON null
+            data = jsondata();
+            data.nullable = matlab.io.config.JSONNull();
+            data.name = "test";
+
+            filename = fullfile(pwd, 'output.json');
+            writejson(data, filename);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"nullable": null');
+            testCase.verifySubstring(content, '"name": "test"');
+        end
+
+        function testNullEquality(testCase)
+            % Test Null equality methods
+            null1 = matlab.io.config.JSONNull();
+            null2 = matlab.io.config.JSONNull();
+
+            testCase.verifyTrue(null1 == null2);
+            testCase.verifyTrue(isequal(null1, null2));
+            testCase.verifyFalse(null1 == 5);
+            testCase.verifyFalse(null1 == []);
+        end
+
+        function testNullIsEmpty(testCase)
+            % Test that isempty returns true for Null (backward compatibility)
+            null = matlab.io.config.JSONNull();
+            testCase.verifyTrue(isempty(null));
+        end
+
+        function testMultipleNullValues(testCase)
+            % Test multiple null values in same object
+            jsonText = '{"a": null, "b": 1, "c": null, "d": "text"}';
+
+            filename = fullfile(pwd, 'test.json');
+            writelines(jsonText, filename);
+
+            data = readjson(filename);
+
+            testCase.verifyClass(data.a, 'matlab.io.config.JSONNull');
+            testCase.verifyEqual(data.b, 1);
+            testCase.verifyClass(data.c, 'matlab.io.config.JSONNull');
+            testCase.verifyEqual(data.d, "text");
+        end
+
+        function testNullAndEmptyValueOmit(testCase)
+            % Test EmptyValue='omit' behavior with Null
+            data = jsondata();
+            data.nullValue = matlab.io.config.JSONNull();
+            data.emptyArray = [];
+            data.name = "test";
+
+            filename = fullfile(pwd, 'output.json');
+            writejson(data, filename, 'EmptyValue', 'omit');
+
+            content = fileread(filename);
+            % Null should still be written (it's explicit null, not empty)
+            testCase.verifySubstring(content, '"nullValue": null');
+            % Empty array should be omitted
+            testCase.verifyFalse(contains(content, '"emptyArray"'));
+            testCase.verifySubstring(content, '"name": "test"');
         end
     end
 end
