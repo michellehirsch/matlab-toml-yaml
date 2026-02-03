@@ -1,0 +1,19 @@
+{
+  "widgets": [
+    {
+      "id": "acme.toolbarGroup",
+      "type": "group",
+      "label": "Acme",
+      "children": [
+        {
+          "type": "button",
+          "action": "acme.runChecks"
+        },
+        {
+          "type": "toggleButton",
+          "action": "acme.autoFormat"
+        }
+      ]
+    }
+  ]
+}

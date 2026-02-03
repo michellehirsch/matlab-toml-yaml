@@ -1,0 +1,34 @@
+{
+  "schemaVersion": "2.1.0",
+  "name": "acme-utilities",
+  "version": "1.3.0",
+  "summary": "Utility functions for data import/export and plotting",
+  "description": "A small collection of MATLAB utilities used across Acme projects.",
+  "authors": [
+    {
+      "name": "A. Dev",
+      "email": "adev@example.com"
+    }
+  ],
+  "license": "MIT",
+  "engines": {
+    "matlab": ">=R2024b"
+  },
+  "dependencies": {
+    "acme-io": ">=1.0.0",
+    "acme-plot": "~2.2.0"
+  },
+  "files": [
+    {
+      "path": "src/**/*.m",
+      "install": "toolbox/acme-utils"
+    },
+    {
+      "path": "examples/**",
+      "install": "examples"
+    }
+  ],
+  "tests": {
+    "entrypoint": "test/runtests.m"
+  }
+}

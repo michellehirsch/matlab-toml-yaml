@@ -1,0 +1,14 @@
+{
+  "name": "Simulink Toolstrip Plugin - Example",
+  "id": "com.acme.simulink.plugin",
+  "version": "0.1.0",
+  "vendor": "Acme",
+  "targets": [
+    "simulink"
+  ],
+  "minMatlabRelease": "R2025b",
+  "load": {
+    "actions": "./actions.json",
+    "widgets": "./widgets.json"
+  }
+}
