@@ -43,6 +43,9 @@ function data = readjson(filename, options)
     % Extract original keys from JSON text (before jsondecode mangles them)
     keyMap = extractJSONKeys(fileContent);
 
+    % Extract array context for single-element array preservation
+    arrayKeyMap = extractArrayKeys(fileContent);
+
     % Parse JSON using built-in jsondecode
     try
         rawData = jsondecode(fileContent);
@@ -51,7 +54,7 @@ function data = readjson(filename, options)
     end
 
     % Convert to JSONData hierarchy, using original keys
-    data = convertToJSONData(rawData, keyMap, options.SequenceRule);
+    data = convertToJSONData(rawData, keyMap, options.SequenceRule, arrayKeyMap, '');
 end
 
 function keyMap = extractJSONKeys(jsonText)
@@ -76,13 +79,48 @@ function keyMap = extractJSONKeys(jsonText)
     end
 end
 
-function result = convertToJSONData(value, keyMap, sequenceRule)
+function arrayKeyMap = extractArrayKeys(jsonText)
+%EXTRACTARRAYKEYS Identify keys with array values in raw JSON
+%   Returns a containers.Map where keys are the JSON key names and values
+%   are true if that key has an array value somewhere in the JSON.
+%   This enables SequenceRule='cell' to preserve single-element arrays,
+%   which jsondecode otherwise converts to scalar structs.
+
+    arrayKeyMap = containers.Map('KeyType', 'char', 'ValueType', 'logical');
+
+    % Pattern: "key" : [ (with optional whitespace)
+    % Captures the key name for keys that have array values
+    pattern = '"([^"\\]*(?:\\.[^"\\]*)*)"\s*:\s*\[';
+    matches = regexp(jsonText, pattern, 'tokens');
+
+    for i = 1:numel(matches)
+        key = matches{i}{1};
+        arrayKeyMap(key) = true;
+    end
+end
+
+function result = convertToJSONData(value, keyMap, sequenceRule, arrayKeyMap, currentKey)
 %CONVERTTOJSONDATA Recursively convert parsed JSON to JSONData objects
 %   Converts struct hierarchies from jsondecode to JSONData objects.
 %   Uses keyMap to restore original key names that jsondecode mangled.
+%   Uses arrayKeyMap to detect single-element arrays (which jsondecode
+%   converts to scalar structs) when SequenceRule='cell'.
+%
+%   Arguments:
+%     value        - Value from jsondecode
+%     keyMap       - Map of mangled keys to original keys
+%     sequenceRule - 'auto' or 'cell'
+%     arrayKeyMap  - Map of keys known to have array values in original JSON
+%     currentKey   - Current key being processed (for array detection)
 
     if isstruct(value)
         if isscalar(value)
+            % Check if this scalar struct was originally a single-element array
+            shouldWrapInCell = false;
+            if sequenceRule == "cell" && ~isempty(currentKey) && isKey(arrayKeyMap, currentKey)
+                shouldWrapInCell = true;
+            end
+
             % Scalar struct -> JSONData object
             result = matlab.io.config.JSONData();
             fields = fieldnames(value);
@@ -98,17 +136,22 @@ function result = convertToJSONData(value, keyMap, sequenceRule)
                 end
 
                 % Recursively convert nested values
-                convertedValue = convertToJSONData(fieldValue, keyMap, sequenceRule);
+                convertedValue = convertToJSONData(fieldValue, keyMap, sequenceRule, arrayKeyMap, originalKey);
 
                 % Use parenthesized indexing to assign with original key
                 result.(originalKey) = convertedValue;
+            end
+
+            % Wrap in cell if this was originally a single-element array
+            if shouldWrapInCell
+                result = {result};
             end
         else
             % Struct array (from JSON array of objects)
             % Convert each element to JSONData
             result = cell(size(value));
             for i = 1:numel(value)
-                result{i} = convertToJSONData(value(i), keyMap, sequenceRule);
+                result{i} = convertToJSONData(value(i), keyMap, sequenceRule, arrayKeyMap, '');
             end
             % Convert to JSONData array if all elements are JSONData
             allJSON = true;
@@ -131,7 +174,7 @@ function result = convertToJSONData(value, keyMap, sequenceRule)
         % Cell array (from JSON mixed-type array or string array)
         result = cell(size(value));
         for i = 1:numel(value)
-            result{i} = convertToJSONData(value{i}, keyMap, sequenceRule);
+            result{i} = convertToJSONData(value{i}, keyMap, sequenceRule, arrayKeyMap, '');
         end
         % For SequenceRule='auto', try to consolidate homogeneous cell arrays
         if sequenceRule == "auto" && ~isempty(result)
@@ -139,18 +182,34 @@ function result = convertToJSONData(value, keyMap, sequenceRule)
         end
     elseif isnumeric(value) || islogical(value)
         % Numeric or logical array (including empty [] from null)
-        if sequenceRule == "cell" && ~isscalar(value) && ~isempty(value)
-            % Convert to cell array for SequenceRule='cell'
-            result = num2cell(value);
+        if sequenceRule == "cell" && ~isempty(value)
+            if isscalar(value)
+                % Check if this scalar came from a single-element array
+                if ~isempty(currentKey) && isKey(arrayKeyMap, currentKey)
+                    result = {value};  % Wrap in cell to preserve array semantics
+                else
+                    result = value;
+                end
+            else
+                % Multi-element array -> cell array
+                result = num2cell(value);
+            end
         else
             result = value;
         end
     elseif ischar(value) || isstring(value)
         % String value
         result = string(value);
-        if sequenceRule == "cell" && ~isscalar(result)
-            % Convert string array to cell for SequenceRule='cell'
-            result = cellstr(result);
+        if sequenceRule == "cell"
+            if isscalar(result)
+                % Check if this scalar came from a single-element array
+                if ~isempty(currentKey) && isKey(arrayKeyMap, currentKey)
+                    result = {char(result)};  % Wrap in cell to preserve array semantics
+                end
+            else
+                % Multi-element string array -> cell array
+                result = cellstr(result);
+            end
         end
     else
         % Other types - pass through
