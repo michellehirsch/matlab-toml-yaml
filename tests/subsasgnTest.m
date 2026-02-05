@@ -189,5 +189,149 @@ classdef subsasgnTest < matlab.unittest.TestCase
             testCase.verifyEqual(data.keys, "toml keys");
             testCase.verifyEqual(keys(data), "keys");
         end
+
+        %% Array dot reference tests
+        % Enable arr.field syntax on arrays of ConfigurationData
+
+        function testArrayDotReferenceStrings(testCase)
+            % Test: arr.field returns string array when all values are strings
+            arr = [yamldata(), yamldata(), yamldata()];
+            arr(1).name = "Alice";
+            arr(2).name = "Bob";
+            arr(3).name = "Charlie";
+
+            names = arr.name;
+            testCase.verifyClass(names, "string");
+            testCase.verifyEqual(names, ["Alice", "Bob", "Charlie"]);
+        end
+
+        function testArrayDotReferenceNumbers(testCase)
+            % Test: arr.field returns numeric array when all values are numbers
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+
+            values = arr.value;
+            testCase.verifyClass(values, "double");
+            testCase.verifyEqual(values, [10, 20, 30]);
+        end
+
+        function testArrayDotReferenceLogicals(testCase)
+            % Test: arr.field returns logical array when all values are logicals
+            arr = [tomldata(), tomldata()];
+            arr(1).active = true;
+            arr(2).active = false;
+
+            actives = arr.active;
+            testCase.verifyClass(actives, "logical");
+            testCase.verifyEqual(actives, [true, false]);
+        end
+
+        function testArrayDotReferenceNestedObjects(testCase)
+            % Test: arr.field returns ConfigurationData array for nested objects
+            arr = [yamldata(), yamldata()];
+            arr(1).config.value = 1;
+            arr(2).config.value = 2;
+
+            configs = arr.config;
+            testCase.verifyClass(configs, "matlab.io.config.YAMLData");
+            testCase.verifySize(configs, [1, 2]);
+            testCase.verifyEqual(configs(1).value, 1);
+            testCase.verifyEqual(configs(2).value, 2);
+        end
+
+        function testArrayDotReferenceChained(testCase)
+            % Test: arr.field1.field2 works for chained access
+            arr = [jsondata(), jsondata()];
+            arr(1).settings.enabled = true;
+            arr(2).settings.enabled = false;
+
+            enabled = arr.settings.enabled;
+            testCase.verifyClass(enabled, "logical");
+            testCase.verifyEqual(enabled, [true, false]);
+        end
+
+        function testArrayDotReferenceMissingKeyError(testCase)
+            % Test: error when key missing in some elements
+            arr = [yamldata(), yamldata(), yamldata()];
+            arr(1).name = "Alice";
+            arr(3).name = "Charlie";
+            % arr(2) has no "name" key
+
+            testCase.verifyError(@() arr.name, 'ConfigurationData:MissingKey');
+        end
+
+        function testArrayDotReferenceTypeMismatchError(testCase)
+            % Test: error when types differ across elements
+            arr = [jsondata(), jsondata()];
+            arr(1).value = 42;       % double
+            arr(2).value = "text";   % string
+
+            testCase.verifyError(@() arr.value, 'ConfigurationData:TypeMismatch');
+        end
+
+        function testIsKeyVectorized(testCase)
+            % Test: iskey returns logical array for arrays
+            arr = [yamldata(), yamldata(), yamldata()];
+            arr(1).name = "Alice";
+            arr(1).email = "alice@test.com";
+            arr(2).name = "Bob";
+            % arr(2) has no email
+            arr(3).name = "Charlie";
+            arr(3).email = "charlie@test.com";
+
+            % All have name
+            hasName = iskey(arr, "name");
+            testCase.verifyClass(hasName, "logical");
+            testCase.verifyEqual(hasName, [true, true, true]);
+
+            % Only 1 and 3 have email
+            hasEmail = iskey(arr, "email");
+            testCase.verifyEqual(hasEmail, [true, false, true]);
+        end
+
+        function testIsfieldDelegatesToIskey(testCase)
+            % Test: isfield behaves same as iskey
+            arr = [tomldata(), tomldata()];
+            arr(1).x = 1;
+            arr(2).x = 2;
+
+            testCase.verifyEqual(isfield(arr, "x"), iskey(arr, "x"));
+            testCase.verifyEqual(isfield(arr, "y"), iskey(arr, "y"));
+        end
+
+        function testFilterWithIskey(testCase)
+            % Test: can filter array using iskey results
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).name = "Alice";
+            arr(1).score = 100;
+            arr(2).name = "Bob";
+            % arr(2) has no score
+            arr(3).name = "Charlie";
+            arr(3).score = 85;
+
+            hasScore = iskey(arr, "score");
+            filtered = arr(hasScore);
+
+            testCase.verifySize(filtered, [1, 2]);
+            testCase.verifyEqual(filtered.name, ["Alice", "Charlie"]);
+            testCase.verifyEqual(filtered.score, [100, 85]);
+        end
+
+        function testScalarBehaviorUnchanged(testCase)
+            % Test: scalar access still works as before
+            arr = [yamldata(), yamldata()];
+            arr(1).name = "Alice";
+            arr(2).name = "Bob";
+
+            % Index first, then access
+            testCase.verifyEqual(arr(1).name, "Alice");
+            testCase.verifyEqual(arr(2).name, "Bob");
+
+            % iskey on scalar returns scalar logical
+            testCase.verifyEqual(iskey(arr(1), "name"), true);
+            testCase.verifySize(iskey(arr(1), "name"), [1, 1]);
+        end
     end
 end

@@ -1,7 +1,7 @@
 # Design Decision: Array Dot-Reference Behavior
 
-**Date:** 2026-01-14
-**Status:** Decided - Provide helpful error message instead of comma-separated list
+**Date:** 2026-01-14 (original), 2026-02-05 (updated)
+**Status:** Implemented - Return concatenated typed arrays with strict requirements
 
 ---
 
@@ -11,120 +11,193 @@ When a user has an array of `ConfigurationData` objects and attempts to access a
 
 ```matlab
 data = readtoml("tests/SampleFiles/array_of_tables.toml");
-data.users.name  % users is a 1x3 TOMLData array
+data.products.name  % products is a 1x3 TOMLData array
 ```
 
 MATLAB structs would return a comma-separated list: `[s(1).name, s(2).name, s(3).name]`.
 
-The question: Should `ConfigurationData` mimic this behavior?
+The question: Should `ConfigurationData` support this behavior?
 
 ---
 
-## Decision
+## Decision (Updated 2026-02-05)
 
-**No.** We provide a clear error message with workarounds instead:
+**Yes, with strict requirements.** Array dot reference now returns concatenated typed arrays when:
+1. All elements have the requested key
+2. All values have the same type (can be concatenated)
 
+```matlab
+data.products.name    % Returns: ["Hammer" "Nail" "Screwdriver"]
+data.products.sku     % Returns: [738594937 284758393 847520193]
+data.products.in_stock % Returns: [true true false]
 ```
-Cannot access field 'name' on a [1 3] array of TOMLData objects.
-Index into the array first, e.g., obj(1).name or use:
-  arrayfun(@(x) x.name, obj)
+
+If requirements aren't met, helpful errors are thrown:
+- Missing key: `"Key 'x' is missing in elements [2, 4]."`
+- Type mismatch: `"Types differ: element 1 is string, element 3 is double."`
+
+---
+
+## Behavior Summary
+
+| Scenario | All Have Key? | Types Match? | Result |
+|----------|--------------|--------------|--------|
+| All strings | Yes | Yes | string array |
+| All numbers | Yes | Yes | double array |
+| All logical | Yes | Yes | logical array |
+| All ConfigurationData | Yes | Yes | ConfigurationData array |
+| Mixed types | Yes | No | **ERROR** |
+| Missing in some | No | N/A | **ERROR** |
+
+---
+
+## Design Decisions
+
+### D1: Missing Keys - Error
+
+We require all elements to have the requested key. This:
+- Matches struct behavior (all elements must have field)
+- Catches data errors early
+- Provides predictable behavior
+
+Users can pre-filter using `iskey`:
+```matlab
+hasEmail = iskey(data.users, "email");
+emails = data.users(hasEmail).email;
 ```
+
+### D2: Type Mismatch - Error (Strict)
+
+We require all values to have the same concatenatable type. This:
+- Ensures predictable return types (no surprise cell arrays)
+- Avoids code that needs to handle both typed arrays and cells
+- Encourages clean data
+
+Users can use `arrayfun` for heterogeneous data:
+```matlab
+values = arrayfun(@(x) x.value, arr, 'UniformOutput', false);
+```
+
+**Future consideration:** A `pluck` method could provide explicit cell output.
+
+### D3: Vectorized `iskey`
+
+The `iskey` method now returns a logical array for array inputs:
+```matlab
+iskey(data.users, "email")  % Returns: [true false true]
+all(iskey(data.users, "name"))  % Check if ALL have key
+```
+
+This enables filtering patterns and is a breaking change from the previous behavior (which only checked the first element).
 
 ---
 
 ## Rationale
 
-### 1. Heterogeneous Data Problem
+### Why Not Comma-Separated Lists?
 
-Unlike structs, `ConfigurationData` arrays can have different keys per element:
+We chose to return a single concatenated result rather than comma-separated lists because:
+1. `dotListLength` would need to return `numel(obj)` dynamically
+2. Capturing comma-separated lists requires special syntax: `[a, b, c] = ...`
+3. A single array is more convenient for most use cases
 
+### Why Not Always Return Cell Arrays?
+
+Returning cells for heterogeneous types would create unpredictable APIs:
+- Sometimes `arr.field` returns `["a", "b"]`
+- Sometimes `arr.field` returns `{1, "two", true}`
+- Calling code would need to handle both cases
+
+The strict approach ensures predictable types.
+
+### Why Error on Missing Keys?
+
+Optional fields in config files are common, but accessing them across an array should be explicit:
 ```matlab
-data.users(1)  % has keys: name, email, permissions
-data.users(2)  % has keys: name, email, role  (no permissions!)
-```
-
-With structs, all elements must have identical fields. With `ConfigurationData`, elements can vary. This creates several problems:
-
-- `data.users.name` might work (all have `name`)
-- `data.users.permissions` would fail unpredictably (only some have it)
-- The behavior depends on runtime data content, not code structure
-
-### 2. Fragile Code
-
-Code that relies on comma-separated list behavior would be fragile:
-
-```matlab
-% This would work sometimes, fail at runtime other times
-[names{:}] = data.users.name;
-```
-
-Debugging such failures is difficult because the error depends on what data happened to be loaded.
-
-### 3. Implementation Complexity
-
-Supporting comma-separated lists would require:
-
-1. Detecting non-scalar `obj` in `dotReference`
-2. Looping over elements and collecting results
-3. Modifying `dotListLength` to return `numel(obj)` dynamically
-4. Deciding what to do when some elements lack the key (error? skip? empty?)
-5. Handling nested arrays (`data.users.permissions.read` where each level might be arrays)
-
-This is significant complexity for a feature that would be unreliable due to heterogeneous data.
-
-### 4. Simple Workarounds Exist
-
-Users can easily achieve the same result with explicit, predictable code:
-
-```matlab
-% Using arrayfun (returns array)
-names = arrayfun(@(x) x.name, data.users);
-
-% Using a loop (most flexible)
-for i = 1:length(data.users)
-    names{i} = data.users(i).name;
+% Check first, then access
+if all(iskey(arr, "optional"))
+    values = arr.optional;
 end
 
-% Cell array collection
-names = cell(1, length(data.users));
-for i = 1:length(data.users)
-    names{i} = data.users(i).name;
-end
+% Or filter to elements that have it
+values = arr(iskey(arr, "optional")).optional;
 ```
 
-These approaches are explicit about what they do and fail predictably if a key is missing.
-
----
-
-## Alternative Considered
-
-We considered implementing comma-separated list behavior with the constraint that all array elements must have the requested key. However:
-
-- Users would get inconsistent behavior: works for some fields, fails for others
-- Error messages would be confusing ("field exists in element 1 but not element 2")
-- The implicit behavior makes code harder to reason about
-- It's better to be consistently explicit than inconsistently implicit
+This prevents silent failures when data structure changes.
 
 ---
 
 ## Implementation
 
-Added a check at the start of `dotReference` in `ConfigurationData.m`:
+### `iskey` Method (vectorized)
+```matlab
+function tf = iskey(obj, key)
+    tf = false(size(obj));
+    for i = 1:numel(obj)
+        resolvedKey = obj(i).resolveKey(key);
+        tf(i) = ~isempty(resolvedKey);
+    end
+end
+```
 
+### `dotReference` (array handling)
 ```matlab
 if ~isscalar(obj)
-    fieldName = indexOp(1).Name;
-    error('ConfigurationData:ArrayDotReference', ...
-        ['Cannot access field ''%s'' on a %s array of %s objects.\n' ...
-         'Index into the array first, e.g., obj(1).%s or use:\n' ...
-         '  arrayfun(@(x) x.%s, obj)'], ...
-        fieldName, mat2str(size(obj)), class(obj), fieldName, fieldName);
+    % Check all elements have the key
+    hasKey = iskey(obj, fieldName);
+    if ~all(hasKey)
+        % Error with missing element indices
+    end
+
+    % Collect values
+    values = cell(size(obj));
+    for i = 1:numel(obj)
+        values{i} = obj(i).getData(resolvedKey);
+    end
+
+    % Concatenate (errors if types differ)
+    result = tryConcatenate(values, fieldName);
 end
+```
+
+### `parenDotAssign` (array element assignment)
+Now handles `arr(idx).field = value` pattern correctly.
+
+---
+
+## Examples
+
+```matlab
+% Read TOML with array of tables
+data = readtoml("tests/SampleFiles/array_of_tables.toml");
+
+% Array dot reference - returns typed arrays
+names = data.products.name      % ["Hammer" "Nail" "Screwdriver"]
+prices = data.products.price    % [19.99 0.05 24.99]
+active = data.products.in_stock % [true true false]
+
+% Chained access through nested objects
+admins = data.users.permissions.admin  % [false false true]
+
+% Filtering with iskey
+hasEmail = iskey(data.users, "email");
+emails = data.users(hasEmail).email;
+
+% Type mismatch error
+j1 = jsondata(); j1.v = 1;
+j2 = jsondata(); j2.v = "two";
+[j1 j2].v  % ERROR: Types differ
+
+% Missing key error
+j1 = jsondata(); j1.name = "Alice";
+j2 = jsondata();  % no name
+[j1 j2].name  % ERROR: Key missing in elements [2]
 ```
 
 ---
 
 ## References
 
-- Issue documented in: `Claude/ARRAY_INDEXING_LIMITATIONS.md` (Issue #1)
-- Implementation: `toolbox/ConfigurationData.m`, `dotReference` method
+- Implementation: `toolbox/+matlab/+io/+config/ConfigurationData.m`
+- Tests: `tests/subsasgnTest.m` (array dot reference section)
+- Related: `Claude/ARRAY_INDEXING_LIMITATIONS.md`

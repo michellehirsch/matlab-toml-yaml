@@ -55,13 +55,8 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         end
 
         function tf = isfield(obj, key)
-            % Handle arrays - check first element only
-            if numel(obj) > 1
-                tf = isfield(obj(1), key);
-                return;
-            end
-            resolvedKey = obj.resolveKey(key);
-            tf = ~isempty(resolvedKey);
+            %ISFIELD Check if key exists (delegates to iskey)
+            tf = iskey(obj, key);
         end
 
         function s = struct(obj)
@@ -155,8 +150,24 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         end
 
         function tf = iskey(obj, key)
-            %ISKEY Check if key exists (alias for isfield)
-            tf = obj.isfield(key);
+            %ISKEY Check if key exists in each element of the array
+            %   tf = iskey(obj, key) returns a logical array the same size as obj.
+            %   tf(i) is true if obj(i) contains the key.
+            %
+            %   For scalar objects, returns a scalar logical.
+            %   For array objects, returns a logical array allowing filtering:
+            %       hasEmail = iskey(data.users, "email");
+            %       emailUsers = data.users(hasEmail);
+            %
+            %   To check if ALL elements have a key: all(iskey(obj, key))
+            %
+            %   See also ISFIELD, KEYS
+
+            tf = false(size(obj));
+            for i = 1:numel(obj)
+                resolvedKey = obj(i).resolveKey(key);
+                tf(i) = ~isempty(resolvedKey);
+            end
         end
 
         function obj = rmfield(obj, key)
@@ -372,14 +383,52 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             % so users can have keys named "keys", "isfield", etc.
             % To call methods, use function syntax: keys(obj), isfield(obj, key)
 
-            % Check for unsupported array dot-reference: arr.field where arr is non-scalar
+            % Handle array dot reference: arr.field returns concatenated values
             if ~isscalar(obj)
                 fieldName = indexOp(1).Name;
-                error('ConfigurationData:ArrayDotReference', ...
-                    ['Cannot access field ''%s'' on a %s array of %s objects.\n' ...
-                     'Index into the array first, e.g., obj(1).%s or use:\n' ...
-                     '  arrayfun(@(x) x.%s, obj)'], ...
-                    fieldName, mat2str(size(obj)), class(obj), fieldName, fieldName);
+
+                % Block reserved key
+                if fieldName == "xInternal__"
+                    error('ConfigurationData:ReservedKey', ...
+                        'Key "xInternal__" is reserved for internal use.');
+                end
+
+                % Check which elements have the key
+                hasKey = iskey(obj, fieldName);
+                if ~all(hasKey)
+                    missingIndices = find(~hasKey);
+                    error('ConfigurationData:MissingKey', ...
+                        ['Key "%s" is missing in elements %s.\n' ...
+                         'Use iskey(arr, ''%s'') to check which elements have this key.'], ...
+                        fieldName, mat2str(missingIndices(:)'), fieldName);
+                end
+
+                % Collect values from all elements
+                values = cell(size(obj));
+                for i = 1:numel(obj)
+                    resolvedKey = obj(i).resolveKey(fieldName);
+                    values{i} = obj(i).getData(resolvedKey);
+                end
+
+                % Try to concatenate homogeneously
+                result = obj.tryConcatenate(values, fieldName);
+
+                % Handle chained indexing on the result
+                if length(indexOp) > 1
+                    if isa(result, 'matlab.io.config.ConfigurationData') && ~isscalar(result)
+                        % Recursive array dot reference
+                        result = dotReference(result, indexOp(2:end));
+                    elseif isa(result, 'matlab.io.config.ConfigurationData') && isscalar(result)
+                        result = dotReference(result, indexOp(2:end));
+                    else
+                        % Can't chain into non-ConfigurationData
+                        error('ConfigurationData:InvalidChain', ...
+                            'Cannot chain into non-ConfigurationData value');
+                    end
+                end
+
+                varargout{1} = result;
+                return;
             end
 
             if indexOp(1).Type == "Dot"
@@ -551,31 +600,55 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         end
 
         function obj = parenDotAssign(obj, indexOp, varargin)
-            % Handle method name conflicts (e.g., obj.empty = value)
-            % When a key matches a method name, MATLAB calls this instead of dotAssign
-            % because it interprets obj.methodName as a method call
+            % Handle patterns:
+            %   1. obj(idx).field = value  (array element assignment)
+            %   2. obj.methodName = value  (method name conflicts)
+            %
+            % For pattern 1, indexOp(1) is Paren, indexOp(2) is Dot
+            % For pattern 2, indexOp(1) is Dot (method name)
 
-            key = indexOp(1).Name;
             value = varargin{end};
 
-            % Block assignment to reserved internal property name
-            if key == "xInternal__"
-                error('ConfigurationData:ReservedKey', ...
-                    'Key "xInternal__" is reserved for internal use.');
-            end
+            if indexOp(1).Type == matlab.indexing.IndexingOperationType.Paren
+                % Pattern: obj(idx).field = value (or obj(idx).field.subfield = ...)
+                idx = indexOp(1).Indices{:};
 
-            % Store directly using setData to bypass method resolution
-            obj = obj.setData(key, value);
+                % Get the indexed element
+                elem = obj(idx);
 
-            % Track order
-            if ~any(obj.xInternal__.OriginalKeys == key)
-                obj.xInternal__.OriginalKeys(end+1) = key;
-            end
+                % Apply the remaining dot operations
+                if length(indexOp) > 1
+                    elem = dotAssign(elem, indexOp(2:end), varargin{:});
+                else
+                    % Shouldn't happen for parenDot, but handle it
+                    elem = value;
+                end
 
-            % Create alias if needed
-            validKey = matlab.lang.makeValidName(key);
-            if ~strcmp(validKey, key)
-                obj.xInternal__.KeyAliases(validKey) = key;
+                % Write element back
+                obj(idx) = elem;
+            else
+                % Pattern: obj.methodName = value (method name conflict)
+                key = indexOp(1).Name;
+
+                % Block assignment to reserved internal property name
+                if key == "xInternal__"
+                    error('ConfigurationData:ReservedKey', ...
+                        'Key "xInternal__" is reserved for internal use.');
+                end
+
+                % Store directly using setData to bypass method resolution
+                obj = obj.setData(key, value);
+
+                % Track order
+                if ~any(obj.xInternal__.OriginalKeys == key)
+                    obj.xInternal__.OriginalKeys(end+1) = key;
+                end
+
+                % Create alias if needed
+                validKey = matlab.lang.makeValidName(key);
+                if ~strcmp(validKey, key)
+                    obj.xInternal__.KeyAliases(validKey) = key;
+                end
             end
         end
 
@@ -644,6 +717,96 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
             % Other types (numeric, string, etc.) pass through unchanged
             % They will be validated by setData when assigned
+        end
+
+        function result = tryConcatenate(~, values, fieldName)
+            %TRYCONCATENATE Attempt to concatenate cell array of values into typed array
+            %   Returns typed array if all values have same type, otherwise errors.
+            %   This implements the "strict homogeneous" policy: no surprise cells.
+
+            if isempty(values)
+                result = {};
+                return;
+            end
+
+            % Get types of all values
+            types = cellfun(@class, values, 'UniformOutput', false);
+            uniqueTypes = unique(types);
+
+            if numel(uniqueTypes) > 1
+                % Find first mismatch to report helpful error
+                firstType = types{1};
+                for i = 2:numel(types)
+                    if ~strcmp(types{i}, firstType)
+                        error('ConfigurationData:TypeMismatch', ...
+                            ['Cannot concatenate values for key "%s": types differ.\n' ...
+                             'Element 1 is %s, element %d is %s.\n' ...
+                             'Use arrayfun(@(x) x.%s, arr, ''UniformOutput'', false) for heterogeneous values.'], ...
+                            fieldName, firstType, i, types{i}, fieldName);
+                    end
+                end
+            end
+
+            % All same type - try to concatenate
+            theType = uniqueTypes{1};
+
+            % Handle different types appropriately
+            if strcmp(theType, 'char')
+                % char arrays -> convert to string array
+                result = string(values);
+            elseif contains(theType, 'ConfigurationData') || ...
+                   startsWith(theType, 'matlab.io.config.')
+                % ConfigurationData objects -> concatenate into array
+                try
+                    result = [values{:}];
+                catch
+                    % Different sizes or incompatible - error
+                    error('ConfigurationData:ConcatenationFailed', ...
+                        ['Cannot concatenate ConfigurationData values for key "%s".\n' ...
+                         'Use arrayfun(@(x) x.%s, arr, ''UniformOutput'', false) for cell output.'], ...
+                        fieldName, fieldName);
+                end
+            elseif isnumeric(values{1}) || islogical(values{1}) || isstring(values{1})
+                % Numeric, logical, string - try direct concatenation
+                try
+                    % Check if all values are scalars
+                    allScalars = all(cellfun(@isscalar, values));
+                    if allScalars
+                        result = [values{:}];
+                    else
+                        % Non-scalar values - need to verify compatibility
+                        % Check all have same size
+                        sizes = cellfun(@size, values, 'UniformOutput', false);
+                        if all(cellfun(@(s) isequal(s, sizes{1}), sizes))
+                            % Same size - can concatenate
+                            result = cat(1, values{:});
+                        else
+                            error('ConfigurationData:SizeMismatch', ...
+                                ['Cannot concatenate values for key "%s": sizes differ.\n' ...
+                                 'Use arrayfun(@(x) x.%s, arr, ''UniformOutput'', false) for cell output.'], ...
+                                fieldName, fieldName);
+                        end
+                    end
+                catch ME
+                    if contains(ME.identifier, 'ConfigurationData:')
+                        rethrow(ME);
+                    end
+                    error('ConfigurationData:ConcatenationFailed', ...
+                        ['Cannot concatenate values for key "%s".\n' ...
+                         'Use arrayfun(@(x) x.%s, arr, ''UniformOutput'', false) for cell output.'], ...
+                        fieldName, fieldName);
+                end
+            else
+                % Other types - try generic concatenation
+                try
+                    result = [values{:}];
+                catch
+                    error('ConfigurationData:ConcatenationFailed', ...
+                        ['Cannot concatenate values for key "%s" of type %s.\n' ...
+                         'Use arrayfun(@(x) x.%s, arr, ''UniformOutput'', false) for cell output.'], ...
+                        fieldName, theType, fieldName);
+                end
+            end
         end
     end
 
