@@ -90,6 +90,24 @@ all(iskey(data.users, "name"))  % Check if ALL have key
 
 This enables filtering patterns and is a breaking change from the previous behavior (which only checked the first element).
 
+### D4: Logical Index Pre-Filtering
+
+When accessing `arr.field(logicalMask)` where `logicalMask` matches the size of `arr`, the array is pre-filtered before checking if all elements have the key. This enables the ergonomic pattern:
+
+```matlab
+% Direct shorthand - pre-filters before key check
+scores = arr.score(iskey(arr, "score"))
+
+% Equivalent to the longer form:
+hasScore = iskey(arr, "score");
+scores = arr(hasScore).score
+```
+
+This is detected when:
+1. `indexOp(2)` is a Paren operation
+2. It contains a single logical index
+3. The logical index has the same size as `obj`
+
 ---
 
 ## Rationale
@@ -179,9 +197,10 @@ active = data.products.in_stock % [true true false]
 % Chained access through nested objects
 admins = data.users.permissions.admin  % [false false true]
 
-% Filtering with iskey
+% Filtering with iskey (two equivalent approaches)
 hasEmail = iskey(data.users, "email");
-emails = data.users(hasEmail).email;
+emails = data.users(hasEmail).email;        % Filter array, then access
+emails = data.users.email(hasEmail);        % Access with logical pre-filter (shorthand)
 
 % Type mismatch error
 j1 = jsondata(); j1.v = 1;

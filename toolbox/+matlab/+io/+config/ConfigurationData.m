@@ -393,7 +393,22 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         'Key "xInternal__" is reserved for internal use.');
                 end
 
-                % Check which elements have the key
+                % Check if next operation is Paren with logical indices matching array size
+                % This enables pattern: arr.field(logicalMask) where logicalMask = iskey(arr, "field")
+                remainingIndexOp = indexOp(2:end);
+                if numel(indexOp) > 1 && indexOp(2).Type == matlab.indexing.IndexingOperationType.Paren
+                    indices = indexOp(2).Indices;
+                    if numel(indices) == 1
+                        idx = indices{1};
+                        if islogical(idx) && isequal(size(idx), size(obj))
+                            % Pre-filter the array by logical indices
+                            obj = obj(idx);
+                            remainingIndexOp = indexOp(3:end);  % Skip the Paren we just consumed
+                        end
+                    end
+                end
+
+                % Check which elements have the key (on potentially pre-filtered array)
                 hasKey = iskey(obj, fieldName);
                 if ~all(hasKey)
                     missingIndices = find(~hasKey);
@@ -414,12 +429,12 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 result = obj.tryConcatenate(values, fieldName);
 
                 % Handle chained indexing on the result
-                if length(indexOp) > 1
+                if ~isempty(remainingIndexOp)
                     if isa(result, 'matlab.io.config.ConfigurationData') && ~isscalar(result)
                         % Recursive array dot reference
-                        result = dotReference(result, indexOp(2:end));
+                        result = dotReference(result, remainingIndexOp);
                     elseif isa(result, 'matlab.io.config.ConfigurationData') && isscalar(result)
-                        result = dotReference(result, indexOp(2:end));
+                        result = dotReference(result, remainingIndexOp);
                     else
                         % Can't chain into non-ConfigurationData
                         error('ConfigurationData:InvalidChain', ...

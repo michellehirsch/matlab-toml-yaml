@@ -319,6 +319,29 @@ classdef subsasgnTest < matlab.unittest.TestCase
             testCase.verifyEqual(filtered.score, [100, 85]);
         end
 
+        function testArrayDotReferenceWithLogicalFilter(testCase)
+            % Test: arr.field(logicalMask) pre-filters array before key check
+            % This enables the pattern: arr.field(iskey(arr, "field"))
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).name = "Alice";
+            arr(1).score = 100;
+            arr(2).name = "Bob";
+            % arr(2) has no score - this is the heterogeneous case
+            arr(3).name = "Charlie";
+            arr(3).score = 85;
+
+            % Direct access would error because not all have "score"
+            testCase.verifyError(@() arr.score, 'ConfigurationData:MissingKey');
+
+            % But arr.score(logicalMask) should pre-filter and work
+            hasScore = iskey(arr, "score");
+            scores = arr.score(hasScore);  % This should NOT error
+            testCase.verifyEqual(scores, [100, 85]);
+
+            % Verify the logical mask is as expected
+            testCase.verifyEqual(hasScore, [true, false, true]);
+        end
+
         function testScalarBehaviorUnchanged(testCase)
             % Test: scalar access still works as before
             arr = [yamldata(), yamldata()];
