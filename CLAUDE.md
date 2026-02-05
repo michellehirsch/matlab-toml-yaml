@@ -32,6 +32,9 @@ addpath('toolbox')
 mcp__matlab__check_matlab_code('toolbox/readyaml.m')
 ```
 
+## Branching Strategy
+All work must be done on a branch, not on main. Create a new branch for new work, or switch to an appropriate existing branch for refinement. 
+
 ## Architecture
 
 ### Class Hierarchy
