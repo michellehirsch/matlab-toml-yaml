@@ -5,7 +5,7 @@
 %[text] If the STRUCT datatype just supported arbitrary field names, then STRUCT would satisfy the use-cases for the JSONData/YAMLData/TOMLData objects without needing to add a new object.
 %[text] Therefore I wonder if our internal efforts should focus on unblocking arbitrary fieldnames for STRUCT instead of adding custom objects for these configuration file formats.
 %%
-%[text] ## Array-of-objects behavior
+%[text] ## Array-of-objects behavior: TODO Try to Improve!
 %[text] I haven't tried the Nx1 JSONData array behavior yet, so I just wanted to try a few cases with that.
 S = readjson("twitter.json");
 % S.statuses.created_at  % Errors - can't access fields of an array; need S.statuses(1).created_at
@@ -39,6 +39,15 @@ for i=1:numel(j.statuses)
     j.statuses(i).retweet_count = j.statuses(i).retweet_count + 100;
 end
 %[text] This also has severe performance consequences since the JSONData approach is creating a lot of small MCOS objects (if you have a million rows, it'll create a million small MCOS objects), while the jsonTree approach is just working on 1 large MCOS object irregardless of the number of rows. It indicates that the JSONData approach will mostly work for small data, but won't scale well to medium-large data.
+%[text] **\[MICHELLE\]** I agree with the flag on inability to access values of keys across an array and will try to come up with a design.
+%[text] - 3 ideas for keys that don't exist on some array elements
+%[text]     - Subset the array. This is what's currently in JSONTree. I find this behavior very surprising and not MATLAB-y -  expectation is that dot indexing into an array returns an array of the same size.
+%[text]     - Just return missing on subsref, allow subsasgn to add the keys
+%[text]     - Don't allow operating on keys that don't exist on an array element
+%[text]         - Vectorize iskey, so you can do: 
+%[text]             - keyfound = iskey(data.users,"name"); % Nx1 of 1s and 0s
+%[text]             - data.users(keyfound).name = ... \
+%[text] **\[MICHELLE\]** I agree that my approach will likely hit performance issues. Will look to see how bad it is.
 %%
 %[text] ## Round-trip issue with 1-element arrays in JSON
 %[text] This is observable even in the small example provided with the `writejson` function:
@@ -67,6 +76,14 @@ type("my_package.json") %[output:1e6f659e]
 %[text] Note here that `keywords` is now a non-array type, which now doesn't meet the schema for NPM's `package.json` files (see [https://www.schemastore.org/package.json](https://www.schemastore.org/package.json) where `keywords` is required to always be an `array`).
 %[text] Its very tempting to think that accurate JSON `array` handling is a rare out-of-model use-case that can be enabled via an extra N-V pair or something like that. I understand that this is an annoying case to handle that complicates all the indexing. But I think its **very** telling that the *simplest real-world writejson example* **already** suffers from a correctness problem due to the default behavior of the design.
 %[text] Also, I'm not convinced that there are a lot of users that ***NEED non-ASCII fieldname round-trip by default*** (and therefore need a custom datatype instead of `struct`) but ***DONT NEED array-of-1-element round-trip by default***. Array-of-objects are *very common, to the extent that it is already an issue in the very first real-world writejson example*. Why have we optimized this design to account for a rarer edge-case, but deprioritized handling a common case behind an off-by-default N-V pair?
+%[text] **\[MICHELLE\]:** 
+%[text] - Really good flag that the users who want name preservation also likely want array preservation - in both cases it's because they want to roundtrip. That said, I think we might be making nice enough behavior that users will prefer JSONData over struct even if they don't need roundtrip. The nice display and the (new) ability to dot index across an array. Name preservation is also extra appealing when you have names like "@name" so you don't get ugly x\_name.
+%[text] - Current approach: 
+%[text]     - Use SequenceRule = "cell" to force all arrays into cells when reading. More awkward to work with in MATLAB, but roundtrip nicely. I'm hesitant to make it the default
+%[text]     - I've also added an ArrayKeys option to writejson that lets a user specify any keys (by name) that they want to force to be arrays. This lets them work with natural MATLAB arrays, but then ensure that the right ones are written as arrays when output
+%[text]         - It's simple name matching without hierarchy - e.g. every key named foobar will be made array
+%[text]         - I could improve this workflow by giving an output on readjson that lists keys that were arrays. Might be part of larger metadata output
+%[text] - I still think my solution is nicely targeted and not very onerous, but need to compare with JSONTree experience to get a better feel (especially if JSONTree switches to native MATLAB types for values where possible). \
 %%
 %[text] ## Performance with real-world JSON files.
 %[text] Comparisons with readstruct and jsondecode:
@@ -398,7 +415,7 @@ j =
 %   data: {"dataType":"tabular","outputData":{"columns":1,"header":"100×1 cell array","name":"ans","rows":100,"type":"cell","value":[["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"],["1×1 struct"]]}}
 %---
 %[output:22378302]
-%   data: {"dataType":"error","outputData":{"errorType":"runtime","text":"Error using <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('matlab.io.config.ConfigurationData\/dotReference', '\/home\/admello\/src\/matlab-toml-yaml\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m', 378)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/home\/admello\/src\/matlab-toml-yaml\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m',378,0)\">line 378<\/a>)\nCannot access field 'created_at' on a [100 1] array of matlab.io.config.JSONData objects.\nIndex into the array first, e.g., obj(1).created_at or use:\n  arrayfun(@(x) x.created_at, obj)\n\nError in <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('matlab.io.config.ConfigurationData\/dotReference', '\/home\/admello\/src\/matlab-toml-yaml\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m', 433)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/home\/admello\/src\/matlab-toml-yaml\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m',433,0)\">line 433<\/a>)\n                                value = dotReference(value, indexOp(2:end));\n                                ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^"}}
+%   data: {"dataType":"error","outputData":{"errorType":"runtime","text":"Error using <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('matlab.io.config.ConfigurationData\/dotReference', '\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m', 378)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m',378,0)\">line 378<\/a>)\nCannot access field 'created_at' on a [100 1] array of matlab.io.config.JSONData objects.\nIndex into the array first, e.g., obj(1).created_at or use:\n  arrayfun(@(x) x.created_at, obj)\n\nError in <a href=\"matlab:matlab.lang.internal.introspective.errorDocCallback('matlab.io.config.ConfigurationData\/dotReference', '\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m', 433)\" style=\"font-weight:bold\"> . <\/a> (<a href=\"matlab: opentoline('\/Users\/michellehirsch\/Coding\/AgentExperiments\/MATLAB\/Claude\/ConfigurationFileIO\/toolbox\/+matlab\/+io\/+config\/ConfigurationData.m',433,0)\">line 433<\/a>)\n                                value = dotReference(value, indexOp(2:end));"}}
 %---
 %[output:1e6f659e]
 %   data: {"dataType":"text","outputData":{"text":"\n{\n  \"name\": \"my-awesome-app\",\n  \"version\": \"1.0.0\",\n  \"description\": \"An awesome application\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"test\": \"jest\",\n    \"build\": \"tsc\",\n    \"start\": \"node dist\/index.js\"\n  },\n  \"keywords\": \"awesome\",\n  \"author\": {\n    \"name\": \"Developer\",\n    \"email\": \"dev@example.com\"\n  },\n  \"license\": \"MIT\",\n  \"dependencies\": {\n    \"express\": \"^4.18.2\",\n    \"body-parser\": \"^1.20.0\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.0.0\",\n    \"jest\": \"^29.0.0\",\n    \"@types\/node\": \"^20.0.0\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https:\/\/github.com\/dev\/my-awesome-app.git\"\n  },\n  \"private\": false\n}\n","truncated":false}}
