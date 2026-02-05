@@ -5,7 +5,9 @@
       "command": "${MATLAB_MCP_SERVER_PATH}",
       "args": [
         "--matlab-root",
-        "${MATLAB_ROOT:-/Applications/MATLAB_R2026a.app}"
+        "${MATLAB_ROOT:-/Applications/MATLAB_R2026a.app}",
+        "--matlab-display-mode",
+        "nodesktop"
       ],
       "env": {}
     },
