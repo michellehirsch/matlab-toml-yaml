@@ -17,7 +17,7 @@ function writejson(data, filename, options)
 %           'null'  - Write as JSON null
 %           'omit'  - Omit the key entirely from output
 %
-%   To write explicit JSON null, use matlab.io.config.JSONNull:
+%   To write explicit JSON null, assign missing to a key:
 %
 %   Supported input types:
 %       - JSONData, YAMLData, TOMLData, INIData (ConfigurationData)
@@ -89,7 +89,7 @@ function str = encodeValue(data, depth, prettyPrint, emptyValueOption)
         str = encodeMapObject(data, depth, prettyPrint, emptyValueOption);
     elseif isa(data, 'dictionary')
         str = encodeDictObject(data, depth, prettyPrint, emptyValueOption);
-    elseif isa(data, 'matlab.io.config.JSONNull')
+    elseif isa(data, 'missing')
         str = 'null';
     elseif isempty(data) && (isnumeric(data) || islogical(data))
         if emptyValueOption == "null"

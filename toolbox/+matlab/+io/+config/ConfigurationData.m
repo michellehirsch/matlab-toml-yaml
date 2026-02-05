@@ -750,6 +750,11 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 return;  % OK
             end
 
+            % missing represents JSON/config null
+            if isa(value, 'missing')
+                return;  % OK
+            end
+
             % Empty values
             if isempty(value)
                 return;  % OK (will revisit serialization)

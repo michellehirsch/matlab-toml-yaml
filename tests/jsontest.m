@@ -100,7 +100,7 @@ classdef jsontest < matlab.unittest.TestCase
         end
 
         function testReadNullValue(testCase)
-            % Test that null is converted to matlab.io.config.JSONNull (Issue #44)
+            % Test that null is converted to missing (Issue #44)
             jsonText = '{"value": null}';
 
             filename = fullfile(pwd, 'test.json');
@@ -108,10 +108,8 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyClass(data.value, 'matlab.io.config.JSONNull');
-            testCase.verifyTrue(isa(data.value, 'matlab.io.config.JSONNull'));
-            % isempty returns true for backward compatibility
-            testCase.verifyTrue(isempty(data.value));
+            testCase.verifyClass(data.value, 'missing');
+            testCase.verifyTrue(ismissing(data.value));
         end
 
         function testReadEmptyObject(testCase)
@@ -480,7 +478,7 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifyEqual(data.enabled, true);
             testCase.verifyEqual(data.maxRetries, 3);
             testCase.verifyEqual(data.database.host, "localhost");
-            testCase.verifyClass(data.nullValue, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(ismissing(data.nullValue));
         end
 
         function testReadPackageJsonFile(testCase)
@@ -717,14 +715,13 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            % null -> matlab.io.config.JSONNull
-            testCase.verifyClass(data.nullValue, 'matlab.io.config.JSONNull');
-            testCase.verifyTrue(isa(data.nullValue, 'matlab.io.config.JSONNull'));
+            % null -> missing
+            testCase.verifyTrue(ismissing(data.nullValue));
 
             % empty array -> double []
             testCase.verifyClass(data.emptyArray, 'double');
             testCase.verifyEmpty(data.emptyArray);
-            testCase.verifyFalse(isa(data.emptyArray, 'matlab.io.config.JSONNull'));
+            testCase.verifyFalse(any(ismissing(data.emptyArray)));
         end
 
         function testNullRoundtrip(testCase)
@@ -769,14 +766,14 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyClass(data.outer.inner, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(ismissing(data.outer.inner));
             testCase.verifyEqual(data.outer.value, 42);
         end
 
         function testWriteNullDirectly(testCase)
-            % Issue #44: writing matlab.io.config.JSONNull produces JSON null
+            % Issue #44: writing missing produces JSON null
             data = jsondata();
-            data.nullable = matlab.io.config.JSONNull();
+            data.nullable = missing;
             data.name = "test";
 
             filename = fullfile(pwd, 'output.json');
@@ -787,21 +784,12 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifySubstring(content, '"name": "test"');
         end
 
-        function testNullEquality(testCase)
-            % Test Null equality methods
-            null1 = matlab.io.config.JSONNull();
-            null2 = matlab.io.config.JSONNull();
-
-            testCase.verifyTrue(null1 == null2);
-            testCase.verifyTrue(isequal(null1, null2));
-            testCase.verifyFalse(null1 == 5);
-            testCase.verifyFalse(null1 == []);
-        end
-
-        function testNullIsEmpty(testCase)
-            % Test that isempty returns true for Null (backward compatibility)
-            null = matlab.io.config.JSONNull();
-            testCase.verifyTrue(isempty(null));
+        function testMissingDetection(testCase)
+            % Test that ismissing reliably detects null values
+            testCase.verifyTrue(ismissing(missing));
+            testCase.verifyFalse(ismissing(42));
+            testCase.verifyFalse(any(ismissing([])));  % ismissing([]) is empty logical
+            testCase.verifyFalse(ismissing("hello"));
         end
 
         function testMultipleNullValues(testCase)
@@ -813,16 +801,16 @@ classdef jsontest < matlab.unittest.TestCase
 
             data = readjson(filename);
 
-            testCase.verifyClass(data.a, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(ismissing(data.a));
             testCase.verifyEqual(data.b, 1);
-            testCase.verifyClass(data.c, 'matlab.io.config.JSONNull');
+            testCase.verifyTrue(ismissing(data.c));
             testCase.verifyEqual(data.d, "text");
         end
 
         function testNullAndEmptyValueOmit(testCase)
             % Test EmptyValue='omit' behavior with Null
             data = jsondata();
-            data.nullValue = matlab.io.config.JSONNull();
+            data.nullValue = missing;
             data.emptyArray = [];
             data.name = "test";
 
@@ -835,6 +823,153 @@ classdef jsontest < matlab.unittest.TestCase
             % Empty array should be omitted
             testCase.verifyFalse(contains(content, '"emptyArray"'));
             testCase.verifySubstring(content, '"name": "test"');
+        end
+
+        %% Parameterized Sample File Round-trip Tests
+        function testSampleFileRoundtrip(testCase, SampleFile)
+            % Test round-trip: read -> write -> read -> compare
+            sampleDir = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles');
+            originalFile = fullfile(sampleDir, SampleFile);
+
+            if ~isfile(originalFile)
+                testCase.assumeFail(sprintf('Sample file not found: %s', SampleFile));
+            end
+
+            % Read original
+            original = readjson(originalFile);
+
+            % Write to temp file
+            tempFile = fullfile(pwd, ['roundtrip_' SampleFile]);
+            writejson(original, tempFile);
+
+            % Read back
+            restored = readjson(tempFile);
+
+            % Compare semantically
+            testCase.verifyDataEqual(original, restored, SampleFile);
+        end
+
+        %% Large File Stress Tests
+        function testLargeFileRoundtrip(testCase)
+            % Stress test with 1.3MB functionSignatures.json
+            sampleDir = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles');
+            originalFile = fullfile(sampleDir, 'functionSignatures.json');
+
+            if ~isfile(originalFile)
+                testCase.assumeFail('functionSignatures.json not found');
+            end
+
+            original = readjson(originalFile);
+
+            tempFile = fullfile(pwd, 'roundtrip_functionSignatures.json');
+            writejson(original, tempFile);
+
+            restored = readjson(tempFile);
+
+            testCase.verifyDataEqual(original, restored, 'functionSignatures.json');
+        end
+
+        function testMediumLargeFileRoundtrip(testCase)
+            % Stress test with 54KB extensions_large.json
+            sampleDir = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles');
+            originalFile = fullfile(sampleDir, 'extensions_large.json');
+
+            if ~isfile(originalFile)
+                testCase.assumeFail('extensions_large.json not found');
+            end
+
+            original = readjson(originalFile);
+
+            tempFile = fullfile(pwd, 'roundtrip_extensions_large.json');
+            writejson(original, tempFile);
+
+            restored = readjson(tempFile);
+
+            testCase.verifyDataEqual(original, restored, 'extensions_large.json');
+        end
+    end
+
+    methods (Access = private)
+        function verifyDataEqual(testCase, original, restored, context)
+            % Recursively compare two ConfigurationData objects
+            % Allows for key reordering but requires same keys and values
+
+            % Handle arrays of ConfigurationData (array of objects)
+            if isa(original, 'matlab.io.config.ConfigurationData') && numel(original) > 1
+                testCase.verifyEqual(numel(restored), numel(original), ...
+                    sprintf('Array length mismatch for %s', context));
+                for j = 1:numel(original)
+                    testCase.verifyDataEqual(original(j), restored(j), ...
+                        sprintf('%s(%d)', context, j));
+                end
+                return;
+            end
+
+            % Handle missing (JSON null)
+            if ismissing(original)
+                testCase.verifyTrue(ismissing(restored), ...
+                    sprintf('Expected missing for %s', context));
+                return;
+            end
+
+            origKeys = sort(keys(original));
+            restKeys = sort(keys(restored));
+
+            testCase.verifyEqual(restKeys, origKeys, ...
+                sprintf('Keys mismatch in %s', context));
+
+            for i = 1:length(origKeys)
+                key = origKeys(i);
+                origVal = original.(key);
+                restVal = restored.(key);
+
+                keyContext = sprintf('%s.%s', context, key);
+
+                if ismissing(origVal)
+                    % Null values
+                    testCase.verifyTrue(ismissing(restVal), ...
+                        sprintf('Expected missing for %s', keyContext));
+                elseif isa(origVal, 'matlab.io.config.ConfigurationData')
+                    % Recursive comparison for nested objects (check this early!)
+                    testCase.verifyTrue(isa(restVal, 'matlab.io.config.ConfigurationData'), ...
+                        sprintf('Expected ConfigurationData for %s', keyContext));
+                    if isa(restVal, 'matlab.io.config.ConfigurationData')
+                        testCase.verifyDataEqual(origVal, restVal, keyContext);
+                    end
+                elseif isnumeric(origVal)
+                    % Compare numeric values (allow row/column differences)
+                    testCase.verifyEqual(restVal(:), origVal(:), ...
+                        'AbsTol', 1e-10, ...
+                        sprintf('Numeric mismatch for %s', keyContext));
+                elseif islogical(origVal)
+                    testCase.verifyEqual(restVal, origVal, ...
+                        sprintf('Logical mismatch for %s', keyContext));
+                elseif iscell(origVal)
+                    % Cell arrays (mixed type arrays)
+                    testCase.verifyEqual(numel(restVal), numel(origVal), ...
+                        sprintf('Cell array length mismatch for %s', keyContext));
+                    for j = 1:numel(origVal)
+                        if isa(origVal{j}, 'matlab.io.config.ConfigurationData')
+                            testCase.verifyDataEqual(origVal{j}, restVal{j}, ...
+                                sprintf('%s{%d}', keyContext, j));
+                        elseif ismissing(origVal{j})
+                            testCase.verifyTrue(ismissing(restVal{j}), ...
+                                sprintf('Expected missing for %s{%d}', keyContext, j));
+                        else
+                            testCase.verifyEqual(restVal{j}, origVal{j}, ...
+                                sprintf('Cell element mismatch for %s{%d}', keyContext, j));
+                        end
+                    end
+                elseif isstring(origVal) || ischar(origVal)
+                    % String comparison
+                    testCase.verifyEqual(string(restVal), string(origVal), ...
+                        sprintf('String mismatch for %s', keyContext));
+                else
+                    % Generic comparison for other types
+                    testCase.verifyEqual(restVal, origVal, ...
+                        sprintf('Value mismatch for %s', keyContext));
+                end
+            end
         end
     end
 end
