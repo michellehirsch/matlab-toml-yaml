@@ -172,24 +172,16 @@ special = readyaml("special_keys.yaml");
 special.("pull-request").("target-branch") %[output:72ed3579]
 %%
 %[text] ## Exploring Unknown YAML Files
-%[text] Use keys, isfield, and show to explore structure
+%[text] Use keys, iskey, and show to explore structure
 %[text] Top-level keys in GitHub Actions workflow:
 keys(ghActions) %[output:8097bbab]
 %%
-%[text] Check for specific fields
-if isfield(ghActions, "jobs") %[output:group:03c2fbcb]
-    disp("Workflow contains jobs") %[output:970c9e3f]
-    if isfield(ghActions.jobs, "build")
-        disp("  Build job exists") %[output:78813401]
-    end
-    if isfield(ghActions.jobs, "test")
-        disp("  Test job exists") %[output:451da295]
-    end
-end %[output:group:03c2fbcb]
+%[text] Check for specific keys
+iskey(ghActions, "jobs") %[output:788cfd40]
 %%
-%[text] Use show for formatted display
+%[text] ## Use show for formatted display
 %[text] Database configuration structure:
-dbConfig.show %[output:02043c92]
+show(dbConfig) %[output:5360cd8e]
 %%
 %[text] ## Data Types in YAML
 %[text] YAML supports various data types
@@ -204,17 +196,7 @@ yamlTypes = [
     "no_val: no"
     "null_val: null"];
 writelines(yamlTypes,"types.yaml");
-types = readyaml("types.yaml");
-%[text] YAML data types:
-fprintf("String: %s (class: %s)\n", types.string_val, class(types.string_val)); %[output:5dcee9b5]
-fprintf("Quoted string: %s (class: %s)\n", types.quoted_string, class(types.quoted_string)); %[output:1847497b]
-fprintf("Integer: %d (class: %s)\n", types.integer_val, class(types.integer_val)); %[output:445d4fda]
-fprintf("Float: %.5f (class: %s)\n", types.float_val, class(types.float_val)); %[output:1474d858]
-fprintf("Boolean true: %d (class: %s)\n", types.boolean_true, class(types.boolean_true)); %[output:6a6bef8f]
-fprintf("Boolean false: %d (class: %s)\n", types.boolean_false, class(types.boolean_false)); %[output:1f9aaa2b]
-fprintf("Yes: %d (class: %s)\n", types.yes_val, class(types.yes_val)); %[output:3617ab71]
-fprintf("No: %d (class: %s)\n", types.no_val, class(types.no_val)); %[output:9dce0d1b]
-fprintf("Null: %s (class: %s)\n", string(types.null_val), class(types.null_val)); %[output:38f6ae76]
+types = readyaml("types.yaml") %[output:9c05f12e]
 %%
 %[text] ## Converting to Struct
 %[text] Convert YAMLData to standard MATLAB struct when needed
@@ -228,43 +210,7 @@ serverConfig = readyaml("server.yaml");
 %[text] Convert to struct
 serverStruct = struct(serverConfig);
 %[text] Converted to struct:
-serverStruct %[output:810e1689]
-%%
-%[text] ## Real-World Example: Docker Compose
-%[text] Read a realistic Docker Compose YAML configuration
-dockerComposeYaml = [
-    "version: ""3.8"""
-    ""
-    "services:"
-    "  web:"
-    "    image: nginx:latest"
-    "    ports:"
-    "      - ""8080:80"""
-    "      - ""8443:443"""
-    "    environment:"
-    "      - NGINX_HOST=example.com"
-    "      - NGINX_PORT=80"
-    ""
-    "  db:"
-    "    image: postgres:15"
-    "    ports:"
-    "      - ""5432:5432"""
-    "    environment:"
-    "      - POSTGRES_PASSWORD=secret"
-    "      - POSTGRES_DB=myapp"];
-writelines(dockerComposeYaml,"docker-compose.yaml");
-dockerCompose = readyaml("docker-compose.yaml");
-%[text] Access Docker Compose configuration
-%[text] Docker Compose configuration:
-fprintf("Version: %s\n", dockerCompose.version); %[output:624872fe]
-disp("Web service:") %[output:91c4776e]
-fprintf("  Image: %s\n", dockerCompose.services.web.image); %[output:94d4a265]
-disp("  Ports:") %[output:7cfa29fb]
-disp(dockerCompose.services.web.ports) %[output:54adbcff]
-disp("Database service:") %[output:174ba041]
-fprintf("  Image: %s\n", dockerCompose.services.db.image); %[output:295504df]
-disp("  Ports:") %[output:69c9f471]
-disp(dockerCompose.services.db.ports) %[output:530e8b50]
+serverStruct
 %%
 %[text] ## Best Practices
 %[text] Best practices for reading YAML files:
@@ -272,9 +218,9 @@ disp(dockerCompose.services.db.ports) %[output:530e8b50]
 %[text] - Use quoted syntax for special characters: config.("app-name")
 %[text] - Use SequenceRule='cell' for dynamic configurations
 %[text] - Use keys to explore unknown structures
-%[text] - Use isfield to check for optional fields
+%[text] - Use iskey to check for optional fields
 %[text] - Use show for formatted display during debugging
-%[text] - Remember: arrays are column vectors by default\\ \
+%[text] - Remember: arrays are column vectors by default \
 %%
 %[text] ## Cleanup
 %[text] Delete temporary YAML files
@@ -289,7 +235,7 @@ delete("basic_config.yaml", "nested_config.yaml", "flow_arrays.yaml", ...
 %   data: {"layout":"inline"}
 %---
 %[output:9d2914d0]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 8080\n    debug: true\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 8080\n    debug: true\n"}}
 %---
 %[output:870f5a7b]
 %   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"\"MyApplication\""}}
@@ -360,72 +306,12 @@ delete("basic_config.yaml", "nested_config.yaml", "flow_arrays.yaml", ...
 %[output:8097bbab]
 %   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"ans","rows":1,"type":"string","value":[["name","on","jobs"]]}}
 %---
-%[output:970c9e3f]
-%   data: {"dataType":"text","outputData":{"text":"Workflow contains jobs\n","truncated":false}}
+%[output:788cfd40]
+%   data: {"dataType":"textualVariable","outputData":{"header":"logical","name":"ans","value":"   1\n"}}
 %---
-%[output:78813401]
-%   data: {"dataType":"text","outputData":{"text":"  Build job exists\n","truncated":false}}
+%[output:5360cd8e]
+%   data: {"dataType":"text","outputData":{"text":"database:\n  host: localhost\n  port: 5432\n  credentials:\n    username: admin\n    password: secret\n\n","truncated":false}}
 %---
-%[output:451da295]
-%   data: {"dataType":"text","outputData":{"text":"  Test job exists\n","truncated":false}}
-%---
-%[output:02043c92]
-%   data: {"dataType":"text","outputData":{"text":"database:\n  host: localhost\n  port: 5432\n  credentials:\n    username: admin\n    password: secret\n","truncated":false}}
-%---
-%[output:5dcee9b5]
-%   data: {"dataType":"text","outputData":{"text":"String: Hello, World! (class: string)\n","truncated":false}}
-%---
-%[output:1847497b]
-%   data: {"dataType":"text","outputData":{"text":"Quoted string: Quoted text (class: string)\n","truncated":false}}
-%---
-%[output:445d4fda]
-%   data: {"dataType":"text","outputData":{"text":"Integer: 42 (class: double)\n","truncated":false}}
-%---
-%[output:1474d858]
-%   data: {"dataType":"text","outputData":{"text":"Float: 3.14159 (class: double)\n","truncated":false}}
-%---
-%[output:6a6bef8f]
-%   data: {"dataType":"text","outputData":{"text":"Boolean true: 1 (class: logical)\n","truncated":false}}
-%---
-%[output:1f9aaa2b]
-%   data: {"dataType":"text","outputData":{"text":"Boolean false: 0 (class: logical)\n","truncated":false}}
-%---
-%[output:3617ab71]
-%   data: {"dataType":"text","outputData":{"text":"Yes: 1 (class: logical)\n","truncated":false}}
-%---
-%[output:9dce0d1b]
-%   data: {"dataType":"text","outputData":{"text":"No: 0 (class: logical)\n","truncated":false}}
-%---
-%[output:38f6ae76]
-%   data: {"dataType":"text","outputData":{"text":"Null:  (class: double)\n","truncated":false}}
-%---
-%[output:810e1689]
-%   data: {"dataType":"textualVariable","outputData":{"header":"struct with fields:","name":"serverStruct","value":"    server: [1×1 struct]\n"}}
-%---
-%[output:624872fe]
-%   data: {"dataType":"text","outputData":{"text":"Version: 3.8\n","truncated":false}}
-%---
-%[output:91c4776e]
-%   data: {"dataType":"text","outputData":{"text":"Web service:\n","truncated":false}}
-%---
-%[output:94d4a265]
-%   data: {"dataType":"text","outputData":{"text":"  Image: nginx:latest\n","truncated":false}}
-%---
-%[output:7cfa29fb]
-%   data: {"dataType":"text","outputData":{"text":"  Ports:\n","truncated":false}}
-%---
-%[output:54adbcff]
-%   data: {"dataType":"text","outputData":{"text":"    \"8080:80\"\n    \"8443:443\"\n\n","truncated":false}}
-%---
-%[output:174ba041]
-%   data: {"dataType":"text","outputData":{"text":"Database service:\n","truncated":false}}
-%---
-%[output:295504df]
-%   data: {"dataType":"text","outputData":{"text":"  Image: postgres:15\n","truncated":false}}
-%---
-%[output:69c9f471]
-%   data: {"dataType":"text","outputData":{"text":"  Ports:\n","truncated":false}}
-%---
-%[output:530e8b50]
-%   data: {"dataType":"text","outputData":{"text":"5432:5432\n","truncated":false}}
+%[output:9c05f12e]
+%   data: {"dataType":"textualVariable","outputData":{"name":"types","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    string_val: \"Hello, World!\"\n    quoted_string: \"Quoted text\"\n    integer_val: 42\n    float_val: 3.14159\n    boolean_true: true\n    boolean_false: false\n    yes_val: true\n    no_val: false\n    null_val: []\n"}}
 %---

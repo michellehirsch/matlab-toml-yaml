@@ -2,6 +2,23 @@ classdef jsontest < matlab.unittest.TestCase
     % JSONTEST Unit tests for JSON support
     %   Comprehensive tests for readjson, writejson, and JSONData
 
+    properties (TestParameter)
+        % Sample files for parameterized round-trip testing
+        SampleFile = {
+            'simple_config.json',
+            '01_package.json',
+            '03_openapi.json',
+            '04_devcontainer.json',
+            '06_vscode_settings.json',
+            '07_aws_iam_policy.json',
+            '08_k8s_deployment.json',
+            'nested_sample.json',
+            'extensions.json',
+            'mpackage.json',
+            'codeAnalyzerConfiguration.json'
+        }
+    end
+
     methods (TestClassSetup)
         function addToPath(testCase)
             % Add toolbox folder to path
@@ -482,18 +499,19 @@ classdef jsontest < matlab.unittest.TestCase
         end
 
         function testReadPackageJsonFile(testCase)
-            % Test reading the package.json sample file
-            sampleFile = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles', 'package.json');
+            % Test reading the 01_package.json sample file
+            sampleFile = fullfile(fileparts(mfilename('fullpath')), 'SampleFiles', '01_package.json');
             if ~isfile(sampleFile)
                 testCase.assumeFail('Sample file not found');
             end
 
             data = readjson(sampleFile);
 
-            testCase.verifyEqual(data.name, "example-package");
-            testCase.verifyEqual(data.version, "2.1.0");
-            testCase.verifyEqual(data.scripts.test, "jest");
-            testCase.verifyEqual(data.author.name, "Test Author");
+            testCase.verifyEqual(data.name, "acme-webapp");
+            testCase.verifyEqual(data.version, "1.0.0");
+            testCase.verifyEqual(data.type, "module");
+            testCase.verifyTrue(isfield(data, 'exports'));
+            testCase.verifyTrue(isfield(data, 'peerDependencies'));
         end
 
         %% Edge Cases
