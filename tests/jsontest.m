@@ -843,6 +843,201 @@ classdef jsontest < matlab.unittest.TestCase
             testCase.verifySubstring(content, '"name": "test"');
         end
 
+        %% ArrayKeys Tests
+        function testArrayKeysScalarToArray(testCase)
+            % Test forcing scalar to array
+            data = jsondata();
+            data.ports = 8080;
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "ports", 'PrettyPrint', false);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"ports": [8080]');
+
+            % Verify it round-trips as array
+            restored = readjson(filename);
+            testCase.verifyEqual(restored.ports, 8080);
+        end
+
+        function testArrayKeysMultipleKeys(testCase)
+            % Test multiple keys forced to arrays
+            data = jsondata();
+            data.ports = 8080;
+            data.volumes = "/data";
+            data.replicas = 3;
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', ["ports", "volumes"], 'PrettyPrint', false);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"ports": [8080]');
+            testCase.verifySubstring(content, '"volumes": ["/data"]');
+            % replicas should NOT be array (not in ArrayKeys)
+            testCase.verifySubstring(content, '"replicas": 3');
+            testCase.verifyFalse(contains(content, '"replicas": [3]'));
+        end
+
+        function testArrayKeysNestedStructure(testCase)
+            % Test ArrayKeys works in nested structures
+            data = jsondata();
+            data.spec.containers.ports = 3000;
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "ports", 'PrettyPrint', false);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"ports": [3000]');
+        end
+
+        function testArrayKeysNonExistentKey(testCase)
+            % Test specifying non-existent key (should be harmless)
+            data = jsondata();
+            data.name = "test";
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "nonexistent");
+
+            % Should succeed without error
+            testCase.verifyTrue(isfile(filename));
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"name": "test"');
+        end
+
+        function testArrayKeysAlreadyArray(testCase)
+            % Test that existing arrays aren't double-wrapped
+            data = jsondata();
+            data.ports = [8080, 8443];
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "ports");
+
+            content = fileread(filename);
+            readBack = readjson(filename);
+            testCase.verifyEqual(numel(readBack.ports), 2);
+            % Should not be nested array
+            testCase.verifyEqual(readBack.ports(1), 8080);
+            testCase.verifyEqual(readBack.ports(2), 8443);
+        end
+
+        function testArrayKeysWithEmptyValue(testCase)
+            % Test that EmptyValue option takes precedence
+            data = jsondata();
+            data.items = [];
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "items", 'EmptyValue', 'null');
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"items": null');
+            testCase.verifyFalse(contains(content, '"items": [null]'));
+        end
+
+        function testArrayKeysWithMissing(testCase)
+            % Test that missing (JSON null) isn't wrapped
+            data = jsondata();
+            data.value = missing;
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "value");
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"value": null');
+            testCase.verifyFalse(contains(content, '"value": [null]'));
+        end
+
+        function testArrayKeysWithCellArray(testCase)
+            % Test that cell arrays aren't double-wrapped
+            data = jsondata();
+            data.items = {1, 2, 3};
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "items");
+
+            readBack = readjson(filename);
+            testCase.verifyEqual(numel(readBack.items), 3);
+        end
+
+        function testArrayKeysWithStruct(testCase)
+            % Test ArrayKeys with plain struct input
+            s.ports = 8080;
+            s.name = "server";
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(s, filename, 'ArrayKeys', "ports", 'PrettyPrint', false);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"ports": [8080]');
+            testCase.verifySubstring(content, '"name": "server"');
+        end
+
+        function testArrayKeysK8sPattern(testCase)
+            % Real-world test: Kubernetes deployment pattern
+            data = jsondata();
+            data.spec.template.spec.containers.name = "web";
+            data.spec.template.spec.containers.ports.containerPort = 3000;
+
+            filename = fullfile(pwd, 'k8s.json');
+            writejson(data, filename, 'ArrayKeys', ["containers", "ports"]);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"containers": [');
+            testCase.verifySubstring(content, '"ports": [');
+        end
+
+        function testArrayKeysWithStringValue(testCase)
+            % Test with string scalar
+            data = jsondata();
+            data.tags = "alpha";
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "tags", 'PrettyPrint', false);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"tags": ["alpha"]');
+        end
+
+        function testArrayKeysWithLogicalValue(testCase)
+            % Test with logical scalar
+            data = jsondata();
+            data.flags = true;
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "flags", 'PrettyPrint', false);
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"flags": [true]');
+        end
+
+        function testArrayKeysWithNestedObject(testCase)
+            % Test with nested object (should wrap object in array)
+            data = jsondata();
+            data.config.host = "localhost";
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "config");
+
+            content = fileread(filename);
+            testCase.verifySubstring(content, '"config": [');
+            testCase.verifySubstring(content, '"host": "localhost"');
+        end
+
+        function testArrayKeysMultipleLevels(testCase)
+            % Test that same key name at different levels is handled
+            data = jsondata();
+            data.server.ports = 8080;
+            data.client.ports = 9000;
+
+            filename = fullfile(pwd, 'arraykeys.json');
+            writejson(data, filename, 'ArrayKeys', "ports");
+
+            content = fileread(filename);
+            % Both ports should be arrays
+            readBack = readjson(filename);
+            testCase.verifyEqual(readBack.server.ports, 8080);
+            testCase.verifyEqual(readBack.client.ports, 9000);
+        end
+
         %% Parameterized Sample File Round-trip Tests
         function testSampleFileRoundtrip(testCase, SampleFile)
             % Test round-trip: read -> write -> read -> compare
