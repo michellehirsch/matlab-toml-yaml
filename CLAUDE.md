@@ -118,7 +118,10 @@ config.new.section.value = 42;  % creates nested YAMLData objects
 
 - **YAML**: No anchors/aliases, no multi-document, no literal/folded strings
 - **TOML**: Array of tables reading has bugs (writing works)
-- **JSON**: Null values become empty `[]`; designed for config files, not strict round-tripping (use jsondecode/jsonencode for that)
+- **JSON**: Designed for config files with usability focus; MATLAB's `5` and `[5]` are identical, so scalar vs array distinction is lossy by default
+  - Use `SequenceRule='cell'` for strict round-trip preservation (all arrays become cells)
+  - Use `ArrayKeys` parameter in `writejson` to force specific keys to be arrays (e.g., for API schemas)
+  - For strict JSON round-tripping, use built-in `jsondecode`/`jsonencode`
 - **Array indexing**: Cannot do `obj.field(i).subfield = value` directly; extract array first
 - **Comments**: Not preserved during round-trip
 - **Reserved key**: `xInternal__` cannot be used as a configuration key (reserved for internal storage)

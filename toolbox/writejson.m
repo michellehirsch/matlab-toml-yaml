@@ -17,6 +17,10 @@ function writejson(data, filename, options)
 %           'null'  - Write as JSON null
 %           'omit'  - Omit the key entirely from output
 %
+%       'ArrayKeys'   - Keys that should always be arrays
+%           string array - Keys to force as JSON arrays even if scalar
+%           []          - (default) No forced arrays
+%
 %   To write explicit JSON null, assign missing to a key:
 %
 %   Supported input types:
@@ -38,6 +42,19 @@ function writejson(data, filename, options)
 %       % Write without pretty printing
 %       writejson(config, 'compact.json', 'PrettyPrint', false);
 %
+%       % Force specific keys to be arrays (useful for API schemas)
+%       config = jsondata();
+%       config.ports = 8080;  % Scalar in MATLAB
+%       writejson(config, 'config.json', 'ArrayKeys', "ports");
+%       % Output: {"ports": [8080]}
+%
+%       % Multiple keys (e.g., Kubernetes manifests)
+%       config.spec.containers.name = "web";
+%       config.spec.containers.ports.containerPort = 3000;
+%       writejson(config, 'deployment.json', ...
+%           'ArrayKeys', ["containers", "ports"]);
+%       % Both containers and ports become arrays even if single element
+%
 %   See also: readjson, jsondata, matlab.io.config.JSONData, jsonencode
 
     arguments
@@ -46,10 +63,11 @@ function writejson(data, filename, options)
         options.PrettyPrint (1,1) logical = true
         options.Precision (1,1) {mustBePositive, mustBeInteger} = 6
         options.EmptyValue {mustBeMember(options.EmptyValue, ["array", "null", "omit"])} = "array"
+        options.ArrayKeys (:,1) string = string.empty
     end
 
     % Serialize to JSON string with preserved key order
-    jsonText = encodeValue(data, 0, options.PrettyPrint, options.EmptyValue);
+    jsonText = encodeValue(data, 0, options.PrettyPrint, options.EmptyValue, options.ArrayKeys);
 
     % Write to file
     fid = fopen(filename, 'w', 'n', 'UTF-8');
@@ -65,30 +83,30 @@ function writejson(data, filename, options)
     end
 end
 
-function str = encodeValue(data, depth, prettyPrint, emptyValueOption)
+function str = encodeValue(data, depth, prettyPrint, emptyValueOption, arrayKeys)
 % Recursively encode a value to a JSON string.
 % Dispatches to type-specific encoders; leaf values use jsonencode.
 
     if isa(data, 'matlab.io.config.ConfigurationData')
         if numel(data) > 1
             % Array of ConfigurationData objects -> JSON array
-            str = encodeArray(num2cell(data), depth, prettyPrint, emptyValueOption);
+            str = encodeArray(num2cell(data), depth, prettyPrint, emptyValueOption, arrayKeys);
         else
-            str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption);
+            str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption, arrayKeys);
         end
     elseif iscell(data)
-        str = encodeArray(data, depth, prettyPrint, emptyValueOption);
+        str = encodeArray(data, depth, prettyPrint, emptyValueOption, arrayKeys);
     elseif isstruct(data)
         if isscalar(data)
-            str = encodeStructObject(data, depth, prettyPrint, emptyValueOption);
+            str = encodeStructObject(data, depth, prettyPrint, emptyValueOption, arrayKeys);
         else
             % Struct array -> JSON array
-            str = encodeArray(num2cell(data), depth, prettyPrint, emptyValueOption);
+            str = encodeArray(num2cell(data), depth, prettyPrint, emptyValueOption, arrayKeys);
         end
     elseif isa(data, 'containers.Map')
-        str = encodeMapObject(data, depth, prettyPrint, emptyValueOption);
+        str = encodeMapObject(data, depth, prettyPrint, emptyValueOption, arrayKeys);
     elseif isa(data, 'dictionary')
-        str = encodeDictObject(data, depth, prettyPrint, emptyValueOption);
+        str = encodeDictObject(data, depth, prettyPrint, emptyValueOption, arrayKeys);
     elseif isa(data, 'missing')
         str = 'null';
     elseif isempty(data) && (isnumeric(data) || islogical(data))
@@ -103,7 +121,7 @@ function str = encodeValue(data, depth, prettyPrint, emptyValueOption)
     end
 end
 
-function str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption)
+function str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption, arrayKeys)
 % Encode a scalar ConfigurationData as a JSON object.
 % Uses keys() which returns OriginalKeys, preserving insertion order.
 
@@ -115,47 +133,61 @@ function str = encodeConfigObject(data, depth, prettyPrint, emptyValueOption)
         if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
             continue;
         end
-        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
+        % Force array if key matches ArrayKeys
+        if shouldForceArray(key, value, arrayKeys)
+            value = {value};
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption, arrayKeys);
         pairs{end+1} = [jsonencode(char(key)), ': ', valueStr];
     end
     str = formatObject(pairs, depth, prettyPrint);
 end
 
-function str = encodeStructObject(data, depth, prettyPrint, emptyValueOption)
+function str = encodeStructObject(data, depth, prettyPrint, emptyValueOption, arrayKeys)
 % Encode a scalar struct as a JSON object.
 % fieldnames() preserves struct field order.
 
     fields = fieldnames(data);
     pairs = {};
     for i = 1:numel(fields)
-        value = data.(fields{i});
+        fieldName = fields{i};
+        value = data.(fieldName);
         if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
             continue;
         end
-        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
-        pairs{end+1} = [jsonencode(fields{i}), ': ', valueStr];
+        % Force array if key matches ArrayKeys
+        if shouldForceArray(fieldName, value, arrayKeys)
+            value = {value};
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption, arrayKeys);
+        pairs{end+1} = [jsonencode(fieldName), ': ', valueStr];
     end
     str = formatObject(pairs, depth, prettyPrint);
 end
 
-function str = encodeMapObject(data, depth, prettyPrint, emptyValueOption)
+function str = encodeMapObject(data, depth, prettyPrint, emptyValueOption, arrayKeys)
 % Encode a containers.Map as a JSON object.
 % Note: Map keys are always alphabetically sorted.
 
     allKeys = keys(data);
     pairs = {};
     for i = 1:numel(allKeys)
-        value = data(allKeys{i});
+        keyStr = allKeys{i};
+        value = data(keyStr);
         if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
             continue;
         end
-        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
-        pairs{end+1} = [jsonencode(allKeys{i}), ': ', valueStr];
+        % Force array if key matches ArrayKeys
+        if shouldForceArray(keyStr, value, arrayKeys)
+            value = {value};
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption, arrayKeys);
+        pairs{end+1} = [jsonencode(keyStr), ': ', valueStr];
     end
     str = formatObject(pairs, depth, prettyPrint);
 end
 
-function str = encodeDictObject(data, depth, prettyPrint, emptyValueOption)
+function str = encodeDictObject(data, depth, prettyPrint, emptyValueOption, arrayKeys)
 % Encode a dictionary as a JSON object.
 
     allKeys = keys(data);
@@ -169,13 +201,17 @@ function str = encodeDictObject(data, depth, prettyPrint, emptyValueOption)
         if isempty(value) && (isnumeric(value) || islogical(value)) && emptyValueOption == "omit"
             continue;
         end
-        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption);
+        % Force array if key matches ArrayKeys
+        if shouldForceArray(key, value, arrayKeys)
+            value = {value};
+        end
+        valueStr = encodeValue(value, depth + 1, prettyPrint, emptyValueOption, arrayKeys);
         pairs{end+1} = [jsonencode(char(key)), ': ', valueStr];
     end
     str = formatObject(pairs, depth, prettyPrint);
 end
 
-function str = encodeArray(data, depth, prettyPrint, emptyValueOption)
+function str = encodeArray(data, depth, prettyPrint, emptyValueOption, arrayKeys)
 % Encode a cell array as a JSON array.
 
     if isempty(data)
@@ -184,7 +220,7 @@ function str = encodeArray(data, depth, prettyPrint, emptyValueOption)
     end
     elements = cell(1, numel(data));
     for i = 1:numel(data)
-        elements{i} = encodeValue(data{i}, depth + 1, prettyPrint, emptyValueOption);
+        elements{i} = encodeValue(data{i}, depth + 1, prettyPrint, emptyValueOption, arrayKeys);
     end
     str = formatArray(elements, depth, prettyPrint);
 end
@@ -255,4 +291,59 @@ function str = indentedEncode(data, depth, prettyPrint)
             str = [str, char(10), baseIndent, lines{i}];
         end
     end
+end
+
+function tf = shouldForceArray(key, value, arrayKeys)
+%SHOULDFORCEARRAY Determine if scalar value should be forced to array
+%   Returns true if:
+%     - key matches one of arrayKeys
+%     - value is not already a cell array
+%     - value is not already an array (numel > 1)
+%     - value is not empty (handled by EmptyValue option)
+%     - value is not missing (JSON null)
+
+    tf = false;
+
+    % No array keys specified
+    if isempty(arrayKeys)
+        return;
+    end
+
+    % Key doesn't match
+    if ~any(strcmp(key, arrayKeys))
+        return;
+    end
+
+    % Already a cell array (explicitly marked as array)
+    if iscell(value)
+        return;
+    end
+
+    % Already an array of ConfigurationData objects
+    if isa(value, 'matlab.io.config.ConfigurationData') && numel(value) > 1
+        return;
+    end
+
+    % Struct array
+    if isstruct(value) && numel(value) > 1
+        return;
+    end
+
+    % Numeric/string/logical array with multiple elements
+    if (isnumeric(value) || isstring(value) || islogical(value)) && numel(value) > 1
+        return;
+    end
+
+    % Empty values handled by EmptyValue option
+    if isempty(value)
+        return;
+    end
+
+    % Missing values (JSON null) should not be wrapped
+    if isa(value, 'missing')
+        return;
+    end
+
+    % All checks passed - this is a scalar that should be forced to array
+    tf = true;
 end
