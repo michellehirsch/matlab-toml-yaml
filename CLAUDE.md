@@ -35,6 +35,9 @@ mcp__matlab__check_matlab_code('toolbox/readyaml.m')
 ## Branching Strategy
 All work must be done on a branch, not on main. Create a new branch for new work, or switch to an appropriate existing branch for refinement. 
 
+## Code style
+- Don't use ambiguous abbreviations like Arr or Ann in variable names, especially ones that are UpperCase or camelCase. When in doubt, spell out the word.
+- 
 ## Architecture
 
 ### Class Hierarchy
@@ -137,3 +140,4 @@ Sample configuration files for testing are in `tests/SampleFiles/` (27+ real-wor
 ## Development Documentation
 
 The `Claude/` folder contains 14 detailed design documents explaining implementation decisions, known issues, and architecture rationale.
+
