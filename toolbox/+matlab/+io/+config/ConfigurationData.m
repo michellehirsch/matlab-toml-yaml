@@ -60,6 +60,16 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
         end
 
         function s = struct(obj)
+            % Handle non-scalar array: convert each element
+            if ~isscalar(obj)
+                structCell = cell(size(obj));
+                for i = 1:numel(obj)
+                    structCell{i} = struct(obj(i));
+                end
+                s = reshape([structCell{:}], size(obj));
+                return;
+            end
+
             s = struct;
             for i = 1:length(obj.xInternal__.OriginalKeys)
                 key = obj.xInternal__.OriginalKeys(i);
@@ -975,11 +985,30 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %   This method handles conversion from external data types.
             %   It preserves the class type for nested objects.
             %
+            %   For struct arrays, returns an array of ConfigurationData objects
+            %   with the same shape as the input struct array.
+            %
             %   Example:
             %       obj = tomldata();
             %       obj = importFrom(obj, myStruct);
+            %
+            %       % Struct array creates ConfigurationData array
+            %       s = struct(A={1 2 3});  % 1x3 struct array
+            %       arr = importFrom(jsondata(), s);  % 1x3 JSONData array
 
             if isstruct(inputData)
+                if ~isscalar(inputData)
+                    % Struct array -> array of ConfigurationData
+                    % Create array with same size as input
+                    arr(numel(inputData)) = feval(class(obj));
+                    for i = 1:numel(inputData)
+                        arr(i) = importFrom(feval(class(obj)), inputData(i));
+                    end
+                    obj = reshape(arr, size(inputData));
+                    return;
+                end
+
+                % Scalar struct handling
                 fields = fieldnames(inputData);
                 for i = 1:numel(fields)
                     key = fields{i};
