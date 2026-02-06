@@ -5,7 +5,8 @@
 %[text] If the STRUCT datatype just supported arbitrary field names, then STRUCT would satisfy the use-cases for the JSONData/YAMLData/TOMLData objects without needing to add a new object.
 %[text] Therefore I wonder if our internal efforts should focus on unblocking arbitrary fieldnames for STRUCT instead of adding custom objects for these configuration file formats.
 %%
-%[text] ## Array-of-objects behavior: TODO Try to Improve!
+%[text] ## Array-of-objects behavior: 
+%[text] **\[MICHELLE\] Addressed.** 
 %[text] I haven't tried the Nx1 JSONData array behavior yet, so I just wanted to try a few cases with that.
 S = readjson("twitter.json");
 % S.statuses.created_at  % Errors - can't access fields of an array; need S.statuses(1).created_at
@@ -20,6 +21,20 @@ S.statuses %[output:2a338c8c]
 %[text] This indicates that `JSONData` is more like a cell array than a homogeneous array, even though it uses parens intsead of brace to "dereference" elements in the cell. I'll explore this more in the next section.
 %%
 %[text] ## Ambiguity in JSONData array dereferencing vs. slicing
+%[text] **\[MICHELLE\] - Addressed.** 
+%[text] **The 1-liner jsonread example works as-is with readjson. Here's the new behavior:**
+%[text] - **Reference field of a JSONData array:**
+%[text]     - **If key does not exist in every element: Error**
+%[text]         - **iskey is vectorized. Use it to determine where it exists to index just into array elements with the key. Then see the following ...**
+%[text]     - **If key exists in every element**
+%[text]         - **If values are homogeneous type/sizez: Return an array of the homogeneous type**
+%[text]         - **If vaues are not homogeneous type/size: Error**
+%[text]             - **Alternative design: return cell array.**
+%[text]                 - **Rejected because very difficult to program against, since you'll be surprised when a string array suddenly becomes a cell array if you read a file with a bad element**
+%[text]                 - **Since it's property access, there's no way for a user to specify if they want cell or homogeneous**
+%[text]             - **If needed, we could add a method for indexing that can return cells**
+%[text]         - 
+%[text]     -  \
 %[text] I feel like the syntax of JSONData arrays is a little confusing since it doesn't use brace indexing like a cell array, but it also doesn't do CSL generation like a struct array:
 j = readjson("twitter.json");
 j.statuses.created_at % struct-like access %[output:22378302]
@@ -44,12 +59,13 @@ end
 %[text]     - Subset the array. This is what's currently in JSONTree. I find this behavior very surprising and not MATLAB-y -  expectation is that dot indexing into an array returns an array of the same size.
 %[text]     - Just return missing on subsref, allow subsasgn to add the keys
 %[text]     - Don't allow operating on keys that don't exist on an array element
-%[text]         - Vectorize iskey, so you can do: 
+%[text]         - Vectorize iskey, so you can do:
 %[text]             - keyfound = iskey(data.users,"name"); % Nx1 of 1s and 0s
 %[text]             - data.users(keyfound).name = ... \
 %[text] **\[MICHELLE\]** I agree that my approach will likely hit performance issues. Will look to see how bad it is.
 %%
 %[text] ## Round-trip issue with 1-element arrays in JSON
+%[text] **\[MICHELLE: Accepting workflow as designed at least for now. Details below. Added ArrayKeys option to writejson for more targeted workflow for writing arrays.\]**
 %[text] This is observable even in the small example provided with the `writejson` function:
 pkg = jsondata();
 pkg.name = "my-awesome-app";
@@ -78,7 +94,7 @@ type("my_package.json") %[output:1e6f659e]
 %[text] Also, I'm not convinced that there are a lot of users that ***NEED non-ASCII fieldname round-trip by default*** (and therefore need a custom datatype instead of `struct`) but ***DONT NEED array-of-1-element round-trip by default***. Array-of-objects are *very common, to the extent that it is already an issue in the very first real-world writejson example*. Why have we optimized this design to account for a rarer edge-case, but deprioritized handling a common case behind an off-by-default N-V pair?
 %[text] **\[MICHELLE\]:** 
 %[text] - Really good flag that the users who want name preservation also likely want array preservation - in both cases it's because they want to roundtrip. That said, I think we might be making nice enough behavior that users will prefer JSONData over struct even if they don't need roundtrip. The nice display and the (new) ability to dot index across an array. Name preservation is also extra appealing when you have names like "@name" so you don't get ugly x\_name.
-%[text] - Current approach: 
+%[text] - Current approach:
 %[text]     - Use SequenceRule = "cell" to force all arrays into cells when reading. More awkward to work with in MATLAB, but roundtrip nicely. I'm hesitant to make it the default
 %[text]     - I've also added an ArrayKeys option to writejson that lets a user specify any keys (by name) that they want to force to be arrays. This lets them work with natural MATLAB arrays, but then ensure that the right ones are written as arrays when output
 %[text]         - It's simple name matching without hierarchy - e.g. every key named foobar will be made array
@@ -86,6 +102,7 @@ type("my_package.json") %[output:1e6f659e]
 %[text] - I still think my solution is nicely targeted and not very onerous, but need to compare with JSONTree experience to get a better feel (especially if JSONTree switches to native MATLAB types for values where possible). \
 %%
 %[text] ## Performance with real-world JSON files.
+%[text] **MICHELLE: Yes, my approach will be slower. Some of it is from my implementation being unoptimized and wrapping around jsondecode - I already have to take 2 passes through a file. Some is likely inherent in the design because of large numbers of objects; will need assessment. But we should avoid having performance as primary driver for design unless performance is more important than usability.**
 %[text] Comparisons with readstruct and jsondecode:
 tic; S = readjson("twitter.json"); toc
 Elapsed time is 1.309058 seconds.
@@ -97,11 +114,10 @@ Elapsed time is 0.031396 seconds.
 %[text] While this benchmark doesn't demonstrate the inefficiency of large numbers of small MCOS objects, it is something to keep in mind for the future.
 %%
 %[text] ## Small bug in jsondata ctor
-j = jsondata(struct(A={1 2}))
+%[text] **Michelle: FIXED**
+j = jsondata(struct(A={1 2})) %[output:281bfda8]
 
-j = 
-
-  JSONData with keys:
+  JSONData with keys: %[output:67a438f7]
 
     A: 1
 %[text] This should probably be a JSONData array with 2 array elements.
@@ -419,4 +435,10 @@ j =
 %---
 %[output:1e6f659e]
 %   data: {"dataType":"text","outputData":{"text":"\n{\n  \"name\": \"my-awesome-app\",\n  \"version\": \"1.0.0\",\n  \"description\": \"An awesome application\",\n  \"main\": \"index.js\",\n  \"scripts\": {\n    \"test\": \"jest\",\n    \"build\": \"tsc\",\n    \"start\": \"node dist\/index.js\"\n  },\n  \"keywords\": \"awesome\",\n  \"author\": {\n    \"name\": \"Developer\",\n    \"email\": \"dev@example.com\"\n  },\n  \"license\": \"MIT\",\n  \"dependencies\": {\n    \"express\": \"^4.18.2\",\n    \"body-parser\": \"^1.20.0\"\n  },\n  \"devDependencies\": {\n    \"typescript\": \"^5.0.0\",\n    \"jest\": \"^29.0.0\",\n    \"@types\/node\": \"^20.0.0\"\n  },\n  \"repository\": {\n    \"type\": \"git\",\n    \"url\": \"https:\/\/github.com\/dev\/my-awesome-app.git\"\n  },\n  \"private\": false\n}\n","truncated":false}}
+%---
+%[output:281bfda8]
+%   data: {"dataType":"textualVariable","outputData":{"name":"j","value":"  1x2 <a href=\"matlab:helpPopup matlab.io.config.JSONData\">JSONData<\/a> array with keys:\n\n    A\n\n    <a href=\"matlab:show(j)\">Show all values<\/a>\n"}}
+%---
+%[output:67a438f7]
+%   data: {"dataType":"error","outputData":{"errorType":"runtime","text":"Unrecognized function or variable 'JSONData'."}}
 %---
