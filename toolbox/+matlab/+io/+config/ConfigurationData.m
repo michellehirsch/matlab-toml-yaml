@@ -402,6 +402,19 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         idx = indices{1};
                         % Pre-filter the array by any valid index (numeric, logical, range, etc.)
                         obj = obj(idx);
+                        % Preserve index shape: reshape result to match idx shape
+                        % For numeric idx, use idx shape; for logical, use sum(idx) with idx orientation
+                        if isnumeric(idx)
+                            obj = reshape(obj, size(idx));
+                        elseif islogical(idx)
+                            % Logical index: result count is sum(idx), preserve row/column orientation
+                            if isrow(idx)
+                                obj = reshape(obj, 1, []);
+                            elseif iscolumn(idx)
+                                obj = reshape(obj, [], 1);
+                            end
+                            % Otherwise keep whatever MATLAB gave us
+                        end
                         remainingIndexOp = indexOp(3:end);  % Skip the Paren we just consumed
                     end
                 end
@@ -827,6 +840,9 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %TRYCONCATENATE Attempt to concatenate cell array of values into typed array
             %   Returns typed array if all values have same type, otherwise errors.
             %   This implements the "strict homogeneous" policy: no surprise cells.
+            %
+            %   The shape of the result matches the shape of the values cell array.
+            %   If values is Nx1, result is Nx1. If values is 1xN, result is 1xN.
 
             if isempty(values)
                 % Return empty double array (MATLAB-idiomatic "nothing")
@@ -834,6 +850,9 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                 result = [];
                 return;
             end
+
+            % Remember input shape to preserve it
+            inputShape = size(values);
 
             % Get types of all values
             types = cellfun(@class, values, 'UniformOutput', false);
@@ -858,13 +877,13 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
 
             % Handle different types appropriately
             if strcmp(theType, 'char')
-                % char arrays -> convert to string array
-                result = string(values);
+                % char arrays -> convert to string array, preserve shape
+                result = reshape(string(values), inputShape);
             elseif contains(theType, 'ConfigurationData') || ...
                    startsWith(theType, 'matlab.io.config.')
                 % ConfigurationData objects -> concatenate into array
                 try
-                    result = [values{:}];
+                    result = reshape([values{:}], inputShape);
                 catch
                     % Different sizes or incompatible - error
                     error('ConfigurationData:ConcatenationFailed', ...
@@ -878,7 +897,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     % Check if all values are scalars
                     allScalars = all(cellfun(@isscalar, values));
                     if allScalars
-                        result = [values{:}];
+                        result = reshape([values{:}], inputShape);
                     else
                         % Non-scalar values - need to verify compatibility
                         % Check all have same size
@@ -905,7 +924,7 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             else
                 % Other types - try generic concatenation
                 try
-                    result = [values{:}];
+                    result = reshape([values{:}], inputShape);
                 catch
                     error('ConfigurationData:ConcatenationFailed', ...
                         ['Cannot concatenate values for key "%s" of type %s.\n' ...
