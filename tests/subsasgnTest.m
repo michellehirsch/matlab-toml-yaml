@@ -508,5 +508,28 @@ classdef subsasgnTest < matlab.unittest.TestCase
             testCase.verifyEqual(arr(2).status, "new");
             testCase.verifyEqual(arr(3).status, "new");
         end
+
+        function testArrayDotAssignChainedWithIndex(testCase)
+            % Test: arr.field(idx).subfield = value
+            % This was a bug - IndexingOperation concatenation error
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).nested = jsondata();
+            arr(1).nested.value = 10;
+            arr(2).nested = jsondata();
+            arr(2).nested.value = 20;
+            arr(3).nested = jsondata();
+            arr(3).nested.value = 30;
+
+            % Assign to subfield of indexed element
+            arr.nested(2).value = 999;
+            testCase.verifyEqual(arr(1).nested.value, 10);  % Unchanged
+            testCase.verifyEqual(arr(2).nested.value, 999); % Modified
+            testCase.verifyEqual(arr(3).nested.value, 30);  % Unchanged
+
+            % Assign deeper chain
+            arr.nested(1).deep = jsondata();
+            arr.nested(1).deep.x = 42;
+            testCase.verifyEqual(arr(1).nested.deep.x, 42);
+        end
     end
 end
