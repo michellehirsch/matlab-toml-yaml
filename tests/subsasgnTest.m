@@ -481,5 +481,32 @@ classdef subsasgnTest < matlab.unittest.TestCase
             testCase.verifyEqual(arr(2).active, false);  % Unchanged
             testCase.verifyEqual(arr(3).active, true);
         end
+
+        function testArrayDotAssignAllElements(testCase)
+            % Test: arr.field = arr.field (assign to ALL elements)
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+
+            % Read all values, modify, assign back
+            arr.value = arr.value + 100;
+            testCase.verifyEqual(arr(1).value, 110);
+            testCase.verifyEqual(arr(2).value, 120);
+            testCase.verifyEqual(arr(3).value, 130);
+        end
+
+        function testArrayDotAssignAllElementsBroadcast(testCase)
+            % Test: arr.field = scalar (broadcast to ALL elements)
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).status = "old";
+            arr(2).status = "old";
+            arr(3).status = "old";
+
+            arr.status = "new";  % Broadcast scalar to all
+            testCase.verifyEqual(arr(1).status, "new");
+            testCase.verifyEqual(arr(2).status, "new");
+            testCase.verifyEqual(arr(3).status, "new");
+        end
     end
 end
