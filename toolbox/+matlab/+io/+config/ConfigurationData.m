@@ -570,31 +570,43 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         end
                         numSelected = numel(selectedIndices);
 
+                        % Get field name for Case 2
+                        fieldName = indexOp(1).Name;
+                        hasMoreChain = numel(indexOp) > 2;
+                        remainingChain = indexOp(3:end);
+
                         % Determine if value should be broadcast or indexed
                         if isscalar(value) || (numel(value) == 1)
                             % Scalar value - broadcast to all filtered elements
                             for i = 1:numSelected
                                 objIdx = selectedIndices(i);
-                                if numel(indexOp) > 2
+                                elem = obj(objIdx);
+                                if hasMoreChain
                                     % More chaining: arr.field(idx).subfield = value
-                                    obj(objIdx) = dotAssign(obj(objIdx), ...
-                                        [indexOp(1), indexOp(3:end)], value);
+                                    % Get nested, apply chain, write back
+                                    nested = elem.getData(fieldName);
+                                    nested = dotAssign(nested, remainingChain, value);
+                                    elem = elem.setData(fieldName, nested);
                                 else
                                     % Direct: arr.field(idx) = value
-                                    obj(objIdx) = dotAssign(obj(objIdx), indexOp(1), value);
+                                    elem = elem.setData(fieldName, value);
                                 end
+                                obj(objIdx) = elem;
                             end
                         elseif numel(value) == numSelected
                             % Array value matching filtered size - assign element-wise
                             for i = 1:numSelected
                                 objIdx = selectedIndices(i);
+                                elem = obj(objIdx);
                                 elemValue = value(i);
-                                if numel(indexOp) > 2
-                                    obj(objIdx) = dotAssign(obj(objIdx), ...
-                                        [indexOp(1), indexOp(3:end)], elemValue);
+                                if hasMoreChain
+                                    nested = elem.getData(fieldName);
+                                    nested = dotAssign(nested, remainingChain, elemValue);
+                                    elem = elem.setData(fieldName, nested);
                                 else
-                                    obj(objIdx) = dotAssign(obj(objIdx), indexOp(1), elemValue);
+                                    elem = elem.setData(fieldName, elemValue);
                                 end
+                                obj(objIdx) = elem;
                             end
                         else
                             error('ConfigurationData:SizeMismatch', ...
