@@ -342,6 +342,43 @@ classdef subsasgnTest < matlab.unittest.TestCase
             testCase.verifyEqual(hasScore, [true, false, true]);
         end
 
+        function testArrayDotAssignWithLogicalFilterScalar(testCase)
+            % Test: arr.field(logicalMask) = scalarValue broadcasts
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).name = "Alice";
+            arr(1).active = true;
+            arr(2).name = "Bob";
+            % arr(2) has no active
+            arr(3).name = "Charlie";
+            arr(3).active = false;
+
+            hasActive = iskey(arr, "active");
+            arr.active(hasActive) = true;  % Broadcast scalar to filtered elements
+
+            testCase.verifyEqual(arr(1).active, true);
+            testCase.verifyEqual(arr(3).active, true);
+            % arr(2) still has no active key
+            testCase.verifyFalse(iskey(arr(2), "active"));
+        end
+
+        function testArrayDotAssignWithLogicalFilterArray(testCase)
+            % Test: arr.field(logicalMask) = arrayValue assigns element-wise
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).name = "Alice";
+            arr(1).score = 100;
+            arr(2).name = "Bob";
+            % arr(2) has no score
+            arr(3).name = "Charlie";
+            arr(3).score = 85;
+
+            hasScore = iskey(arr, "score");
+            arr.score(hasScore) = [200, 300];  % Assign element-wise
+
+            testCase.verifyEqual(arr(1).score, 200);
+            testCase.verifyEqual(arr(3).score, 300);
+            testCase.verifyFalse(iskey(arr(2), "score"));
+        end
+
         function testScalarBehaviorUnchanged(testCase)
             % Test: scalar access still works as before
             arr = [yamldata(), yamldata()];

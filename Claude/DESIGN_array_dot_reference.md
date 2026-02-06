@@ -92,15 +92,20 @@ This enables filtering patterns and is a breaking change from the previous behav
 
 ### D4: Logical Index Pre-Filtering
 
-When accessing `arr.field(logicalMask)` where `logicalMask` matches the size of `arr`, the array is pre-filtered before checking if all elements have the key. This enables the ergonomic pattern:
+When accessing or assigning `arr.field(logicalMask)` where `logicalMask` matches the size of `arr`, the array is pre-filtered before checking if all elements have the key. This enables ergonomic patterns:
 
 ```matlab
-% Direct shorthand - pre-filters before key check
+% Reading - pre-filters before key check
 scores = arr.score(iskey(arr, "score"))
 
-% Equivalent to the longer form:
+% Assigning - broadcasts scalar or assigns element-wise
+arr.active(iskey(arr, "active")) = true       % Broadcast scalar
+arr.score(iskey(arr, "score")) = [200, 300]   % Element-wise
+
+% Equivalent longer forms:
 hasScore = iskey(arr, "score");
 scores = arr(hasScore).score
+arr(hasScore).score = [200, 300]  % (requires loop)
 ```
 
 This is detected when:
