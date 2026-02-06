@@ -829,7 +829,9 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %   This implements the "strict homogeneous" policy: no surprise cells.
 
             if isempty(values)
-                result = {};
+                % Return empty double array (MATLAB-idiomatic "nothing")
+                % This occurs when pre-filtering selects no elements
+                result = [];
                 return;
             end
 
