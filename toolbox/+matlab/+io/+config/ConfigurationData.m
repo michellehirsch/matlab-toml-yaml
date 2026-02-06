@@ -393,18 +393,16 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                         'Key "xInternal__" is reserved for internal use.');
                 end
 
-                % Check if next operation is Paren with logical indices matching array size
-                % This enables pattern: arr.field(logicalMask) where logicalMask = iskey(arr, "field")
+                % Check if next operation is Paren - pre-filter array by any valid index
+                % This enables patterns: arr.field(1), arr.field(1:5), arr.field(logicalMask)
                 remainingIndexOp = indexOp(2:end);
                 if numel(indexOp) > 1 && indexOp(2).Type == matlab.indexing.IndexingOperationType.Paren
                     indices = indexOp(2).Indices;
                     if numel(indices) == 1
                         idx = indices{1};
-                        if islogical(idx) && isequal(size(idx), size(obj))
-                            % Pre-filter the array by logical indices
-                            obj = obj(idx);
-                            remainingIndexOp = indexOp(3:end);  % Skip the Paren we just consumed
-                        end
+                        % Pre-filter the array by any valid index (numeric, logical, range, etc.)
+                        obj = obj(idx);
+                        remainingIndexOp = indexOp(3:end);  % Skip the Paren we just consumed
                     end
                 end
 
@@ -529,52 +527,59 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                     'Key "xInternal__" is reserved for internal use.');
             end
 
-            % Handle non-scalar array assignment: arr.field(logicalMask) = value
-            % Pattern: arr.field(mask) = value where mask matches size(arr)
+            % Handle non-scalar array assignment: arr.field(idx) = value
+            % Pattern: arr.field(idx) = value for any valid index type
             if ~isscalar(obj) && numel(indexOp) > 1 && ...
                     indexOp(2).Type == matlab.indexing.IndexingOperationType.Paren
                 indices = indexOp(2).Indices;
                 if numel(indices) == 1
                     idx = indices{1};
-                    if islogical(idx) && isequal(size(idx), size(obj))
-                        % Pre-filter pattern: arr.field(logicalMask) = value
-                        value = varargin{end};
-                        trueIndices = find(idx);
-                        numTrue = numel(trueIndices);
+                    value = varargin{end};
 
-                        % Determine if value should be broadcast or indexed
-                        if isscalar(value) || (numel(value) == 1)
-                            % Scalar value - broadcast to all filtered elements
-                            for i = 1:numTrue
-                                objIdx = trueIndices(i);
-                                if numel(indexOp) > 2
-                                    % More chaining: arr.field(mask).subfield = value
-                                    obj(objIdx) = dotAssign(obj(objIdx), ...
-                                        [indexOp(1), indexOp(3:end)], value);
-                                else
-                                    % Direct: arr.field(mask) = value
-                                    obj(objIdx) = dotAssign(obj(objIdx), indexOp(1), value);
-                                end
-                            end
-                        elseif numel(value) == numTrue
-                            % Array value matching filtered size - assign element-wise
-                            for i = 1:numTrue
-                                objIdx = trueIndices(i);
-                                elemValue = value(i);
-                                if numel(indexOp) > 2
-                                    obj(objIdx) = dotAssign(obj(objIdx), ...
-                                        [indexOp(1), indexOp(3:end)], elemValue);
-                                else
-                                    obj(objIdx) = dotAssign(obj(objIdx), indexOp(1), elemValue);
-                                end
-                            end
-                        else
-                            error('ConfigurationData:SizeMismatch', ...
-                                ['Value size (%d) does not match number of ' ...
-                                 'selected elements (%d).'], numel(value), numTrue);
-                        end
-                        return;
+                    % Convert any index type to linear indices
+                    if islogical(idx)
+                        selectedIndices = find(idx);
+                    elseif isnumeric(idx)
+                        selectedIndices = idx(:)';  % Ensure row vector
+                    elseif ischar(idx) && idx == ':'
+                        selectedIndices = 1:numel(obj);
+                    else
+                        selectedIndices = idx;  % Let MATLAB handle other types
                     end
+                    numSelected = numel(selectedIndices);
+
+                    % Determine if value should be broadcast or indexed
+                    if isscalar(value) || (numel(value) == 1)
+                        % Scalar value - broadcast to all filtered elements
+                        for i = 1:numSelected
+                            objIdx = selectedIndices(i);
+                            if numel(indexOp) > 2
+                                % More chaining: arr.field(idx).subfield = value
+                                obj(objIdx) = dotAssign(obj(objIdx), ...
+                                    [indexOp(1), indexOp(3:end)], value);
+                            else
+                                % Direct: arr.field(idx) = value
+                                obj(objIdx) = dotAssign(obj(objIdx), indexOp(1), value);
+                            end
+                        end
+                    elseif numel(value) == numSelected
+                        % Array value matching filtered size - assign element-wise
+                        for i = 1:numSelected
+                            objIdx = selectedIndices(i);
+                            elemValue = value(i);
+                            if numel(indexOp) > 2
+                                obj(objIdx) = dotAssign(obj(objIdx), ...
+                                    [indexOp(1), indexOp(3:end)], elemValue);
+                            else
+                                obj(objIdx) = dotAssign(obj(objIdx), indexOp(1), elemValue);
+                            end
+                        end
+                    else
+                        error('ConfigurationData:SizeMismatch', ...
+                            ['Value size (%d) does not match number of ' ...
+                             'selected elements (%d).'], numel(value), numSelected);
+                    end
+                    return;
                 end
             end
 

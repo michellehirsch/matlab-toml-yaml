@@ -393,5 +393,93 @@ classdef subsasgnTest < matlab.unittest.TestCase
             testCase.verifyEqual(iskey(arr(1), "name"), true);
             testCase.verifySize(iskey(arr(1), "name"), [1, 1]);
         end
+
+        %% Numeric and partial index tests
+        function testArrayDotReferenceNumericSingle(testCase)
+            % Test: arr.field(1) - single numeric index
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+
+            result = arr.value(1);
+            testCase.verifyEqual(result, 10);
+        end
+
+        function testArrayDotReferenceNumericRange(testCase)
+            % Test: arr.field(1:2) - numeric range
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+
+            result = arr.value(1:2);
+            testCase.verifyEqual(result, [10, 20]);
+        end
+
+        function testArrayDotReferenceNumericArray(testCase)
+            % Test: arr.field([1 3]) - numeric array index
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).name = "Alice";
+            arr(2).name = "Bob";
+            arr(3).name = "Charlie";
+
+            result = arr.name([1 3]);
+            testCase.verifyEqual(result, ["Alice", "Charlie"]);
+        end
+
+        function testArrayDotReferencePartialLogical(testCase)
+            % Test: arr.field(partialMask) - logical mask of different size
+            arr = [jsondata(), jsondata(), jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+            arr(4).value = 40;
+            arr(5).value = 50;
+
+            % Get first 3 elements using partial logical mask
+            mask = [true, false, true];  % Different size than array
+            result = arr.value(mask);
+            testCase.verifyEqual(result, [10, 30]);
+        end
+
+        function testArrayDotAssignNumericSingle(testCase)
+            % Test: arr.field(1) = value - single numeric index assignment
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+
+            arr.value(2) = 99;
+            testCase.verifyEqual(arr(2).value, 99);
+            testCase.verifyEqual(arr(1).value, 10);  % Unchanged
+            testCase.verifyEqual(arr(3).value, 30);  % Unchanged
+        end
+
+        function testArrayDotAssignNumericRange(testCase)
+            % Test: arr.field(1:2) = [values] - range assignment
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).value = 10;
+            arr(2).value = 20;
+            arr(3).value = 30;
+
+            arr.value(1:2) = [100, 200];
+            testCase.verifyEqual(arr(1).value, 100);
+            testCase.verifyEqual(arr(2).value, 200);
+            testCase.verifyEqual(arr(3).value, 30);  % Unchanged
+        end
+
+        function testArrayDotAssignNumericBroadcast(testCase)
+            % Test: arr.field([1 3]) = scalar - broadcast scalar
+            arr = [jsondata(), jsondata(), jsondata()];
+            arr(1).active = false;
+            arr(2).active = false;
+            arr(3).active = false;
+
+            arr.active([1 3]) = true;  % Broadcast to indices 1 and 3
+            testCase.verifyEqual(arr(1).active, true);
+            testCase.verifyEqual(arr(2).active, false);  % Unchanged
+            testCase.verifyEqual(arr(3).active, true);
+        end
     end
 end

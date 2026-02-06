@@ -90,28 +90,29 @@ all(iskey(data.users, "name"))  % Check if ALL have key
 
 This enables filtering patterns and is a breaking change from the previous behavior (which only checked the first element).
 
-### D4: Logical Index Pre-Filtering
+### D4: Index Pre-Filtering
 
-When accessing or assigning `arr.field(logicalMask)` where `logicalMask` matches the size of `arr`, the array is pre-filtered before checking if all elements have the key. This enables ergonomic patterns:
+When accessing or assigning `arr.field(idx)`, the array is pre-filtered by `idx` before checking if all elements have the key. This supports **any valid MATLAB index type**:
 
 ```matlab
-% Reading - pre-filters before key check
-scores = arr.score(iskey(arr, "score"))
+% Numeric indexing
+arr.value(1)              % Single element
+arr.value(1:5)            % Range
+arr.value([1 3 5])        % Array of indices
 
-% Assigning - broadcasts scalar or assigns element-wise
-arr.active(iskey(arr, "active")) = true       % Broadcast scalar
-arr.score(iskey(arr, "score")) = [200, 300]   % Element-wise
+% Logical indexing (any size)
+arr.score(iskey(arr, "score"))     % Full mask
+arr.score(mask(1:10))              % Partial mask
 
-% Equivalent longer forms:
-hasScore = iskey(arr, "score");
-scores = arr(hasScore).score
-arr(hasScore).score = [200, 300]  % (requires loop)
+% Assignment with any index type
+arr.active([1 3]) = true           % Broadcast scalar
+arr.value(1:3) = [100, 200, 300]   % Element-wise
 ```
 
-This is detected when:
-1. `indexOp(2)` is a Paren operation
-2. It contains a single logical index
-3. The logical index has the same size as `obj`
+The pattern `arr.field(idx)` is interpreted as:
+1. Pre-filter array: `filteredArr = arr(idx)`
+2. Access field on filtered array: `filteredArr.field`
+3. Return/assign concatenated values
 
 ---
 
