@@ -119,6 +119,28 @@ classdef describeTest < matlab.unittest.TestCase
             testCase.verifySubstring(output, '2x1 array (2 keys each)');
         end
 
+        function testArrayChildWithNestedObject(testCase)
+            % Array elements containing nested ConfigurationData
+            % should show key count, not raw class name
+            elem1 = jsondata();
+            elem1.name = "ext1";
+            elem1.config.host = "localhost";
+            elem1.config.port = 8080;
+            elem2 = jsondata();
+            elem2.name = "ext2";
+            elem2.config.host = "remote";
+            elem2.config.port = 9090;
+            data = jsondata();
+            data.items = [elem1; elem2];
+
+            output = evalc('describe(data)');
+
+            testCase.verifySubstring(output, '(2 keys)');
+            % Should NOT show the full class name
+            testCase.verifyTrue(~contains(output, 'matlab.io.config'), ...
+                'Array children with nested objects should show key count, not class name');
+        end
+
         function testEmptyObject(testCase)
             data = jsondata();
 
