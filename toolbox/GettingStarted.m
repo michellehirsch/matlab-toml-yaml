@@ -43,6 +43,8 @@ server.database.credentials %[output:0880e28f]
 %[text] ### Formatted display
 %[text] Especially for deeply nested data, it can be convenient to see the all of the data at once. Either click on the "Show all values" hyperlink, or call `show`.
 show(server) %[output:6194d526]
+%[text] When data gets large, it can be convenient to get an overall description of the data instead of seeing everything. This is particularly helpful when you have large arrays. Use `describe` for this: (TODO ARRAY EXAMPLE FOR DESCRIBE)
+describe(server) %[output:69cc0ce1]
 %%
 %[text] ### Introspection
 %[text] Get all top-level keys:
@@ -59,7 +61,7 @@ server = remove(server, "logging");
 keys(server) %[output:5c17a1d0]
 %%
 %[text] ### Using familiar MATLAB struct functions
-%[text] Familiar MATLAB struct functions `fieldnames` and `isfield` are also supported. These functions behave identically to `keys` and `iskey`.
+%[text] Familiar MATLAB struct functions `fieldnames`, `rmfield` and `isfield` are also supported. These functions behave identically to `keys` and `iskey`.
 fieldnames(server) %[output:9e5b4327]
 %%
 %[text] ### Data Type Conversion
@@ -185,13 +187,13 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"layout":"inline"}
 %---
 %[output:43646e19]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  YAMLData with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 8080\n    debug: true\n    author: \"Jane Doe\"\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 8080\n    debug: true\n    author: \"Jane Doe\"\n"}}
 %---
 %[output:2e9a802b]
 %   data: {"dataType":"textualVariable","outputData":{"name":"port","value":"8080"}}
 %---
 %[output:03a217ec]
-%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 9000\n    debug: false\n    author: \"Jane Doe\"\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"config","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    app-name: \"MyApplication\"\n    version: \"1.2.0\"\n    port: 9000\n    debug: false\n    author: \"Jane Doe\"\n"}}
 %---
 %[output:05d2e5a9]
 %   data: {"dataType":"textualVariable","outputData":{"name":"currentVersion","value":"\"1.2.0\""}}
@@ -203,16 +205,19 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"textualVariable","outputData":{"name":"appName","value":"\"MyApplication\""}}
 %---
 %[output:0ac3e6f6]
-%   data: {"dataType":"textualVariable","outputData":{"name":"server","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    application: [1×1 YAMLData with 3 keys]\n    database: [1×1 YAMLData with 4 keys]\n    logging: [1×1 YAMLData with 2 keys]\n\n    <a href=\"matlab:show(server)\">Show all values<\/a>\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"server","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    application: [1x1 YAMLData with 3 keys]\n    database: [1x1 YAMLData with 4 keys]\n    logging: [1x1 YAMLData with 2 keys]\n\n    <a href=\"matlab:show(server)\">Show all values<\/a>\n"}}
 %---
 %[output:4fdcf276]
-%   data: {"dataType":"textualVariable","outputData":{"name":"creds","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    username: \"admin\"\n    password: \"secret123\"\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"creds","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    username: \"admin\"\n    password: \"secret123\"\n"}}
 %---
 %[output:0880e28f]
-%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    username: \"Michelle\"\n    password: \"secret123\"\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"ans","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    username: \"Michelle\"\n    password: \"secret123\"\n"}}
 %---
 %[output:6194d526]
-%   data: {"dataType":"text","outputData":{"text":"application:\n  name: WebServer\n  version: 2.0.0\n  environment: production\n\ndatabase:\n  host: localhost\n  port: 5432\n  name: mydb\n  credentials:\n    username: Michelle\n    password: secret123\n\nlogging:\n  level: info\n  file: \/var\/log\/app.log\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"application:\n  name: WebServer\n  version: 2.0.0\n  environment: production\ndatabase:\n  host: localhost\n  port: 5432\n  name: mydb\n  credentials:\n    username: Michelle\n    password: secret123\nlogging:\n  level: info\n  file: \/var\/log\/app.log\n\n","truncated":false}}
+%---
+%[output:69cc0ce1]
+%   data: {"dataType":"text","outputData":{"text":"\n  YAMLData with 3 keys\n\n    application:\n        name:               \"WebServer\" (string)\n        version:            \"2.0.0\" (string)\n        environment:        \"production\" (string)\n    database:\n        host:               \"localhost\" (string)\n        port:               5432 (double)\n        name:               \"mydb\" (string)\n        credentials:\n            username:           \"Michelle\" (string)\n            password:           \"secret123\" (string)\n    logging:\n        level:              \"info\" (string)\n        file:               \"\/var\/log\/app.log\" (string)\n\n","truncated":false}}
 %---
 %[output:061450cc]
 %   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"topKeys","rows":1,"type":"string","value":[["application","database","logging"]]}}
@@ -227,7 +232,7 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"matrix","outputData":{"columns":3,"header":"1×3 string array","name":"ans","rows":1,"type":"string","value":[["application","database","cache"]]}}
 %---
 %[output:3ea25a44]
-%   data: {"dataType":"textualVariable","outputData":{"name":"arrays","value":"  <a href=\"matlab:helpPopup('YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    web: [1×1 YAMLData with 3 keys]\n    services: [3x1 string]\n    mixed: [1x2 YAMLData]\n\n    <a href=\"matlab:show(arrays)\">Show all values<\/a>\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"arrays","value":"  <a href=\"matlab:helpPopup('matlab.io.config.YAMLData')\" style=\"font-weight:bold\">YAMLData<\/a> with keys:\n\n    web: [1x1 YAMLData with 3 keys]\n    services: [3x1 string]\n    mixed: [1x2 YAMLData]\n\n    <a href=\"matlab:show(arrays)\">Show all values<\/a>\n"}}
 %---
 %[output:84bf9bab]
 %   data: {"dataType":"matrix","outputData":{"columns":1,"name":"ports","rows":3,"type":"double","value":[["8080"],["8443"],["9000"]]}}
@@ -257,7 +262,7 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"text","outputData":{"text":"Configuration saved!\n","truncated":false}}
 %---
 %[output:6d15ce2b]
-%   data: {"dataType":"text","outputData":{"text":"\napp-name: MyApplication\n\nversion: 1.2.0\n\nport: 9000\n\ndebug: true\n\nauthor: Jane Doe\n\nmax-connections: 100\n","truncated":false}}
+%   data: {"dataType":"text","outputData":{"text":"\napp-name: MyApplication\nversion: 1.2.0\nport: 9000\ndebug: true\nauthor: Jane Doe\nmax-connections: 100\n","truncated":false}}
 %---
 %[output:45af47d4]
 %   data: {"dataType":"text","outputData":{"text":"\nports: [8080, 8443, 9000]\n","truncated":false}}
@@ -269,13 +274,13 @@ delete("examples/modified_config.yaml", "examples/flow_style.yaml", ...
 %   data: {"dataType":"text","outputData":{"text":"\napp-name: MyApplication\nversion: 1.2.0\nport: 9000\ndebug: true\nauthor: Jane Doe\nmax-connections: 100\n","truncated":false}}
 %---
 %[output:48320ebd]
-%   data: {"dataType":"textualVariable","outputData":{"name":"project","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    project: [1×1 TOMLData with 4 keys]\n    build-system: [1×1 TOMLData with 2 keys]\n\n    <a href=\"matlab:show(project)\">Show all values<\/a>\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"project","value":"  <a href=\"matlab:helpPopup('matlab.io.config.TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    project: [1x1 TOMLData with 4 keys]\n    build-system: [1x1 TOMLData with 2 keys]\n\n    <a href=\"matlab:show(project)\">Show all values<\/a>\n"}}
 %---
 %[output:98afe2dd]
 %   data: {"dataType":"textualVariable","outputData":{"name":"projectName","value":"\"example-package\""}}
 %---
 %[output:1e600743]
-%   data: {"dataType":"textualVariable","outputData":{"name":"buildSystem","value":"  <a href=\"matlab:helpPopup('TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    requires: [1x2 string]\n    build-backend: \"setuptools.build_meta\"\n"}}
+%   data: {"dataType":"textualVariable","outputData":{"name":"buildSystem","value":"  <a href=\"matlab:helpPopup('matlab.io.config.TOMLData')\" style=\"font-weight:bold\">TOMLData<\/a> with keys:\n\n    requires: [1x2 string]\n    build-backend: \"setuptools.build_meta\"\n"}}
 %---
 %[output:6d96ee23]
 %   data: {"dataType":"matrix","outputData":{"columns":2,"header":"1×2 string array","name":"requires","rows":1,"type":"string","value":[["setuptools>=61.0","wheel"]]}}
