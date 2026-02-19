@@ -1,6 +1,6 @@
-# RFA Spec: Configuration File I/O Toolbox
+# RFA Spec: Adding TOML and YAML support to MATLAB
 
-**Project:** Configuration File I/O Toolbox
+**Project:** Adding TOML and YAML support to MATLAB
 **Author:** Michelle Hirsch
 **Date:** January 15, 2026
 **Revised:** February 2026
@@ -10,7 +10,7 @@
 
 ## Overview
 
-This RFA describes a MATLAB toolbox for reading and writing YAML, TOML, JSON, and INI configuration files using dot notation access. The toolbox targets MATLAB R2022b+ and requires no external dependencies.
+This RFA describes MATLAB functions and classes for reading and writing YAML and TOML.
 
 **Core design choices:**
 - Returns `YAMLData` / `TOMLData` value class objects — not plain structs — to support keys with hyphens and other special characters ubiquitous in real config files
