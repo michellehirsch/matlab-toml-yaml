@@ -67,6 +67,7 @@ data = readyaml(filename, SequenceRule=rule)
 | Name | Type | Values | Default | Description |
 |------|------|--------|---------|-------------|
 | `SequenceRule` | `string` | `"auto"` \| `"cell"` | `"auto"` | Controls how YAML sequences are converted to MATLAB values |
+| `DatetimeType` | `string` | `"datetime"` \| `"string"` | `"string"` | Controls how date-like string values are returned in MATLAB |
 
 **`SequenceRule` conversion behavior:**
 
@@ -88,6 +89,17 @@ data = readyaml(filename, SequenceRule=rule)
 
 TOML is less affected by this ambiguity. TOML's type system distinguishes arrays from scalars at the syntax level; `SequenceRule` is primarily a YAML concern.
 
+**`DatetimeType` behavior:**
+
+| | `"string"` (default) | `"datetime"` |
+|---|---|---|
+| Return type | `string` | MATLAB `datetime` |
+| Date arithmetic | Not available | Available |
+| Round-trip fidelity | Exact text preserved | May reformat |
+| Recommended when | Preserving exact file representation | Processing or comparing dates |
+
+Note: YAML has no native datetime type — date values in YAML are plain strings. When `DatetimeType="datetime"`, detection is heuristic: any value matching the ISO 8601 date pattern (`yyyy-MM-dd`, with optional time component) is parsed as a `datetime`. Values that do not match are returned as strings regardless of this setting. TOML datetime detection is unambiguous because TOML's type system marks datetimes explicitly.
+
 #### Output Arguments
 
 | Argument | Type | Description |
@@ -105,6 +117,10 @@ config.ports              % [8080, 8443] — double array
 config = readyaml("config.yaml", SequenceRule="cell");
 config.server.allowed_hosts{end+1} = "staging.example.com";
 writeyaml(config, "config.yaml");
+
+% Parse ISO 8601 date strings as MATLAB datetime objects
+config = readyaml("config.yaml", DatetimeType="datetime");
+config.created_at         % datetime scalar (e.g., 2024-01-15)
 ```
 
 ---
@@ -694,7 +710,7 @@ data = readtoml(filename, DatetimeType=type)
 | Round-trip fidelity | May reformat (timezone normalization, precision) | Exact text preserved |
 | Recommended when | Processing or comparing dates | Preserving exact file representation |
 
-TOML has four native datetime subtypes: offset datetime (e.g. `2024-01-15T12:00:00Z`), local datetime (`2024-01-15T12:00:00`), local date (`2024-01-15`), and local time (`12:00:00`). YAML has no native datetime type — dates in YAML are plain strings — so `DatetimeType` applies only to `readtoml`.
+TOML has four native datetime subtypes: offset datetime (e.g. `2024-01-15T12:00:00Z`), local datetime (`2024-01-15T12:00:00`), local date (`2024-01-15`), and local time (`12:00:00`). Because TOML's type system marks datetimes explicitly, detection is unambiguous. YAML has no native datetime type — detection in `readyaml` is heuristic (ISO 8601 pattern matching) and defaults to `"string"` to avoid unexpected type coercion.
 
 #### Output Arguments
 
@@ -923,6 +939,47 @@ All methods must be called using **function syntax** — dot notation routes to 
 | `struct` | Convert to MATLAB struct |
 | `dictionary` | Convert to MATLAB `dictionary` |
 | `map` | Convert to `containers.Map` |
+
+---
+
+### YAML vs. TOML API Differences
+
+`YAMLData` and `TOMLData` share identical class APIs. The reader and writer functions are intentionally parallel, but a few options differ between formats to reflect genuine differences in the YAML and TOML specifications. This section collects those divergences in one place.
+
+#### `SequenceRule` — reader option, YAML only
+
+| | `readyaml` | `readtoml` |
+|---|---|---|
+| `SequenceRule` option | Yes — `"auto"` (default) or `"cell"` | Not present |
+
+YAML has no syntactic distinction between a scalar and a single-element sequence — both are just a value. `SequenceRule="cell"` lets users preserve that structural distinction at the cost of less ergonomic access. TOML's type system marks arrays explicitly at the syntax level, so the ambiguity does not arise.
+
+#### `DatetimeType` — reader option, different defaults
+
+| | `readyaml` | `readtoml` |
+|---|---|---|
+| `DatetimeType` default | `"string"` | `"datetime"` |
+
+TOML has four native datetime subtypes. The type is declared unambiguously in the file, so returning a MATLAB `datetime` by default is safe and expected. YAML has no native datetime type — detection must be heuristic (ISO 8601 pattern matching). Defaulting to `"string"` avoids silently coercing strings that happen to look like dates; users opt in with `DatetimeType="datetime"` when they know their file contains dates.
+
+#### `ArrayStyle` — writer option, different defaults and value sets
+
+| | `writeyaml` | `writetoml` |
+|---|---|---|
+| `ArrayStyle` values | `"block"` (default) \| `"flow"` | `"auto"` (default) \| `"flow"` \| `"block"` |
+
+Block style (`- item` per line) is the dominant YAML convention for configuration files. `writeyaml` defaults to it and does not offer `"auto"` — there is no ambiguity to resolve. In TOML, short arrays appear inline in nearly all real files, so `writetoml` defaults to `"auto"` and uses heuristics to choose between inline and multiline.
+
+#### Additional writer options — TOML only
+
+| Option | Present in `writeyaml` | Present in `writetoml` |
+|--------|------------------------|------------------------|
+| `TableStyle` | No | Yes |
+| `TableArrayStyle` | No | Yes |
+| `StringEscapeStyle` | No | Yes |
+| `StringLayout` | No | Yes |
+
+TOML has a richer syntax with multiple representations for the same data: tables can be `[section]` headers or `{inline = "tables"}`; strings can be basic (`"..."`), literal (`'...'`), or multiline (`"""..."""`). These options expose that expressiveness. YAML's writer model is simpler — indentation-based block structure has no equivalent multiplicity of representation — so these options have no YAML analogue.
 
 ---
 
