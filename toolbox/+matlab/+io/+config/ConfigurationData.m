@@ -206,6 +206,36 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             obj = obj.rmfield(key);
         end
 
+        function result = describe(obj, options)
+            %DESCRIBE Show structural overview of ConfigurationData
+            %   describe(obj) prints a recursive tree showing all keys, their
+            %   types, and values for scalar leaves.
+            %
+            %   describe(obj, Depth=N) limits recursion to N levels.
+            %
+            %   info = describe(obj) returns a table with Path, Type, and Size
+            %   columns for programmatic querying.
+            %
+            %   Examples:
+            %       describe(config)
+            %       describe(config, Depth=2)
+            %       info = describe(config);
+            %       info(info.Type == "string", :)
+            %
+            %   See also keys, show
+
+            arguments
+                obj
+                options.Depth (1,1) double {mustBePositive} = Inf
+            end
+            if nargout == 0
+                text = buildDescriptionText(obj, options.Depth);
+                fprintf('%s', text);
+            else
+                result = buildDescriptionTable(obj, options.Depth);
+            end
+        end
+
     end
 
     methods (Access = protected)
@@ -1133,6 +1163,256 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             internal.SourceFormat = obj.xInternal__.SourceFormat;
             target = builtin('subsasgn', target, s, internal);
         end
+
+        function text = buildDescriptionText(obj, maxDepth)
+            %BUILDDESCRIPTIONTEXT Build visual tree string for describe()
+            lines = {};
+
+            if ~isscalar(obj)
+                % Non-scalar array header
+                dims = size(obj);
+                dimStr = join(string(dims), "x");
+                lines{end+1} = sprintf('\n  %s array\n\n', dimStr);
+                lines = [lines, buildArrayKeysText(obj, "    ")];
+                lines{end+1} = newline;
+            else
+                % Scalar object header
+                className = matlab.io.config.ConfigurationData.shortClassName(class(obj));
+                nKeys = length(obj.xInternal__.OriginalKeys);
+                if nKeys == 0
+                    lines{end+1} = sprintf('\n  %s with no keys\n\n', className);
+                else
+                    lines{end+1} = sprintf('\n  %s with %d %s\n\n', className, nKeys, ...
+                        matlab.io.config.ConfigurationData.pluralize("key", nKeys));
+                    lines = [lines, buildKeysText(obj, "    ", 1, maxDepth)];
+                    lines{end+1} = newline;
+                end
+            end
+
+            text = strjoin(lines, '');
+        end
+
+        function text = buildDescriptionTable(obj, maxDepth)
+            %BUILDDESCRIPTIONTABLE Build flat table for programmatic use
+            paths = string.empty(0,1);
+            types = string.empty(0,1);
+            sizes = string.empty(0,1);
+
+            if ~isscalar(obj)
+                % Non-scalar array at root
+                [paths, types, sizes] = collectArrayRows(obj, "", paths, types, sizes, 1, maxDepth);
+            else
+                [paths, types, sizes] = collectRows(obj, "", paths, types, sizes, 1, maxDepth);
+            end
+
+            text = table(paths, types, sizes, 'VariableNames', ["Path", "Type", "Size"]);
+        end
+
+        function lines = buildKeysText(obj, indent, currentDepth, maxDepth)
+            %BUILDKEYSTEXT Build visual tree lines for a scalar object's keys
+            lines = {};
+            originalKeys = obj.xInternal__.OriginalKeys;
+
+            if isempty(originalKeys)
+                return;
+            end
+
+            % Calculate key column width for alignment
+            maxKeyLen = max(strlength(originalKeys));
+            keyColumnWidth = max(maxKeyLen + 2, 20);
+
+            for i = 1:length(originalKeys)
+                key = originalKeys(i);
+                value = getData(obj, key);
+
+                if isa(value, 'matlab.io.config.ConfigurationData')
+                    if isscalar(value)
+                        if currentDepth >= maxDepth
+                            % Depth-limited: show key count
+                            nKeys = length(keys(value));
+                            paddedKey = pad(key + ":", keyColumnWidth);
+                            lines{end+1} = sprintf('%s%s(%d %s)\n', indent, paddedKey, ...
+                                nKeys, matlab.io.config.ConfigurationData.pluralize("key", nKeys)); %#ok<AGROW>
+                        else
+                            % Expanded: show key as header, recurse
+                            lines{end+1} = sprintf('%s%s:\n', indent, key); %#ok<AGROW>
+                            childLines = buildKeysText(value, indent + "    ", currentDepth + 1, maxDepth);
+                            lines = [lines, childLines]; %#ok<AGROW>
+                        end
+                    else
+                        % ConfigurationData array
+                        dims = size(value);
+                        dimStr = join(string(dims), "x");
+                        if currentDepth >= maxDepth
+                            % Depth-limited: show array dims and key count
+                            allKeys = collectUnionOfKeys(value);
+                            nUniqueKeys = length(allKeys);
+                            paddedKey = pad(key + ":", keyColumnWidth);
+                            lines{end+1} = sprintf('%s%s%s array (%d %s each)\n', indent, paddedKey, ...
+                                dimStr, nUniqueKeys, matlab.io.config.ConfigurationData.pluralize("key", nUniqueKeys)); %#ok<AGROW>
+                        else
+                            % Expanded: show array header then union of keys with types
+                            paddedKey = pad(key + ":", keyColumnWidth);
+                            lines{end+1} = sprintf('%s%s%s array\n', indent, paddedKey, dimStr); %#ok<AGROW>
+                            childLines = buildArrayKeysText(value, indent + "    ");
+                            lines = [lines, childLines]; %#ok<AGROW>
+                        end
+                    end
+                elseif isa(value, 'missing')
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    lines{end+1} = sprintf('%s%smissing\n', indent, paddedKey); %#ok<AGROW>
+                elseif ischar(value)
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    lines{end+1} = sprintf('%s%s%s\n', indent, paddedKey, ...
+                        matlab.io.config.ConfigurationData.formatLeafValue(value)); %#ok<AGROW>
+                elseif isempty(value)
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    sizeStr = join(string(size(value)), "x");
+                    lines{end+1} = sprintf('%s%s%s %s\n', indent, paddedKey, sizeStr, class(value)); %#ok<AGROW>
+                elseif isscalar(value) && (isstring(value) || isnumeric(value) || islogical(value))
+                    % Scalar leaf - show value with type annotation
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    lines{end+1} = sprintf('%s%s%s\n', indent, paddedKey, ...
+                        matlab.io.config.ConfigurationData.formatLeafValue(value)); %#ok<AGROW>
+                else
+                    % Non-scalar leaf - show size and type
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    sizeStr = join(string(size(value)), "x");
+                    lines{end+1} = sprintf('%s%s%s %s\n', indent, paddedKey, sizeStr, class(value)); %#ok<AGROW>
+                end
+            end
+        end
+
+        function lines = buildArrayKeysText(obj, indent)
+            %BUILDARRAYKEYSTEXT Build type-only display for ConfigurationData array keys
+            lines = {};
+
+            uniqueKeys = collectUnionOfKeys(obj);
+
+            if isempty(uniqueKeys)
+                return;
+            end
+
+            maxKeyLen = max(strlength(uniqueKeys));
+            keyColumnWidth = max(maxKeyLen + 2, 20);
+
+            for i = 1:length(uniqueKeys)
+                key = uniqueKeys(i);
+
+                % Find type from first element that has this key
+                typeDisplay = "";
+                for j = 1:numel(obj)
+                    if iskey(obj(j), key)
+                        value = getData(obj(j), key);
+                        if isa(value, 'matlab.io.config.ConfigurationData')
+                            if isscalar(value)
+                                nKeys = length(keys(value));
+                                typeDisplay = sprintf("(%d %s)", nKeys, ...
+                                    matlab.io.config.ConfigurationData.pluralize("key", nKeys));
+                            else
+                                dims = size(value);
+                                dimStr = join(string(dims), "x");
+                                childKeys = collectUnionOfKeys(value);
+                                nKeys = length(childKeys);
+                                typeDisplay = sprintf("%s array (%d %s each)", dimStr, nKeys, ...
+                                    matlab.io.config.ConfigurationData.pluralize("key", nKeys));
+                            end
+                        else
+                            typeDisplay = string(class(value));
+                        end
+                        break;
+                    end
+                end
+
+                paddedKey = pad(key + ":", keyColumnWidth);
+                lines{end+1} = sprintf('%s%s%s\n', indent, paddedKey, typeDisplay); %#ok<AGROW>
+            end
+        end
+
+        function uniqueKeys = collectUnionOfKeys(obj)
+            %COLLECTUNIONOFKEYS Get union of keys across array elements (preserving order)
+            allKeys = string.empty(0,1);
+            for i = 1:numel(obj)
+                elementKeys = keys(obj(i));
+                allKeys = [allKeys; reshape(elementKeys, [], 1)]; %#ok<AGROW>
+            end
+            uniqueKeys = unique(allKeys, 'stable');
+        end
+
+        function [paths, types, sizes] = collectRows(obj, prefix, paths, types, sizes, currentDepth, maxDepth)
+            %COLLECTROWS Collect table rows for a scalar ConfigurationData
+            originalKeys = obj.xInternal__.OriginalKeys;
+
+            for i = 1:length(originalKeys)
+                key = originalKeys(i);
+                value = getData(obj, key);
+
+                if prefix == ""
+                    fullPath = key;
+                else
+                    fullPath = prefix + "." + key;
+                end
+
+                % Get size and type strings
+                sizeStr = join(string(size(value)), "x");
+                typeName = string(matlab.io.config.ConfigurationData.shortClassName(class(value)));
+
+                % Add row for this key
+                paths(end+1,1) = fullPath; %#ok<AGROW>
+                types(end+1,1) = typeName; %#ok<AGROW>
+                sizes(end+1,1) = sizeStr; %#ok<AGROW>
+
+                % Recurse into nested ConfigurationData
+                if isa(value, 'matlab.io.config.ConfigurationData') && currentDepth < maxDepth
+                    if isscalar(value)
+                        [paths, types, sizes] = collectRows(value, fullPath, paths, types, sizes, currentDepth + 1, maxDepth);
+                    else
+                        [paths, types, sizes] = collectArrayRows(value, fullPath, paths, types, sizes, currentDepth + 1, maxDepth);
+                    end
+                end
+            end
+        end
+
+        function [paths, types, sizes] = collectArrayRows(obj, prefix, paths, types, sizes, ~, ~)
+            %COLLECTARRAYROWS Collect table rows for a ConfigurationData array
+            uniqueKeys = collectUnionOfKeys(obj);
+
+            for i = 1:length(uniqueKeys)
+                key = uniqueKeys(i);
+
+                if prefix == ""
+                    fullPath = key;
+                else
+                    fullPath = prefix + "." + key;
+                end
+
+                % Collect types across all elements that have this key
+                foundTypes = string.empty(0,1);
+                firstSize = "";
+                for j = 1:numel(obj)
+                    if iskey(obj(j), key)
+                        val = getData(obj(j), key);
+                        typeName = string(matlab.io.config.ConfigurationData.shortClassName(class(val)));
+                        if ~any(foundTypes == typeName)
+                            foundTypes(end+1,1) = typeName; %#ok<AGROW>
+                        end
+                        if firstSize == ""
+                            firstSize = join(string(size(val)), "x");
+                        end
+                    end
+                end
+
+                if isscalar(foundTypes)
+                    displayType = foundTypes(1);
+                else
+                    displayType = "mixed types: " + join(foundTypes, ", ");
+                end
+
+                paths(end+1,1) = fullPath; %#ok<AGROW>
+                types(end+1,1) = displayType; %#ok<AGROW>
+                sizes(end+1,1) = firstSize; %#ok<AGROW>
+            end
+        end
     end
 
     methods (Static, Access = private)
@@ -1149,6 +1429,33 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %SHORTCLASSNAME Strip namespace prefix from class name for cleaner display
             %   'matlab.io.config.TOMLData' -> 'TOMLData'
             shortName = regexprep(fullName, '^matlab\.io\.config\.', '');
+        end
+
+        function str = formatLeafValue(value)
+            %FORMATLEAFVALUE Format a scalar leaf value for describe() display
+            if isstring(value)
+                if strlength(value) > 40
+                    str = sprintf('"%s..." (string)', extractBefore(value, 41));
+                else
+                    str = sprintf('"%s" (string)', value);
+                end
+            elseif ischar(value)
+                if length(value) > 40
+                    str = sprintf('''%s...'' (char)', value(1:40));
+                else
+                    str = sprintf('''%s'' (char)', value);
+                end
+            elseif isnumeric(value)
+                str = sprintf('%g (%s)', value, class(value));
+            elseif islogical(value)
+                if value
+                    str = "true (logical)";
+                else
+                    str = "false (logical)";
+                end
+            else
+                str = sprintf('%s', class(value));
+            end
         end
     end
 end
