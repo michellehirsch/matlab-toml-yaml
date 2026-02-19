@@ -152,7 +152,9 @@ function yamlText = configDataToYAML(data, depth, indentSize, flowStyle, precisi
     % Add section spacing for top-level keys (depth == 0)
     if depth == 0 && addSectionSpacing && length(yamlLines) > 1
         % Add blank line between sections
-        separator = newline + newline;
+        % Note: [newline newline] is char concatenation; newline+newline would
+        % be char arithmetic (= 20), which is not a valid join delimiter.
+        separator = [newline newline];
     else
         separator = newline;
     end
@@ -187,7 +189,7 @@ function yamlText = structToYAML(data, depth, indentSize, flowStyle, precision, 
 
         % Add section spacing for top-level keys (depth == 0)
         if depth == 0 && addSectionSpacing && length(yamlLines) > 1
-            separator = newline + newline;
+            separator = [newline newline];
         else
             separator = newline;
         end
@@ -272,7 +274,7 @@ function yamlText = mapToYAML(data, depth, indentSize, flowStyle, precision, add
 
     % Add section spacing for top-level keys (depth == 0)
     if depth == 0 && addSectionSpacing && length(yamlLines) > 1
-        separator = newline + newline;
+        separator = [newline newline];
     else
         separator = newline;
     end
