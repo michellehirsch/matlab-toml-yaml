@@ -1,8 +1,9 @@
-classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
+classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                             matlab.mixin.indexing.OverridesPublicDotMethodCall & ...
                             matlab.mixin.CustomDisplay
-    %CONFIGURATIONDATA Abstract base class for structured configuration data
-    %   Use YAMLData, TOMLData, or INIData instead of this class directly.
+    %CONFIGURATIONDATA Base class for structured hierarchical data
+    %   Can be used directly via configdata() for format-neutral data, or via
+    %   format-specific subclasses: YAMLData, TOMLData, JSONData, INIData.
     %   Provides dot notation access and support for special characters in keys.
     %
     %   This is a value class. Assignment creates an independent copy:
@@ -50,8 +51,32 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             newObj = obj;
         end
 
-        function k = keys(obj)
+        function show(obj)
+            %SHOW Display contents as a structured description
+            %   For format-specific subclasses (YAMLData, TOMLData, etc.), show()
+            %   displays in the native file format. For format-neutral ConfigurationData
+            %   objects created via configdata(), show() delegates to describe().
+            %
+            %   See also describe
+            describe(obj);
+        end
+
+        function [k, perElementKeys] = keys(obj)
+            if ~isscalar(obj)
+                keySets = cell(size(obj));
+                for i = 1:numel(obj)
+                    keySets{i} = keys(obj(i));
+                end
+                k = unique([keySets{:}], 'stable');
+                if nargout > 1
+                    perElementKeys = keySets;
+                end
+                return;
+            end
             k = obj.xInternal__.OriginalKeys;
+            if nargout > 1
+                perElementKeys = {k};
+            end
         end
 
         function tf = isfield(obj, key)
@@ -1067,6 +1092,14 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %VALIDATEANDCONVERTVALUE Validate and optionally convert a value
             %   Subclasses can override to add format-specific type handling.
             %   Returns the (possibly converted) value, or throws an error.
+            %
+            %   Format-neutral objects (SourceFormat "unknown") accept all MATLAB
+            %   types since they are not constrained by serialization requirements.
+
+            % Format-neutral objects accept any MATLAB type
+            if obj.xInternal__.SourceFormat == "unknown"
+                return;
+            end
 
             % Handle cell arrays recursively
             if iscell(value)
