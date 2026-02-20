@@ -271,7 +271,7 @@ All methods must be called using **function syntax** — `keys(obj)`, not `obj.k
 
 | Method | Description |
 |--------|-------------|
-| `keys` | Return all key names in insertion order |
+| `keys` | Return all key names in insertion order; works on scalar or array |
 | `iskey` | Check if a key exists; works element-wise on scalar or array |
 | `remove` | Remove a key; returns updated object |
 | `properties` | Return key names as `cellstr`; used by IDE for tab completion |
@@ -305,25 +305,44 @@ All methods must be called using **function syntax** — `keys(obj)`, not `obj.k
 
 #### `keys`
 
-Return all key names in insertion order.
+Return key names. For a scalar object, returns all keys in insertion order. For an array, returns the union of all keys across every element (preserving first-appearance order).
 
 ##### Syntax
 
 ```matlab
 k = keys(obj)
+[k, perElementKeys] = keys(obj)
 ```
 
 ##### Input Arguments
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `obj` | `YAMLData` scalar | The configuration data object |
+| `obj` | `YAMLData` scalar or array | The configuration data object or array |
 
 ##### Output Arguments
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `k` | `string` array | Key names in insertion order |
+| `k` | `string` array | Key names. For scalar `obj`: keys in insertion order. For array `obj`: union of all key names across elements, in first-appearance order. |
+| `perElementKeys` | `cell` array | Only returned when called with two output arguments. Same size as `obj`. Each cell contains a `string` array of the key names for the corresponding array element. For scalar `obj`, returns a 1×1 cell containing `k`. |
+
+##### Examples
+
+```matlab
+% Scalar: keys in insertion order
+config = readyaml("config.yaml");
+keys(config)          % ["database", "logging"]
+
+% Array with heterogeneous keys: returns union
+steps = wf.jobs.test.steps;   % 1×4 YAMLData array
+keys(steps)           % ["name", "uses", "with"] — union across all elements
+
+% Two-output form: per-element key sets
+[allKeys, perStep] = keys(steps);
+perStep{1}            % keys of the first element only
+isequal(perStep{:})   % false if keys vary by element
+```
 
 ---
 
@@ -866,7 +885,7 @@ All methods must be called using **function syntax** — `keys(obj)`, not `obj.k
 
 | Method | Description |
 |--------|-------------|
-| `keys` | Return all key names in insertion order |
+| `keys` | Return all key names in insertion order; works on scalar or array |
 | `iskey` | Check if a key exists; works element-wise on scalar or array |
 | `remove` | Remove a key; returns updated object |
 | `properties` | Return key names as `cellstr`; used by IDE for tab completion |
@@ -912,7 +931,7 @@ All methods must be called using **function syntax** — dot notation routes to 
 
 | Method | Description |
 |--------|-------------|
-| `keys` | Return all key names in insertion order |
+| `keys` | Return all key names in insertion order; works on scalar or array |
 | `iskey` | Check if a key exists; works element-wise on scalar or array |
 | `remove` | Remove a key; returns updated object |
 | `properties` | Return key names as `cellstr`; used by IDE for tab completion |
