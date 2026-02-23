@@ -49,3 +49,9 @@ items = [item1, item2, item3];
 hasTag = iskey(items, "tag");
 tagged = items(hasTag);
 tagged.name
+
+%[appendix]{"version":"1.0"}
+%---
+%[metadata:view]
+%   data: {"layout":"inline"}
+%---

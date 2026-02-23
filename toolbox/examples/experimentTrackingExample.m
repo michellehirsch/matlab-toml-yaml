@@ -48,3 +48,9 @@ end
 earlyStopped = runs(iskey(runs, "early_stopped"))
 %%
 %[text] Each entry in `earlyStopped` carries its full parameter set alongside the early-stopping metadata — everything in one place, with no schema enforcement forcing uniformity where the data naturally varies.
+
+%[appendix]{"version":"1.0"}
+%---
+%[metadata:view]
+%   data: {"layout":"inline"}
+%---

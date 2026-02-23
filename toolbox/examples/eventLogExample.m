@@ -74,3 +74,9 @@ avgPressure = mean(pressureReadings.value)
 %[text] A MATLAB struct array requires every element to have the same field names. You would have to pad the `"start"` event with empty `sensor`, `value`, `unit`, `code`, and `message` fields, and do the same for `"error"` events. That padding is pure noise: `mean([events.value])` would silently include the empty placeholders unless you remembered to filter first.
 %[text]
 %[text] With `configdata`, the schema is per-element. Extracting `measurements.value` gives you only the values that exist. Filtering with `iskey` is explicit and composable. The result is direct vectorized access on heterogeneous data — without the boilerplate.
+
+%[appendix]{"version":"1.0"}
+%---
+%[metadata:view]
+%   data: {"layout":"inline"}
+%---
