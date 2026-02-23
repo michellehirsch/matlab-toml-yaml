@@ -36,16 +36,13 @@ item1 = configdata();
 item1.name = "alpha.m";
 item1.bytes = 1200;
 item1.tag = "core";
-
 item2 = configdata();
 item2.name = "beta.m";
 item2.bytes = 800;
-
 item3 = configdata();
 item3.name = "gamma.m";
 item3.bytes = 3400;
 item3.tag = "util";
-
 items = [item1, item2, item3];
 %%
 %[text] `iskey` is vectorized — it returns a logical array showing which elements have the field. Use it as a logical index to filter the array.

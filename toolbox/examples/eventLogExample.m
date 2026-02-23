@@ -6,11 +6,9 @@
 addpath('../')
 rng(0)
 events = [];
-
 % Start event
 e = configdata(); e.timestamp = 0; e.type = "start"; e.session_id = "abc123";
 events = [events, e];
-
 % Several temperature measurement events
 for i = 1:5
     e = configdata();
@@ -21,12 +19,10 @@ for i = 1:5
     e.unit = "celsius";
     events = [events, e];
 end
-
 % An error event
 e = configdata(); e.timestamp = 37; e.type = "error";
 e.code = 404; e.message = "Sensor timeout";
 events = [events, e];
-
 % Pressure measurement events
 for i = 6:8
     e = configdata();
