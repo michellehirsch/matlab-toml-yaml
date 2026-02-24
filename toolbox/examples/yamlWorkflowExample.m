@@ -18,7 +18,7 @@ names = steps.name %[output:897f0c21]
 show(steps) %[output:6709486e]
 %%
 %[text] `iskey` is vectorized, so you can programmatically check all array elements:
-iskey(steps,"with") %[output:0f0e509e]
+iskey(steps,"with") %[output:20e7cbfe]
 %%
 %[text] `keys` on an array returns the **union** of all key names across every element — the same list shown in the display above:
 keys(steps) %[output:67d88dd6]
@@ -71,7 +71,7 @@ delete("ci_updated.yaml")
 %[output:6709486e]
 %   data: {"dataType":"text","outputData":{"text":"item:\n  - name: Checkout code\n    uses: actions\/checkout@v4\n  - name: Setup MATLAB\n    uses: matlab-actions\/setup-matlab@v2\n    with:\n      release: R2024b\n      products: MATLAB Statistics_and_Machine_Learning_Toolbox\n  - name: Run tests\n    uses: matlab-actions\/run-tests@v2\n    with:\n      release: R2025a\n      source-folder: src\n      test-results-junit: test-results\/results.xml\n      code-coverage-cobertura: coverage\/coverage.xml\n  - name: Upload test results\n    uses: actions\/upload-artifact@v4\n    with:\n      release: R2025b\n      name: test-results\n      path: test-results\/\n\n","truncated":false}}
 %---
-%[output:0f0e509e]
+%[output:20e7cbfe]
 %   data: {"dataType":"matrix","outputData":{"columns":4,"header":"1×4 logical array","name":"ans","rows":1,"type":"logical","value":[["0","1","1","1"]]}}
 %---
 %[output:67d88dd6]
