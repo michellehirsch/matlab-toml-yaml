@@ -1,8 +1,9 @@
-classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
+classdef ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
                             matlab.mixin.indexing.OverridesPublicDotMethodCall & ...
                             matlab.mixin.CustomDisplay
-    %CONFIGURATIONDATA Abstract base class for structured configuration data
-    %   Use YAMLData, TOMLData, or INIData instead of this class directly.
+    %CONFIGURATIONDATA Base class for structured hierarchical data
+    %   Can be used directly via configdata() for format-neutral data, or via
+    %   format-specific subclasses: YAMLData, TOMLData, JSONData, INIData.
     %   Provides dot notation access and support for special characters in keys.
     %
     %   This is a value class. Assignment creates an independent copy:
@@ -48,6 +49,25 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %   With value semantics, assignment already creates a copy.
             %   This method is retained for backwards compatibility.
             newObj = obj;
+        end
+
+        function show(obj)
+            %SHOW Display all values as an indented tree
+            %   For format-specific subclasses (YAMLData, TOMLData, etc.), show()
+            %   displays in the native file format. For format-neutral ConfigurationData
+            %   objects created via configdata(), show() displays an indented tree
+            %   with actual values (not type annotations).
+            %
+            %   Arrays are displayed using the same style as MATLAB's ND array
+            %   display, with each element labeled varname(i) =
+            %
+            %   See also describe
+            varName = inputname(1);
+            if isempty(varName)
+                varName = 'ans';
+            end
+            text = buildShowText(obj, varName);
+            fprintf('%s', text);
         end
 
         function [k, perElementKeys] = keys(obj)
@@ -1081,6 +1101,14 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %VALIDATEANDCONVERTVALUE Validate and optionally convert a value
             %   Subclasses can override to add format-specific type handling.
             %   Returns the (possibly converted) value, or throws an error.
+            %
+            %   Format-neutral objects (SourceFormat "unknown") accept all MATLAB
+            %   types since they are not constrained by serialization requirements.
+
+            % Format-neutral objects accept any MATLAB type
+            if obj.xInternal__.SourceFormat == "unknown"
+                return;
+            end
 
             % Handle cell arrays recursively
             if iscell(value)
@@ -1343,6 +1371,102 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             end
         end
 
+        function text = buildShowText(obj, varName)
+            %BUILDSHOWTEXT Build value-focused display string for show()
+            lines = {};
+
+            if ~isscalar(obj)
+                % Top-level array: ND array style (like X(:,:,k) = )
+                for i = 1:numel(obj)
+                    lines{end+1} = sprintf('%s(%d) =\n', varName, i); %#ok<AGROW>
+                    lines{end+1} = newline; %#ok<AGROW>
+                    childLines = buildShowKeysText(obj(i), "    ", 1, Inf);
+                    lines = [lines, childLines]; %#ok<AGROW>
+                    lines{end+1} = newline; %#ok<AGROW>
+                    lines{end+1} = newline; %#ok<AGROW>
+                end
+            else
+                % Scalar: header then indented key-value tree
+                className = matlab.io.config.ConfigurationData.shortClassName(class(obj));
+                nKeys = length(obj.xInternal__.OriginalKeys);
+                if nKeys == 0
+                    lines{end+1} = sprintf('\n  %s with no keys\n\n', className);
+                else
+                    lines{end+1} = sprintf('\n  %s with %d %s\n\n', className, nKeys, ...
+                        matlab.io.config.ConfigurationData.pluralize("key", nKeys));
+                    lines = [lines, buildShowKeysText(obj, "    ", 1, Inf)];
+                    lines{end+1} = newline;
+                end
+            end
+
+            text = strjoin(lines, '');
+        end
+
+        function lines = buildShowKeysText(obj, indent, currentDepth, maxDepth)
+            %BUILDSHOWKEYSTEXT Build value tree lines for show() — no type annotations,
+            %   arrays expanded with ND-array style key(i) = headers
+            lines = {};
+            originalKeys = obj.xInternal__.OriginalKeys;
+
+            if isempty(originalKeys)
+                return;
+            end
+
+            maxKeyLen = max(strlength(originalKeys));
+            keyColumnWidth = max(maxKeyLen + 2, 20);
+
+            for i = 1:length(originalKeys)
+                key = originalKeys(i);
+                value = getData(obj, key);
+
+                if isa(value, 'matlab.io.config.ConfigurationData')
+                    if isscalar(value)
+                        if currentDepth >= maxDepth
+                            nKeys = length(keys(value));
+                            paddedKey = pad(key + ":", keyColumnWidth);
+                            lines{end+1} = sprintf('%s%s(%d %s)\n', indent, paddedKey, ...
+                                nKeys, matlab.io.config.ConfigurationData.pluralize("key", nKeys)); %#ok<AGROW>
+                        else
+                            lines{end+1} = sprintf('%s%s:\n', indent, key); %#ok<AGROW>
+                            childLines = buildShowKeysText(value, indent + "    ", currentDepth + 1, maxDepth);
+                            lines = [lines, childLines]; %#ok<AGROW>
+                        end
+                    else
+                        % ConfigurationData array: ND-array style, one element per block
+                        dims = size(value);
+                        dimStr = join(string(dims), "x");
+                        paddedKey = pad(key + ":", keyColumnWidth);
+                        lines{end+1} = sprintf('%s%s%s array\n', indent, paddedKey, dimStr); %#ok<AGROW>
+                        for j = 1:numel(value)
+                            lines{end+1} = sprintf('%s%s(%d) =\n', indent, key, j); %#ok<AGROW>
+                            childLines = buildShowKeysText(value(j), indent + "    ", currentDepth + 1, maxDepth);
+                            lines = [lines, childLines]; %#ok<AGROW>
+                        end
+                    end
+                elseif isa(value, 'missing')
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    lines{end+1} = sprintf('%s%smissing\n', indent, paddedKey); %#ok<AGROW>
+                elseif isempty(value)
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    sizeStr = join(string(size(value)), "x");
+                    lines{end+1} = sprintf('%s%s%s %s\n', indent, paddedKey, sizeStr, class(value)); %#ok<AGROW>
+                elseif ischar(value)
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    lines{end+1} = sprintf('%s%s%s\n', indent, paddedKey, ...
+                        matlab.io.config.ConfigurationData.formatShowLeafValue(value)); %#ok<AGROW>
+                elseif isscalar(value) && (isstring(value) || isnumeric(value) || islogical(value))
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    lines{end+1} = sprintf('%s%s%s\n', indent, paddedKey, ...
+                        matlab.io.config.ConfigurationData.formatShowLeafValue(value)); %#ok<AGROW>
+                else
+                    % Non-scalar leaf: show size and type
+                    paddedKey = pad(key + ":", keyColumnWidth);
+                    sizeStr = join(string(size(value)), "x");
+                    lines{end+1} = sprintf('%s%s%s %s\n', indent, paddedKey, sizeStr, class(value)); %#ok<AGROW>
+                end
+            end
+        end
+
         function uniqueKeys = collectUnionOfKeys(obj)
             %COLLECTUNIONOFKEYS Get union of keys across array elements (preserving order)
             allKeys = string.empty(0,1);
@@ -1443,6 +1567,33 @@ classdef (Abstract) ConfigurationData < matlab.mixin.indexing.RedefinesDot & ...
             %SHORTCLASSNAME Strip namespace prefix from class name for cleaner display
             %   'matlab.io.config.TOMLData' -> 'TOMLData'
             shortName = regexprep(fullName, '^matlab\.io\.config\.', '');
+        end
+
+        function str = formatShowLeafValue(value)
+            %FORMATSHOWLEAFVALUE Format a scalar leaf value for show() — no type annotation
+            if isstring(value)
+                if strlength(value) > 40
+                    str = sprintf('"%s..."', extractBefore(value, 41));
+                else
+                    str = sprintf('"%s"', value);
+                end
+            elseif ischar(value)
+                if length(value) > 40
+                    str = sprintf('''%s...''', value(1:40));
+                else
+                    str = sprintf('''%s''', value);
+                end
+            elseif isnumeric(value)
+                str = sprintf('%g', value);
+            elseif islogical(value)
+                if value
+                    str = "true";
+                else
+                    str = "false";
+                end
+            else
+                str = sprintf('%s', class(value));
+            end
         end
 
         function str = formatLeafValue(value)

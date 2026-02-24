@@ -11,12 +11,13 @@ MATLAB toolbox for reading/writing YAML, TOML, JSON, and INI configuration files
 ### Run Tests
 ```matlab
 % via MCP Server
-run_matlab_test_file('tests/*.m')
 run_matlab_test_file('tests/yamltest.m')
 run_matlab_test_file('tests/tomltest.m')
 run_matlab_test_file('tests/initest.m')
 run_matlab_test_file('tests/jsontest.m')
 run_matlab_test_file('tests/subsasgnTest.m')
+run_matlab_test_file('tests/describeTest.m')
+run_matlab_test_file('tests/configdataTest.m')
 run_matlab_test_file('tests/ConfigurationPerformanceTest.m')
 ```
 
@@ -37,7 +38,7 @@ All work must be done on a branch, not on main. Create a new branch for new work
 
 ## Code style
 - Don't use ambiguous abbreviations like Arr or Ann in variable names, especially ones that are UpperCase or camelCase. When in doubt, spell out the word.
-- 
+
 ## Architecture
 
 ### Class Hierarchy
@@ -64,7 +65,9 @@ All internal state is stored in a single `public Hidden` struct property named `
 This design uses one reserved key name to enable tab completion. See `Claude/TAB_COMPLETION_DESIGN.md`.
 
 ### I/O Pattern
-Reader functions (`readyaml`, `readtoml`, `readjson`, `readini`) return data objects. Writer functions (`writeyaml`, `writetoml`, `writejson`, `writeini`) accept data objects or structs.
+Reader functions (`readyaml`, `readtoml`, `readjson`, `readini`) return subclass objects (YAMLData, TOMLData, etc.). Writer functions (`writeyaml`, `writetoml`, `writejson`, `writeini`) accept data objects or structs.
+
+Format-neutral `ConfigurationData` objects (no source format) are created via the `configdata()` wrapper. Each subclass also has a wrapper: `yamldata()`, `tomldata()`, `jsondata()`, `inidata()`. These wrappers accept no args (empty), a struct, or a dictionary.
 
 ## Critical Design Decisions
 
@@ -105,11 +108,31 @@ config = YAMLData;
 config.new.section.value = 42;  % creates nested YAMLData objects
 ```
 
+### Accessing xInternal__ on Array Elements
+`obj.xInternal__` works when `obj` is the direct `self` parameter (bypasses RedefinesDot). But `obj(j).xInternal__` on array elements goes through `dotReference` and is blocked. Inside methods that iterate over arrays, use the public API instead:
+```matlab
+% WRONG inside a method iterating obj array
+obj(j).xInternal__.OriginalKeys
+
+% CORRECT
+keys(obj(j))
+iskey(obj(j), key)
+getData(obj(j), key)
+```
+
+### show() vs describe()
+- `show(obj)` — value viewer; displays actual data. Format-specific subclasses emit native format (YAML/TOML/JSON/INI). Format-neutral `ConfigurationData` emits an indented tree with values and no type annotations. Arrays use ND-array style (`varname(i) =`).
+- `describe(obj)` — schema inspector; shows key hierarchy with MATLAB types and sizes. Supports `Depth=N` limiting and returns a queryable table when called with an output argument.
+
 ## Key Files
 
 | File | Purpose |
 |------|---------|
-| `toolbox/ConfigurationData.m` | Base class with dot notation handling |
+| `toolbox/+matlab/+io/+config/ConfigurationData.m` | Base class with dot notation handling (~1,500 lines) |
+| `toolbox/+matlab/+io/+config/YAMLData.m` | YAML subclass; `show()` prints YAML format |
+| `toolbox/+matlab/+io/+config/TOMLData.m` | TOML subclass; `show()` prints TOML format |
+| `toolbox/+matlab/+io/+config/JSONData.m` | JSON subclass; `show()` prints JSON format |
+| `toolbox/+matlab/+io/+config/INIData.m` | INI subclass; `show()` prints INI format |
 | `toolbox/readyaml.m` | YAML parser (~400 lines) |
 | `toolbox/readtoml.m` | TOML parser (~1,250 lines, most complex) |
 | `toolbox/writeyaml.m` | YAML writer with formatting options |
@@ -119,6 +142,7 @@ config.new.section.value = 42;  % creates nested YAMLData objects
 | `Claude/DESIGN_DECISIONS.md` | Naming rationale and design philosophy |
 | `Claude/ISSUE_14_RESERVED_NAMES.md` | Reserved name handling explanation |
 | `Claude/TAB_COMPLETION_DESIGN.md` | Tab completion fix and xInternal__ rationale |
+| `specs/` | Design specs and RFAs for features |
 
 ## Known Limitations
 

@@ -24,6 +24,7 @@ jobs:
       - name: Run tests
         uses: matlab-actions/run-tests@v2
         with:
+          release: R2025a
           source-folder: src
           test-results-junit: test-results/results.xml
           code-coverage-cobertura: coverage/coverage.xml
@@ -31,5 +32,6 @@ jobs:
       - name: Upload test results
         uses: actions/upload-artifact@v4
         with:
+          release: R2025b
           name: test-results
           path: test-results/
